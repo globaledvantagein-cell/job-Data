@@ -209,7 +209,7 @@ export async function getPublicBaitJobs() {
     const jobsCollection = db.collection('jobs');
     
     const jobs = await jobsCollection.find({
-        Status: { $in: ['active', 'pending_review'] },
+        Status: { $in: ['active'] },
         GermanRequired: false
     })
         .sort({ PostedDate: -1, createdAt: -1 })
@@ -258,7 +258,7 @@ export async function getJobsPaginated(page = 1, limit = 50, companyFilter = nul
     const skip = (page - 1) * limit;
 
     const query = {
-        Status: { $in: ['active', 'pending_review'] },
+        Status: { $in: ['active'] },
         GermanRequired: false
     };
 
