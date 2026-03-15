@@ -21,6 +21,8 @@ export async function connectToDb() {
     }
 
     db = client.db("job-scraper");
+    const clicksCollection = db.collection('applyClicks');
+    await clicksCollection.createIndex({ jobId: 1, visitorId: 1 }, { unique: true });
     console.log("🗄️  Successfully connected to MongoDB.");
     return db;
 }
@@ -207,17 +209,17 @@ export async function getPublicBaitJobs() {
     const jobsCollection = db.collection('jobs');
     
     const jobs = await jobsCollection.find({
-        Status: 'active',
+        Status: { $in: ['active', 'pending_review'] },
         GermanRequired: false
     })
         .sort({ PostedDate: -1, createdAt: -1 })
         .limit(9)
         .project({
             JobTitle: 1, Company: 1, Location: 1, Department: 1,
-            PostedDate: 1, ApplicationURL: 1, GermanRequired: 1, thumbsUp: 1, thumbsDown: 1
+            PostedDate: 1, ApplicationURL: 1, GermanRequired: 1, applyClicks: 1
         })
         .toArray();
-    return jobs.map(job => ({ ...job, thumbsUp: job.thumbsUp || 0, thumbsDown: job.thumbsDown || 0 }));
+    return jobs.map(job => ({ ...job, applyClicks: job.applyClicks || 0 }));
 }
 
 export async function addSubscriber(data) {
@@ -256,7 +258,7 @@ export async function getJobsPaginated(page = 1, limit = 50, companyFilter = nul
     const skip = (page - 1) * limit;
 
     const query = {
-        Status: 'active',
+        Status: { $in: ['active', 'pending_review'] },
         GermanRequired: false
     };
 
@@ -271,12 +273,14 @@ export async function getJobsPaginated(page = 1, limit = 50, companyFilter = nul
         .limit(limit)
         .toArray();
 
-    const companies = await jobsCollection.distinct('Company', { Status: 'active' });
+    const companies = await jobsCollection.distinct('Company', {
+        Status: { $in: ['active', 'pending_review'] },
+        GermanRequired: false
+    });
 
     const normalizedJobs = jobs.map(job => ({
         ...job,
-        thumbsUp: job.thumbsUp || 0,
-        thumbsDown: job.thumbsDown || 0
+        applyClicks: job.applyClicks || 0
     }));
 
     return { jobs: normalizedJobs, totalJobs, companies };
@@ -332,57 +336,47 @@ export async function reviewJobDecision(jobId, decision) {
     return { success: true, status: newStatus };
 }
 
-export async function castJobVote(jobId, status, visitorId) {
+export async function trackApplyClick(jobId, visitorId) {
     const db = await connectToDb();
     const jobsCollection = db.collection('jobs');
-    const votesCollection = db.collection('votes');
+    const clicksCollection = db.collection('applyClicks');
 
     if (!ObjectId.isValid(jobId)) {
         throw new Error('Invalid job id');
-    }
-    if (!['up', 'down'].includes(status)) {
-        throw new Error('Invalid vote status');
     }
     if (!visitorId || typeof visitorId !== 'string') {
         throw new Error('visitorId is required');
     }
 
     const objectId = new ObjectId(jobId);
-    const existingVote = await votesCollection.findOne({ jobId: objectId, visitorId });
+    const existing = await clicksCollection.findOne({ jobId: objectId, visitorId });
 
-    let userVote = null;
-    if (existingVote && existingVote.vote === status) {
-        await votesCollection.deleteOne({ _id: existingVote._id });
-    } else if (existingVote && existingVote.vote !== status) {
-        await votesCollection.updateOne(
-            { _id: existingVote._id },
-            { $set: { vote: status, createdAt: new Date() } }
-        );
-        userVote = status;
-    } else {
-        await votesCollection.insertOne({
-            jobId: objectId,
-            visitorId,
-            vote: status,
-            createdAt: new Date()
-        });
-        userVote = status;
+    if (existing) {
+        const job = await jobsCollection.findOne({ _id: objectId }, { projection: { applyClicks: 1 } });
+        return { applyClicks: job?.applyClicks || 0, alreadyTracked: true };
     }
 
-    const voteCounts = await votesCollection.aggregate([
-        { $match: { jobId: objectId } },
-        { $group: { _id: '$vote', count: { $sum: 1 } } }
-    ]).toArray();
+    try {
+        await clicksCollection.insertOne({
+            jobId: objectId,
+            visitorId,
+            clickedAt: new Date()
+        });
+    } catch (error) {
+        if (error?.code === 11000) {
+            const job = await jobsCollection.findOne({ _id: objectId }, { projection: { applyClicks: 1 } });
+            return { applyClicks: job?.applyClicks || 0, alreadyTracked: true };
+        }
+        throw error;
+    }
 
-    const thumbsUp = voteCounts.find(v => v._id === 'up')?.count || 0;
-    const thumbsDown = voteCounts.find(v => v._id === 'down')?.count || 0;
-
-    await jobsCollection.updateOne(
+    const result = await jobsCollection.findOneAndUpdate(
         { _id: objectId },
-        { $set: { thumbsUp, thumbsDown, updatedAt: new Date() } }
+        { $inc: { applyClicks: 1 }, $set: { updatedAt: new Date() } },
+        { returnDocument: 'after', projection: { applyClicks: 1 } }
     );
 
-    return { thumbsUp, thumbsDown, userVote };
+    return { applyClicks: result?.applyClicks || 1, alreadyTracked: false };
 }
 
 export async function getCompanyDirectoryStats() {
@@ -393,7 +387,7 @@ export async function getCompanyDirectoryStats() {
         const pipeline = [
             { 
                 $match: { 
-                    Status: 'active', 
+                    Status: { $in: ['active', 'pending_review'] }, 
                     GermanRequired: false
                 } 
             },
@@ -621,4 +615,64 @@ export async function cleanAllDescriptions() {
         cleaned,
         alreadyClean: total - cleaned
     };
+}
+
+export async function saveFeedback(feedbackData) {
+    const db = await connectToDb();
+    const collection = db.collection('feedback');
+    const result = await collection.insertOne(feedbackData);
+    return { id: result.insertedId, ...feedbackData };
+}
+
+export async function getAllFeedback(page = 1, limit = 50, statusFilter = null) {
+    const db = await connectToDb();
+    const collection = db.collection('feedback');
+    const skip = (page - 1) * limit;
+
+    const query = {};
+    if (statusFilter && statusFilter !== 'all') {
+        query.status = statusFilter;
+    }
+
+    const total = await collection.countDocuments(query);
+    const feedback = await collection.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .toArray();
+
+    return { feedback, total, totalPages: Math.ceil(total / limit), currentPage: page };
+}
+
+export async function updateFeedbackStatus(feedbackId, status, adminNote = null) {
+    const db = await connectToDb();
+    const collection = db.collection('feedback');
+
+    const update = { status, updatedAt: new Date() };
+    if (adminNote !== null) update.adminNote = adminNote;
+
+    await collection.updateOne(
+        { _id: new ObjectId(feedbackId) },
+        { $set: update }
+    );
+    return { success: true };
+}
+
+export async function deleteFeedback(feedbackId) {
+    const db = await connectToDb();
+    const collection = db.collection('feedback');
+    await collection.deleteOne({ _id: new ObjectId(feedbackId) });
+    return { success: true };
+}
+
+export async function getFeedbackStats() {
+    const db = await connectToDb();
+    const collection = db.collection('feedback');
+
+    const total = await collection.countDocuments();
+    const unread = await collection.countDocuments({ status: 'unread' });
+    const read = await collection.countDocuments({ status: 'read' });
+    const resolved = await collection.countDocuments({ status: 'resolved' });
+
+    return { total, unread, read, resolved };
 }

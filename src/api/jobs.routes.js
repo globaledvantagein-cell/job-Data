@@ -5,7 +5,7 @@ import {
     addCuratedJob,
     deleteJobById,
     getPublicBaitJobs,
-    castJobVote,
+    trackApplyClick,
     getRejectedJobs,
     getCompanyDirectoryStats,
     getJobsForReview,
@@ -28,6 +28,75 @@ import { verifyToken, verifyAdmin } from '../middleware/authMiddleware.js';
 export const jobsApiRouter = Router();
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+function deriveExperienceFromTitle(title = '') {
+    const lower = String(title).toLowerCase();
+
+    if (/\b(staff|distinguished)\b/.test(lower)) return 'Staff';
+    if (/\b(lead|principal|tech lead)\b/.test(lower)) return 'Lead';
+    if (/\b(senior|sr\.?)\b/.test(lower)) return 'Senior';
+    if (/\b(junior|jr\.?|entry|associate|graduate)\b/.test(lower)) return 'Entry';
+    if (/\b(mid[- ]?level|intermediate)\b/.test(lower)) return 'Mid';
+
+    return 'Mid';
+}
+
+function isEntryLevelTitle(title = '') {
+    return /\b(junior|jr\.?|entry|associate|graduate)\b/.test(String(title).toLowerCase());
+}
+
+function deriveWorkplaceType(workplaceType, location = '', description = '') {
+    const current = String(workplaceType || '').trim();
+    if (current && current.toLowerCase() !== 'unspecified') {
+        return current;
+    }
+
+    const haystack = `${String(location).toLowerCase()} ${String(description).toLowerCase().slice(0, 500)}`;
+
+    if (haystack.includes('remote') || haystack.includes('fully remote') || haystack.includes('work from home')) {
+        return 'Remote';
+    }
+
+    if (haystack.includes('hybrid')) {
+        return 'Hybrid';
+    }
+
+    return 'Unspecified';
+}
+
+async function backfillExperienceForCollection(collection) {
+    const documents = await collection.find({
+        $or: [
+            { ExperienceLevel: 'N/A' },
+            { ExperienceLevel: { $exists: false } },
+            { ExperienceLevel: null }
+        ]
+    }).toArray();
+
+    let updated = 0;
+
+    for (const document of documents) {
+        const title = document.JobTitle || '';
+        const experienceLevel = deriveExperienceFromTitle(title);
+        const isEntryLevel = isEntryLevelTitle(title);
+        const workplaceType = deriveWorkplaceType(document.WorkplaceType, document.Location, document.Description);
+
+        await collection.updateOne(
+            { _id: document._id },
+            {
+                $set: {
+                    ExperienceLevel: experienceLevel,
+                    isEntryLevel,
+                    WorkplaceType: workplaceType
+                }
+            }
+        );
+
+        updated += 1;
+    }
+
+    return { total: documents.length, updated };
+}
 
 function isManuallyReviewed(job) {
     const reviewed = job?.reviewedAt !== undefined && job?.reviewedAt !== null;
@@ -105,12 +174,20 @@ jobsApiRouter.get('/rejected', async (req, res) => {
     }
 });
 
-jobsApiRouter.patch('/:id/feedback', async (req, res) => {
+jobsApiRouter.post('/:id/apply-click', async (req, res) => {
     try {
         const { id } = req.params;
-        const { status, visitorId } = req.body;
+        const { visitorId } = req.body;
 
-        const result = await castJobVote(id, status, visitorId);
+        if (!visitorId) {
+            return res.status(400).json({ error: 'visitorId required' });
+        }
+
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({ error: 'Invalid job ID' });
+        }
+
+        const result = await trackApplyClick(id, visitorId);
         res.status(200).json(result);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -344,6 +421,61 @@ jobsApiRouter.post('/admin/clean-descriptions', verifyToken, verifyAdmin, async 
     try {
         const summary = await cleanAllDescriptions();
         res.status(200).json(summary);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+jobsApiRouter.post('/admin/fix-salaries', verifyToken, verifyAdmin, async (req, res) => {
+    try {
+        const db = await connectToDb();
+        const jobsCollection = db.collection('jobs');
+
+        const jobs = await jobsCollection.find({
+            $or: [
+                { SalaryMin: { $gt: 0, $lt: 1000 } },
+                { SalaryMax: { $gt: 0, $lt: 1000 } }
+            ]
+        }).toArray();
+
+        let fixed = 0;
+
+        for (const job of jobs) {
+            const update = {};
+
+            if (job.SalaryMin && job.SalaryMin > 0 && job.SalaryMin < 1000) {
+                update.SalaryMin = job.SalaryMin * 1000;
+            }
+
+            if (job.SalaryMax && job.SalaryMax > 0 && job.SalaryMax < 1000) {
+                update.SalaryMax = job.SalaryMax * 1000;
+            }
+
+            if (Object.keys(update).length > 0) {
+                await jobsCollection.updateOne({ _id: job._id }, { $set: update });
+                fixed += 1;
+            }
+        }
+
+        res.status(200).json({ total: jobs.length, fixed });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+jobsApiRouter.post('/admin/backfill-experience', verifyToken, verifyAdmin, async (req, res) => {
+    try {
+        const db = await connectToDb();
+        const jobsSummary = await backfillExperienceForCollection(db.collection('jobs'));
+        const logsSummary = await backfillExperienceForCollection(db.collection('jobTestLogs'));
+
+        res.status(200).json({
+            total: jobsSummary.total,
+            updated: jobsSummary.updated,
+            logsTotal: logsSummary.total,
+            logsUpdated: logsSummary.updated,
+            message: 'Backfill complete'
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

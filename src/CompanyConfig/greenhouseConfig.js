@@ -315,13 +315,11 @@ export const greenhouseConfig = {
     },
 
     extractWorkplaceType(job) {
-        const location = `${job.location?.name || ''} ${(job.offices || []).map(o => o?.location).join(' ')}`;
-        return normalizeWorkplaceType(location);
+        return 'Unspecified';
     },
 
     extractIsRemote(job) {
-        const workplace = this.extractWorkplaceType(job);
-        return workplace === 'Remote' || workplace === 'Hybrid';
+        return false;
     },
 
     extractTags(job) {

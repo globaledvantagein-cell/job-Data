@@ -32,12 +32,11 @@ const jobSchemaDefinition = {
     isEntryLevel: { type: Boolean, default: false },
     ContractType: { type: String, default: "N/A" },
     ExperienceLevel: { type: String, default: "N/A" },
+    applyClicks: { type: Number, default: 0 },
     PostedDate: { type: Date, default: null },
     createdAt: { type: Date },
     updatedAt: { type: Date },
-    scrapedAt: { type: Date },
-    thumbsUp: { type: Number, default: 0 },
-    thumbsDown: { type: Number, default: 0 }
+    scrapedAt: { type: Date }
 };
 
 class Job {

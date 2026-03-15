@@ -331,7 +331,12 @@ export const ashbyConfig = {
     },
 
     extractEmploymentType(job) {
-        return job.employmentType || null;
+        const value = String(job.employmentType || '').toLowerCase();
+        if (value.includes('full')) return 'FullTime';
+        if (value.includes('part')) return 'PartTime';
+        if (value.includes('contract')) return 'Contract';
+        if (value.includes('intern')) return 'Intern';
+        return null;
     },
 
     extractWorkplaceType(job) {

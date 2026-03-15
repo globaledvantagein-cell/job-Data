@@ -10,6 +10,7 @@ import { jobsApiRouter } from './api/jobs.routes.js';
 import { usersApiRouter } from './api/users.routes.js';
 import { authRouter } from './api/auth.routes.js';
 import { analyticsRouter } from './api/analytics.routes.js';
+import { feedbackRouter } from './api/feedback.routes.js';
 
 // --- Setup ---
 const app = express();
@@ -24,6 +25,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/jobs', jobsApiRouter); // All job-related routes are in a separate file
 app.use('/api/users', usersApiRouter);
 app.use('/api/analytics', analyticsRouter);
+app.use('/api/feedback', feedbackRouter);
 // --- Health Check Endpoint ---
 app.get('/', (req, res) => {
     res.send('Job Scraper Backend is running and healthy.');

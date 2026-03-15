@@ -17,16 +17,17 @@ function normalizeArray(values) {
 
 function deriveExperienceLevelFromTitle(title) {
     const lower = String(title || '').toLowerCase();
-    if (lower.includes('staff') || lower.includes('principal')) return 'Staff';
-    if (lower.includes('lead')) return 'Lead';
-    if (lower.includes('senior') || lower.includes('sr.')) return 'Senior';
-    if (lower.includes('junior') || lower.includes('entry') || lower.includes('associate') || lower.includes('graduate')) return 'Entry';
+    if (/\b(staff|staff\+|distinguished)\b/i.test(lower)) return 'Staff';
+    if (/\b(lead|principal|tech lead)\b/i.test(lower)) return 'Lead';
+    if (/\b(senior|sr\.?|senior level)\b/i.test(lower)) return 'Senior';
+    if (/\b(junior|jr\.?|entry|associate|graduate|intern|entry level|entry-level)\b/i.test(lower)) return 'Entry';
+    if (/\b(mid|mid-level|intermediate|regular)\b/i.test(lower)) return 'Mid';
     return 'Mid';
 }
 
 function deriveIsEntryLevelFromTitle(title) {
     const lower = String(title || '').toLowerCase();
-    return ['junior', 'entry', 'associate', 'graduate'].some(keyword => lower.includes(keyword));
+    return /\b(junior|jr\.?|entry|associate|graduate|intern|entry level|entry-level)\b/i.test(lower);
 }
 
 function inferAtsPlatform(siteConfig) {
@@ -34,7 +35,43 @@ function inferAtsPlatform(siteConfig) {
     if (name.includes('greenhouse')) return 'greenhouse';
     if (name.includes('ashby')) return 'ashby';
     if (name.includes('lever')) return 'lever';
-    return 'N/A';
+    return 'unknown';
+}
+
+function normalizeSalaryValues(mappedJob) {
+    let { SalaryMin, SalaryMax, SalaryInterval } = mappedJob;
+
+    if (SalaryMin == null && SalaryMax == null) return;
+
+    const normalizedInterval = String(SalaryInterval || '').toLowerCase();
+    const isAnnual = !normalizedInterval || normalizedInterval === 'per-year-salary' || normalizedInterval === 'yearly' || normalizedInterval === 'year';
+
+    if (isAnnual) {
+        if (SalaryMin != null && SalaryMin > 0 && SalaryMin < 1000) {
+            mappedJob.SalaryMin = SalaryMin * 1000;
+        }
+        if (SalaryMax != null && SalaryMax > 0 && SalaryMax < 1000) {
+            mappedJob.SalaryMax = SalaryMax * 1000;
+        }
+    }
+
+    const isMonthly = normalizedInterval === 'per-month-salary' || normalizedInterval === 'monthly';
+    if (isMonthly) {
+        if (SalaryMin != null && SalaryMin > 0 && SalaryMin < 100) {
+            mappedJob.SalaryMin = SalaryMin * 1000;
+        }
+        if (SalaryMax != null && SalaryMax > 0 && SalaryMax < 100) {
+            mappedJob.SalaryMax = SalaryMax * 1000;
+        }
+    }
+
+    if ((mappedJob.SalaryMin === 0 || mappedJob.SalaryMin == null)
+        && (mappedJob.SalaryMax === 0 || mappedJob.SalaryMax == null)) {
+        mappedJob.SalaryMin = null;
+        mappedJob.SalaryMax = null;
+        mappedJob.SalaryCurrency = null;
+        mappedJob.SalaryInterval = null;
+    }
 }
 
 function isSpamOrIrrelevant(title) {
@@ -217,6 +254,8 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
     mappedJob.SubDomain = aiResult.sub_domain;
     mappedJob.ConfidenceScore = aiResult.confidence;
     mappedJob.Status = "pending_review";
+
+    normalizeSalaryValues(mappedJob);
 
     return createJobModel(mappedJob, siteConfig.siteName);
 }
