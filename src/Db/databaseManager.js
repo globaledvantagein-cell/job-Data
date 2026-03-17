@@ -274,7 +274,7 @@ export async function getJobsPaginated(page = 1, limit = 50, companyFilter = nul
         .toArray();
 
     const companies = await jobsCollection.distinct('Company', {
-        Status: { $in: ['active', 'pending_review'] },
+        Status: 'active',
         GermanRequired: false
     });
 
@@ -389,7 +389,7 @@ export async function getCompanyDirectoryStats() {
         const pipeline = [
             {
                 $match: {
-                    Status: { $in: ['active', 'pending_review'] },
+                    Status: 'active',
                     GermanRequired: false
                 }
             },
@@ -487,6 +487,8 @@ export async function countManuallyReviewedJobs() {
     });
 }
 
+
+
 export async function updateJobAfterReanalysis(jobId, aiResult, status, rejectionReason) {
     const db = await connectToDb();
     const jobsCollection = db.collection('jobs');
@@ -510,6 +512,8 @@ export async function updateJobAfterReanalysis(jobId, aiResult, status, rejectio
     return await jobsCollection.findOne({ _id: new ObjectId(jobId) });
 }
 
+
+
 export async function restoreRejectedJobToQueue(jobId) {
     const db = await connectToDb();
     const jobsCollection = db.collection('jobs');
@@ -529,6 +533,8 @@ export async function restoreRejectedJobToQueue(jobId) {
     );
 }
 
+
+
 export async function deleteJobsByCompany(companyName) {
     const db = await connectToDb();
     console.log(`[Admin] Deleting all jobs for company: ${companyName}`);
@@ -536,6 +542,8 @@ export async function deleteJobsByCompany(companyName) {
         Company: { $regex: new RegExp(`^${companyName}$`, 'i') }
     });
 }
+
+
 
 export async function registerUser({ email, password, name, role = 'user', location, domain, isWaitlist }) {
     const db = await connectToDb();
@@ -572,6 +580,8 @@ export async function registerUser({ email, password, name, role = 'user', locat
         name: newUser.name 
     };
 }
+
+
 
 export async function loginUser(email, password) {
     const db = await connectToDb();
