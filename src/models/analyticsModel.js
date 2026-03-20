@@ -23,7 +23,7 @@ analyticsSchema.statics.increment = async function(field, count = 1) {
         $inc: { [field]: count }, 
         $set: { lastUpdated: new Date() } 
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     );
   } catch (err) {
     console.error(`Failed to update analytics for ${field}:`, err);
@@ -36,7 +36,7 @@ analyticsSchema.statics.setValue = async function(field, value) {
   return this.findOneAndUpdate(
     { date: today },
     { $set: { [field]: value, lastUpdated: new Date() } },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: 'after' }
   );
 };
 
