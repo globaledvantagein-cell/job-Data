@@ -68,10 +68,14 @@ export async function saveJobs(jobs) {
     await jobsCollection.bulkWrite(operations);
 }
 
+
 export async function saveJobTestLog(jobTestLog) {
     if (!jobTestLog) return;
     const db = await connectToDb();
     const testLogsCollection = db.collection('jobTestLogs');
+
+    // Ensure fingerprint index exists (runs once, no-ops after that)
+    await testLogsCollection.createIndex({ fingerprint: 1 }, { background: true }).catch(() => {});
 
     const { createdAt, ...pureJobData } = jobTestLog;
     
@@ -88,21 +92,123 @@ export async function saveJobTestLog(jobTestLog) {
     );
 }
 
+/**
+ * Looks up a job test log by its fingerprint hash.
+ * If found, returns the AI classification result so we can skip re-analysis.
+ * 
+ * @param {string} fingerprint - MD5 hash from generateJobFingerprint()
+ * @returns {object|null} The cached AI result, or null if not found
+ */
+export async function findTestLogByFingerprint(fingerprint) {
+    if (!fingerprint) return null;
+    const db = await connectToDb();
+    const testLogsCollection = db.collection('jobTestLogs');
+
+    const log = await testLogsCollection.findOne(
+        { fingerprint: fingerprint },
+        {
+            projection: {
+                GermanRequired: 1,
+                Domain: 1,
+                SubDomain: 1,
+                ConfidenceScore: 1,
+                Evidence: 1,
+                FinalDecision: 1,
+                RejectionReason: 1,
+                fingerprint: 1,
+            }
+        }
+    );
+
+    return log || null;
+}
+
 export async function deleteOldJobs(siteName, scrapeStartTime) {
     const db = await connectToDb();
     const jobsCollection = db.collection('jobs');
-    
-    const sevenDaysAgo = new Date();
+
+    const now = new Date();
+    const sevenDaysAgo = new Date(now);
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    
-    const result = await jobsCollection.deleteMany({
+    const fourteenDaysAgo = new Date(now);
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+    let totalDeleted = 0;
+
+    // ── Rule 1: NEVER delete admin-approved jobs (active + reviewedAt) ──
+    // These are only removed by the URL validator (404 check) or manual admin action.
+    // No query needed — we simply exclude them from all delete operations below.
+
+    // ── Rule 2: NEVER delete curated (manually added) jobs ──
+    // sourceSite === "Curated" means admin added it manually via Add Job form.
+    // We exclude this in every query below with: sourceSite: siteName
+    // Since siteName comes from SITES_CONFIG (Greenhouse/Ashby/Lever), it never equals "Curated".
+
+    // ── Rule 3: Delete AI-rejected jobs older than 7 days ──
+    // These are jobs the AI flagged as "German required" — never shown to users.
+    const aiRejectedResult = await jobsCollection.deleteMany({
         sourceSite: siteName,
+        Status: 'rejected',
+        $or: [
+            { reviewedAt: { $exists: false } },
+            { reviewedAt: null }
+        ],
         updatedAt: { $lt: sevenDaysAgo }
     });
-    
-    if (result.deletedCount > 0) {
-        console.log(`[${siteName}] Deleted ${result.deletedCount} jobs older than 7 days.`);
+    if (aiRejectedResult.deletedCount > 0) {
+        console.log(`[${siteName}] 🗑️  Deleted ${aiRejectedResult.deletedCount} AI-rejected jobs (>7 days old)`);
+        totalDeleted += aiRejectedResult.deletedCount;
     }
+
+    // ── Rule 4: Delete admin-rejected jobs older than 14 days ──
+    // Admin explicitly rejected these. Keep longer for reference, then clean.
+    const adminRejectedResult = await jobsCollection.deleteMany({
+        sourceSite: siteName,
+        Status: 'rejected',
+        reviewedAt: { $exists: true, $ne: null },
+        updatedAt: { $lt: fourteenDaysAgo }
+    });
+    if (adminRejectedResult.deletedCount > 0) {
+        console.log(`[${siteName}] 🗑️  Deleted ${adminRejectedResult.deletedCount} admin-rejected jobs (>14 days old)`);
+        totalDeleted += adminRejectedResult.deletedCount;
+    }
+
+    // ── Rule 5: Delete pending_review jobs older than 14 days ──
+    // Admin had 2 weeks to review. If they didn't, the job is probably stale/filled.
+    const pendingResult = await jobsCollection.deleteMany({
+        sourceSite: siteName,
+        Status: 'pending_review',
+        updatedAt: { $lt: fourteenDaysAgo }
+    });
+    if (pendingResult.deletedCount > 0) {
+        console.log(`[${siteName}] 🗑️  Deleted ${pendingResult.deletedCount} stale pending jobs (>14 days old)`);
+        totalDeleted += pendingResult.deletedCount;
+    }
+
+    // ── Rule 6: Delete auto-approved active jobs (no reviewedAt) older than 14 days ──
+    // Rare case: jobs that became active without manual review. Keep longer, then clean.
+    const autoActiveResult = await jobsCollection.deleteMany({
+        sourceSite: siteName,
+        Status: 'active',
+        $or: [
+            { reviewedAt: { $exists: false } },
+            { reviewedAt: null }
+        ],
+        updatedAt: { $lt: fourteenDaysAgo }
+    });
+    if (autoActiveResult.deletedCount > 0) {
+        console.log(`[${siteName}] 🗑️  Deleted ${autoActiveResult.deletedCount} auto-active jobs with no review (>14 days old)`);
+        totalDeleted += autoActiveResult.deletedCount;
+    }
+
+    // ── Summary ──
+    if (totalDeleted > 0) {
+        console.log(`[${siteName}] 🗑️  Total cleanup: ${totalDeleted} jobs deleted`);
+    } else {
+        console.log(`[${siteName}] ✅ Cleanup: nothing to delete`);
+    }
+
+    return totalDeleted;
 }
 
 export async function deleteJobById(jobId) {

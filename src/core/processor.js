@@ -5,9 +5,9 @@ import { AbortController } from 'abort-controller';
 import { analyzeJobWithGroq } from "../grokAnalyzer.js"; 
 import { createJobModel } from '../models/jobModel.js';
 import { createJobTestLog } from '../models/Jobtestlogmodel.js';
-import { saveJobTestLog } from '../Db/databaseManager.js';
+import { saveJobTestLog, findTestLogByFingerprint } from '../Db/databaseManager.js';
 import { Analytics } from '../models/analyticsModel.js';
-import { BANNED_ROLES } from '../utils.js';
+import { BANNED_ROLES, generateJobFingerprint, generateCrossEntityKey } from '../utils.js';
 
 function normalizeArray(values) {
     return Array.isArray(values)
@@ -109,7 +109,7 @@ async function scrapeJobDetailsFromPage(mappedJob, siteConfig) {
 }
 
 
-export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders, allRawJobs) {
+export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders, allRawJobs, crossEntityKeys) {
     // 1. Config Pre-Filter
     if (siteConfig.preFilter && !siteConfig.preFilter(rawJob)) return null;
 
@@ -158,9 +158,21 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
         mappedJob.ATSPlatform = mappedJob.ATSPlatform || inferAtsPlatform(siteConfig);
     }
 
+
     // 2. Duplicate Check
     if (!mappedJob.JobID || existingIDs.has(mappedJob.JobID)) {
         return null;
+    }
+
+    // 2b. Cross-Entity Duplicate Check
+    // Detects "Databricks GmbH" and "Databricks Inc." posting the same job
+    if (crossEntityKeys) {
+        const crossKey = generateCrossEntityKey(mappedJob.JobTitle, mappedJob.Company, mappedJob.Location);
+        if (crossEntityKeys.has(crossKey)) {
+            console.log(`[Cross-Entity Dedup] ♻️ Skipping duplicate: "${mappedJob.JobTitle}" at "${mappedJob.Company}" (same as another entity)`);
+            return null;
+        }
+        crossEntityKeys.add(crossKey);
     }
 
     await Analytics.increment('jobsScraped');
@@ -202,14 +214,31 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
     
     if (!mappedJob.Description) return null;
 
-    await Analytics.increment('jobsSentToAI');
+    // ✅ 6. FINGERPRINT CHECK — Reuse old AI result if we already analyzed this job
+    const fingerprint = generateJobFingerprint(mappedJob.JobTitle, mappedJob.Company, mappedJob.Description);
+    const cachedResult = await findTestLogByFingerprint(fingerprint);
 
-    // ✅ 6. AI CLASSIFICATION - GERMAN ONLY (NO LOCATION CHECK)
-    const aiResult = await analyzeJobWithGroq(mappedJob.JobTitle, mappedJob.Description);
+    let aiResult;
 
-    if (!aiResult) {
-        console.log(`[AI] Failed to analyze ${mappedJob.JobTitle}. Skipping.`);
-        return null;
+    if (cachedResult) {
+        // We already analyzed this exact job before — reuse the cached classification
+        console.log(`[Cache Hit] ♻️ Reusing AI result for: ${mappedJob.JobTitle.substring(0, 40)}...`);
+        aiResult = {
+            german_required: cachedResult.GermanRequired,
+            domain: cachedResult.Domain,
+            sub_domain: cachedResult.SubDomain,
+            confidence: cachedResult.ConfidenceScore,
+            evidence: cachedResult.Evidence || { german_reason: "Cached result" }
+        };
+    } else {
+        // Genuinely new job — send to AI
+        await Analytics.increment('jobsSentToAI');
+        aiResult = await analyzeJobWithGroq(mappedJob.JobTitle, mappedJob.Description);
+
+        if (!aiResult) {
+            console.log(`[AI] Failed to analyze ${mappedJob.JobTitle}. Skipping.`);
+            return null;
+        }
     }
 
     // ✅ 7. FILTERING LOGIC - ONLY CHECK GERMAN REQUIREMENT
@@ -224,7 +253,7 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
         console.log(`✅ [Valid Job] ${mappedJob.JobTitle} (Confidence: ${aiResult.confidence})`);
     }
     
-    // ✅ 8. SAVE TO TEST LOG
+    // ✅ 8. SAVE TO TEST LOG (with fingerprint for future cache lookups)
     const testLogData = {
         ...mappedJob,
         GermanRequired: aiResult.german_required,
@@ -234,7 +263,8 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
         Evidence: aiResult.evidence,  // ✅ Only contains german_reason
         FinalDecision: finalDecision,
         RejectionReason: rejectionReason,
-        Status: finalDecision === "accepted" ? "pending_review" : "rejected"
+        Status: finalDecision === "accepted" ? "pending_review" : "rejected",
+        fingerprint: fingerprint
     };
     
     const jobTestLog = createJobTestLog(testLogData, siteConfig.siteName);

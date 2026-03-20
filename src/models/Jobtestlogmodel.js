@@ -126,6 +126,7 @@ export function createJobTestLog(jobData, sourceSite) {
         FinalDecision: jobData.FinalDecision || "pending",
         RejectionReason: jobData.RejectionReason || null,
         Status: jobData.Status || "pending_review",
+        fingerprint: jobData.fingerprint || null,
         
         createdAt: new Date(),
         scrapedAt: new Date()

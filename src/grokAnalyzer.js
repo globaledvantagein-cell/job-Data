@@ -7,6 +7,74 @@ const groq = new Groq({ apiKey: GROQ_API_KEY });
 const MODEL_NAME = "llama-3.1-8b-instant"; 
 const MAX_RETRIES = 5;
 
+// ─── Requirements Section Extractor ───────────────────────────────────────
+// Tries to find and extract the "Requirements" / "Qualifications" section
+// from a job description. This is where language requirements are usually stated.
+
+function extractRequirementsSection(text) {
+    if (!text) return null;
+
+    // Common section headers that contain language requirements
+    // Order matters — more specific patterns first
+    const sectionPatterns = [
+        // English headers
+        /(?:^|\n)\s*(?:requirements|what you['']ll bring|what we['']re looking for|your profile|qualifications|what you bring|your expertise|who you are|must[- ]?have|minimum requirements|required skills|key requirements|what we expect|your skills|skills and experience|about you|what you need|desired qualifications|preferred qualifications)\s*[:\-]?\s*\n/im,
+        // German headers (for descriptions mixing languages)
+        /(?:^|\n)\s*(?:anforderungen|was du mitbringst|dein profil|qualifikationen|was wir erwarten|deine skills|voraussetzungen|das bringst du mit|was sie mitbringen|ihr profil)\s*[:\-]?\s*\n/im,
+    ];
+
+    for (const pattern of sectionPatterns) {
+        const match = text.match(pattern);
+        if (!match) continue;
+
+        // Found a section header — extract from here to the next section or 2000 chars
+        const startIndex = match.index + match[0].length;
+        const remainingText = text.substring(startIndex);
+
+        // Look for the NEXT section header (signals end of requirements section)
+        const nextSectionPattern = /\n\s*(?:benefits|what we offer|how we['']ll take care|our commitment|about us|about the|the team|your responsibilities|what you['']ll do|our offer|was wir bieten|unser angebot|location|salary|compensation|perks|why join|why us|apply|how to apply|nice to have|bonus points)\s*[:\-]?\s*\n/im;
+
+        const nextMatch = remainingText.match(nextSectionPattern);
+        let endIndex;
+
+        if (nextMatch) {
+            endIndex = nextMatch.index;
+        } else {
+            // No clear end — take up to 2000 chars
+            endIndex = Math.min(remainingText.length, 2000);
+        }
+
+        const section = remainingText.substring(0, endIndex).trim();
+
+        // Only return if it's a meaningful section (not just a one-liner)
+        if (section.length >= 100) {
+            return section;
+        }
+    }
+
+    // No section headers found — try a simpler approach:
+    // Search for language-related keywords and extract surrounding context
+    const languagePatterns = [
+        /german|deutsch|german\s*(?:language|proficiency|fluency|skills|required|mandatory|native|b[12]|c[12])/i,
+        /fließend|muttersprachler|deutschkenntnisse|sprachkenntnisse/i,
+    ];
+
+    for (const pattern of languagePatterns) {
+        const match = text.match(pattern);
+        if (!match) continue;
+
+        // Found a language mention — extract 500 chars before and 500 chars after
+        const matchStart = match.index;
+        const contextStart = Math.max(0, matchStart - 500);
+        const contextEnd = Math.min(text.length, matchStart + match[0].length + 500);
+
+        return text.substring(contextStart, contextEnd).trim();
+    }
+
+    // Nothing found
+    return null;
+}
+
 /**
  * IMPROVED VERSION - Analyzes job description using Groq for German language requirements
  * 
@@ -20,55 +88,120 @@ const MAX_RETRIES = 5;
 export async function analyzeJobWithGroq(jobTitle, description) {
     if (!description || description.length < 50) return null;
 
-    const cleanDescription= StripHtml(description)
+    const cleanDescription = StripHtml(description);
     let descriptionSnippet;
-if (cleanDescription.length > 4000) {
-    const first = cleanDescription.substring(0, 1500);
-    const last = cleanDescription.slice(-2500);
-    descriptionSnippet = first + "\n...\n" + last;
-} else {
-    descriptionSnippet = cleanDescription;
-}
 
-const prompt = `
+    if (cleanDescription.length <= 4000) {
+        // Short enough — send everything
+        descriptionSnippet = cleanDescription;
+    } else {
+        // Long description — smart extraction
+        // Step 1: Try to find the Requirements/Qualifications section
+        const requirementsSection = extractRequirementsSection(cleanDescription);
+
+        if (requirementsSection && requirementsSection.length >= 100) {
+            // We found a meaningful requirements section
+            // Send: first 1000 chars (job intro) + full requirements section + last 500 chars (salary/benefits)
+            const intro = cleanDescription.substring(0, 1000);
+            const outro = cleanDescription.slice(-500);
+            descriptionSnippet = intro + "\n\n--- REQUIREMENTS SECTION ---\n" + requirementsSection + "\n--- END REQUIREMENTS ---\n\n" + outro;
+
+            // Cap at 5000 chars to avoid token waste
+            if (descriptionSnippet.length > 5000) {
+                descriptionSnippet = descriptionSnippet.substring(0, 5000);
+            }
+        } else {
+            // No clear requirements section found — fall back to old approach
+            const first = cleanDescription.substring(0, 1500);
+            const last = cleanDescription.slice(-2500);
+            descriptionSnippet = first + "\n...\n" + last;
+        }
+    }
+
+    const prompt = `
 Does this job REQUIRE German language skills? Look ONLY at the DESCRIPTION text below.
 If ANY pattern from the REQUIRED list appears in the description, you MUST return german_required: true. Do not overthink or second-guess a match. If you quote a German requirement in your evidence, you MUST return true.
+
+
+        // ─── Requirements Section Extractor ───────────────────────────────────────
+        // Tries to find and extract the "Requirements" / "Qualifications" section
+        // from a job description. This is where language requirements are usually stated.
+
+        function extractRequirementsSection(text) {
+            if (!text) return null;
+
+            // Common section headers that contain language requirements
+            // Order matters — more specific patterns first
+            const sectionPatterns = [
+                // English headers
+                /(?:^|\n)\s*(?:requirements|what you['']ll bring|what we['']re looking for|your profile|qualifications|what you bring|your expertise|who you are|must[- ]?have|minimum requirements|required skills|key requirements|what we expect|your skills|skills and experience|about you|what you need|desired qualifications|preferred qualifications)\s*[:\-]?\s*\n/im,
+                // German headers (for descriptions mixing languages)
+                /(?:^|\n)\s*(?:anforderungen|was du mitbringst|dein profil|qualifikationen|was wir erwarten|deine skills|voraussetzungen|das bringst du mit|was sie mitbringen|ihr profil)\s*[:\-]?\s*\n/im,
+            ];
+
+            for (const pattern of sectionPatterns) {
+                const match = text.match(pattern);
+                if (!match) continue;
+
+                // Found a section header — extract from here to the next section or 2000 chars
+                const startIndex = match.index + match[0].length;
+                const remainingText = text.substring(startIndex);
+
+                // Look for the NEXT section header (signals end of requirements section)
+                const nextSectionPattern = /\n\s*(?:benefits|what we offer|how we['']ll take care|our commitment|about us|about the|the team|your responsibilities|what you['']ll do|our offer|was wir bieten|unser angebot|location|salary|compensation|perks|why join|why us|apply|how to apply|nice to have|bonus points)\s*[:\-]?\s*\n/im;
+
+                const nextMatch = remainingText.match(nextSectionPattern);
+                let endIndex;
+
+                if (nextMatch) {
+                    endIndex = nextMatch.index;
+                } else {
+                    // No clear end — take up to 2000 chars
+                    endIndex = Math.min(remainingText.length, 2000);
+                }
+
+                const section = remainingText.substring(0, endIndex).trim();
+
+                // Only return if it's a meaningful section (not just a one-liner)
+                if (section.length >= 100) {
+                    return section;
+                }
+            }
+
+            // No section headers found — try a simpler approach:
+            // Search for language-related keywords and extract surrounding context
+            const languagePatterns = [
+                /german|deutsch|german\s*(?:language|proficiency|fluency|skills|required|mandatory|native|b[12]|c[12])/i,
+                /fließend|muttersprachler|deutschkenntnisse|sprachkenntnisse/i,
+            ];
+
+            for (const pattern of languagePatterns) {
+                const match = text.match(pattern);
+                if (!match) continue;
+
+                // Found a language mention — extract 500 chars before and 500 chars after
+                const matchStart = match.index;
+                const contextStart = Math.max(0, matchStart - 500);
+                const contextEnd = Math.min(text.length, matchStart + match[0].length + 500);
+
+                return text.substring(contextStart, contextEnd).trim();
+            }
+
+            // Nothing found
+            return null;
+        }
 
 REQUIRED (return true):
 - "Fluent in German" or "Fluency in German" in requirements
 - "German native speaker" or "Native German"
 - "German (mandatory)" or "German (required)"
 - "German required" or "must speak German"
-- "Professional fluency in German" or "Business-level German"
-- "German B1/B2/C1/C2" level mentioned
-- "Bilingual" with German and English
-- "Fließend Deutsch" or "Deutschkenntnisse erforderlich"
-- "Native-level proficiency" or "near-native proficiency" in German
-- "Native or professional proficiency" in German context
-- "deutschsprachig" or "German-speaking" as requirement
-- "proficiency in German" in requirements section
-- Description is written entirely in German language
-- Requirements section written in German (e.g. "Du sprichst fließend Deutsch")
-- "Exzellente Deutschkenntnisse" or "fließendes Deutsch" in any section
-- "Excellent communication in German and English" or similar phrasing
-
-NOT REQUIRED (return false):
-- "German is a plus" or "nice to have" or "von Vorteil"
-- "wünschenswert" or "beneficial" or "runden dein Profil ab"
 - German not mentioned at all
 - Job is LOCATED in Germany but does not require German language skills
-- "must reside in Germany" is about location, NOT language
-
-DESCRIPTION: "${descriptionSnippet}"
-
-Now classify the domain using this job title: "${jobTitle}"
 - "Technical": Software, Data, AI, DevOps, Engineering, IT
 - "Non-Technical": Product, Marketing, Sales, HR, Finance
 - "Unclear": If ambiguous
 
-Return ONLY this JSON:
-{
-  "german_required": true or false,
   "domain": "Technical" or "Non-Technical",
   "sub_domain": "specific area like Sales, Backend, Marketing",
   "confidence": 0.0 to 1.0,

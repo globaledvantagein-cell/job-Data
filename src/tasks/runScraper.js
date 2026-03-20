@@ -22,13 +22,17 @@ export const runScraper = async function () {
 
         const existingIDsMap = await loadAllExistingIDs();
 
+        // Shared across ALL sites — detects same job posted by different legal entities
+        // e.g., "Databricks GmbH" on Greenhouse and "Databricks Inc." on Ashby
+        const crossEntityKeys = new Set();
+
         for (const siteConfig of SITES_CONFIG) {
             if (!siteConfig || !siteConfig.siteName) continue; 
             
             const scrapeStartTime = new Date();
             
             // Note: Inside scrapeSite is where you should call Analytics.increment('jobsScraped')
-            const newJobs = await scrapeSite(siteConfig, existingIDsMap);
+            const newJobs = await scrapeSite(siteConfig, existingIDsMap, crossEntityKeys);
             
             console.log(`[${siteConfig.siteName}] Found ${newJobs.length} new jobs.`);
             await deleteOldJobs(siteConfig.siteName, scrapeStartTime);

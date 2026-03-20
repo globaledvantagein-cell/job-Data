@@ -4,7 +4,7 @@ import { processJob } from './processor.js';
 import { saveJobs } from "../Db/databaseManager.js";
 import { sleep } from '../utils.js';
 
-export async function scrapeSite(siteConfig, existingIDsMap) {
+export async function scrapeSite(siteConfig, existingIDsMap, crossEntityKeys) {
     const siteName = siteConfig.siteName;
     const existingIDs = existingIDsMap.get(siteName) || new Set();
     const allNewJobs = [];
@@ -46,7 +46,7 @@ export async function scrapeSite(siteConfig, existingIDsMap) {
                 });
 
                 const jobPromises = batch.map(rawJob => 
-                    processJob(rawJob, siteConfig, existingIDs, sessionHeaders)
+                    processJob(rawJob, siteConfig, existingIDs, sessionHeaders, null, crossEntityKeys)
                 );
                 
                 const processedJobs = await Promise.all(jobPromises);
