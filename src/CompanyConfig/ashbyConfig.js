@@ -44,8 +44,6 @@ export const ashbyConfig = {
         'Deel',
         'OpenAI',
         'Cohere',
-        
-        // Additional tech companies using Ashby (verify these)
         'Linear',
         'Notion',
         'Ramp',
@@ -72,8 +70,6 @@ export const ashbyConfig = {
         'Adept',
         'Character',
         'Inflection',
-        
-        // European/German companies
         'Personio',
         'Contentful',
         'Celonis',
@@ -89,6 +85,9 @@ export const ashbyConfig = {
         'Zalando',
         'HelloFresh',
         'Rocket-Internet',
+        // --- BEGIN APPENDED ENTRIES ---
+        'moss','upvest','deepl','amboss','bunch','leapsome','carwow','rohlik','pleo','lemon-markets','forto','billie','alephalpha','docker','babbel','mollie','cosmos','rasa','airwallex','redis','uipath','deliveroo','camunda','enpal','neon','langchain','kestra','voodoo',
+        // --- END APPENDED ENTRIES ---
     ],
     
     // Internal state

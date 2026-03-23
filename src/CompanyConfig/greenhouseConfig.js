@@ -95,8 +95,6 @@ export const greenhouseConfig = {
         'reddit',
         'pinterest',
         'twitch',
-        
-        // ✅ ADDITIONAL WORKING TOKENS (tech companies with Germany jobs)
         'deliveryhero',
         'getaround',
         'wolt',
@@ -117,8 +115,6 @@ export const greenhouseConfig = {
         'scalablecapital',
         'eyeo',
         'jimdo',
-        
-        // ✅ More tech companies (may or may not have Germany jobs)
         'shopify',          // Try alternative
         'datadog',
         'notion',           // Try alternative  
@@ -147,6 +143,9 @@ export const greenhouseConfig = {
         'new-relic',
         'splunk',
         'dynatrace',
+        // --- BEGIN APPENDED ENTRIES ---
+        'doctolib','sumup','flix','jetbrains','ionos','helsing','isaraerospace','staffbase','moia','freenow','scout24','parloa','autoscout24','trustpilot','finanzcheck','nice','grafanalabs','catawiki','navvis','clickhouse','flaconi','moonfare','trivago','adyen','zscaler','anaplan','think-cell','commercetools','grover','pleo','apaleo','idnow','typeform','dataiku','workato','mirakl','bitpanda','tanium','smartsheet','anydesk','spryker','strato','fivetran','tripadvisor','fireblocks','bitgo','beyondtrust','tekla','adahealth','qualtrics','sofi','riotgames','udemy','klaviyo','cultureamp','planradar','five9','wooga','braze','bloomreach','konux','jfrog','cockroachlabs','scaleai','algolia','veracode','wrike','zuora','propstack','pendo',
+        // --- END APPENDED ENTRIES ---
     ],
     
     // Internal state

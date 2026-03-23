@@ -45,7 +45,10 @@ const LEVER_BASE_URL = 'https://api.lever.co/v0/postings';
  */
 const companySiteNames = [
   // Tech companies with frequent job postings
- 'welocalize'
+ 'welocalize',
+ // --- BEGIN APPENDED ENTRIES ---
+ 'veeva','crytek','sonarsource','agicap','coupa','qonto','pipedrive','brevo','spotify','contentsquare','bazaarvoice','didomi','sophos',
+ // --- END APPENDED ENTRIES ---
   
 
 ];
