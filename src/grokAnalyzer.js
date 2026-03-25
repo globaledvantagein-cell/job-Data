@@ -118,95 +118,33 @@ export async function analyzeJobWithGroq(jobTitle, description) {
         }
     }
 
-    const prompt = `
-Does this job REQUIRE German language skills? Look ONLY at the DESCRIPTION text below.
-If ANY pattern from the REQUIRED list appears in the description, you MUST return german_required: true. Do not overthink or second-guess a match. If you quote a German requirement in your evidence, you MUST return true.
+   const prompt = `
+You are an expert HR data extractor. Analyze the job description below and extract the requested JSON data.
 
+JOB TITLE: ${jobTitle}
 
-        // ─── Requirements Section Extractor ───────────────────────────────────────
-        // Tries to find and extract the "Requirements" / "Qualifications" section
-        // from a job description. This is where language requirements are usually stated.
+JOB DESCRIPTION TEXT:
+"""
+${descriptionSnippet}
+"""
 
-        function extractRequirementsSection(text) {
-            if (!text) return null;
+RULES FOR 'german_required':
+- Return TRUE ONLY IF the text explicitly states German is "fluent", "native", "required", "mandatory", "must-have", or specifies a required level like B2, C1, C2.
+- Return FALSE IF German is listed as a "plus", "nice to have", "bonus", or if the company language is explicitly stated as English.
+- Return FALSE IF German language skills are not mentioned at all.
 
-            // Common section headers that contain language requirements
-            // Order matters — more specific patterns first
-            const sectionPatterns = [
-                // English headers
-                /(?:^|\n)\s*(?:requirements|what you['']ll bring|what we['']re looking for|your profile|qualifications|what you bring|your expertise|who you are|must[- ]?have|minimum requirements|required skills|key requirements|what we expect|your skills|skills and experience|about you|what you need|desired qualifications|preferred qualifications)\s*[:\-]?\s*\n/im,
-                // German headers (for descriptions mixing languages)
-                /(?:^|\n)\s*(?:anforderungen|was du mitbringst|dein profil|qualifikationen|was wir erwarten|deine skills|voraussetzungen|das bringst du mit|was sie mitbringen|ihr profil)\s*[:\-]?\s*\n/im,
-            ];
+RULES FOR 'domain' & 'sub_domain':
+- 'domain' must be strictly "Technical" (Software, Data, DevOps, IT) or "Non-Technical" (Product, Marketing, Sales, HR).
+- 'sub_domain' should be the specific area (e.g., "Frontend", "B2B Sales").
 
-            for (const pattern of sectionPatterns) {
-                const match = text.match(pattern);
-                if (!match) continue;
-
-                // Found a section header — extract from here to the next section or 2000 chars
-                const startIndex = match.index + match[0].length;
-                const remainingText = text.substring(startIndex);
-
-                // Look for the NEXT section header (signals end of requirements section)
-                const nextSectionPattern = /\n\s*(?:benefits|what we offer|how we['']ll take care|our commitment|about us|about the|the team|your responsibilities|what you['']ll do|our offer|was wir bieten|unser angebot|location|salary|compensation|perks|why join|why us|apply|how to apply|nice to have|bonus points)\s*[:\-]?\s*\n/im;
-
-                const nextMatch = remainingText.match(nextSectionPattern);
-                let endIndex;
-
-                if (nextMatch) {
-                    endIndex = nextMatch.index;
-                } else {
-                    // No clear end — take up to 2000 chars
-                    endIndex = Math.min(remainingText.length, 2000);
-                }
-
-                const section = remainingText.substring(0, endIndex).trim();
-
-                // Only return if it's a meaningful section (not just a one-liner)
-                if (section.length >= 100) {
-                    return section;
-                }
-            }
-
-            // No section headers found — try a simpler approach:
-            // Search for language-related keywords and extract surrounding context
-            const languagePatterns = [
-                /german|deutsch|german\s*(?:language|proficiency|fluency|skills|required|mandatory|native|b[12]|c[12])/i,
-                /fließend|muttersprachler|deutschkenntnisse|sprachkenntnisse/i,
-            ];
-
-            for (const pattern of languagePatterns) {
-                const match = text.match(pattern);
-                if (!match) continue;
-
-                // Found a language mention — extract 500 chars before and 500 chars after
-                const matchStart = match.index;
-                const contextStart = Math.max(0, matchStart - 500);
-                const contextEnd = Math.min(text.length, matchStart + match[0].length + 500);
-
-                return text.substring(contextStart, contextEnd).trim();
-            }
-
-            // Nothing found
-            return null;
-        }
-
-REQUIRED (return true):
-- "Fluent in German" or "Fluency in German" in requirements
-- "German native speaker" or "Native German"
-- "German (mandatory)" or "German (required)"
-- "German required" or "must speak German"
-- German not mentioned at all
-- Job is LOCATED in Germany but does not require German language skills
-- "Technical": Software, Data, AI, DevOps, Engineering, IT
-- "Non-Technical": Product, Marketing, Sales, HR, Finance
-- "Unclear": If ambiguous
-
+Return ONLY a valid JSON object matching this exact schema:
+{
+  "german_required": boolean,
   "domain": "Technical" or "Non-Technical",
-  "sub_domain": "specific area like Sales, Backend, Marketing",
-  "confidence": 0.0 to 1.0,
+  "sub_domain": "string",
+  "confidence": number between 0.0 and 1.0,
   "evidence": {
-    "german_reason": "quote the exact text that proves your answer"
+    "german_reason": "Quote the exact short phrase that proves your answer for german_required, or write 'Not mentioned'"
   }
 }
 `;
