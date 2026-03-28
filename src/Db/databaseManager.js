@@ -568,16 +568,8 @@ export async function getJobsEligibleForReanalysis() {
     const jobsCollection = db.collection('jobs');
 
     return await jobsCollection.find({
-        $or: [
-            { Status: 'pending_review' },
-            {
-                Status: 'rejected',
-                $or: [
-                    { reviewedAt: { $exists: false } },
-                    { reviewedAt: null }
-                ]
-            }
-        ]
+        Status: { $in: ['pending_review', 'active', 'rejected'] },
+        sourceSite: { $ne: 'Curated' }
     }).toArray();
 }
 
@@ -595,7 +587,7 @@ export async function countManuallyReviewedJobs() {
 
 
 
-export async function updateJobAfterReanalysis(jobId, aiResult, status, rejectionReason) {
+export async function updateJobAfterReanalysis(jobId, aiResult, status, rejectionReason, domain, subDomain) {
     const db = await connectToDb();
     const jobsCollection = db.collection('jobs');
 
@@ -604,8 +596,8 @@ export async function updateJobAfterReanalysis(jobId, aiResult, status, rejectio
         {
             $set: {
                 GermanRequired: aiResult.german_required,
-                Domain: aiResult.domain,
-                SubDomain: aiResult.sub_domain,
+                Domain: domain,
+                SubDomain: subDomain,
                 ConfidenceScore: aiResult.confidence,
                 Evidence: aiResult.evidence || { german_reason: '' },
                 Status: status,

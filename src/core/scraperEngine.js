@@ -61,9 +61,10 @@ export async function scrapeSite(siteConfig, existingIDsMap, crossEntityKeys) {
                     newJobsInBatch.forEach(job => existingIDs.add(job.JobID));
                 }
 
-                // ✅ FIX: Sleep 10 seconds to ensure we stay under the rate limit
+                // 2s between jobs is safe: 3 keys × 15 RPM = 45 RPM capacity.
+                // The AI layer's KeyState handles any burst automatically.
                 if (i + batchSize < jobs.length) {
-                    await sleep(10000); 
+                    await sleep(2000); 
                 }
             }
             

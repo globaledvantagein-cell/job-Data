@@ -9,6 +9,29 @@ import { saveJobTestLog, findTestLogByFingerprint } from '../Db/databaseManager.
 import { Analytics } from '../models/analyticsModel.js';
 import { BANNED_ROLES, generateJobFingerprint, generateCrossEntityKey } from '../utils.js';
 
+// ─── Domain Classification (derived from Department + Title, no AI needed) ──
+const TECHNICAL_KEYWORDS = [
+    'engineering', 'software', 'data', 'ai', 'machine learning', 'devops',
+    'infrastructure', 'platform', 'backend', 'frontend', 'fullstack',
+    'full-stack', 'full stack', 'mobile', 'ios', 'android', 'web',
+    'cloud', 'security', 'cybersecurity', 'infosec', 'it', 'sre',
+    'reliability', 'qa', 'quality assurance', 'test', 'automation',
+    'architect', 'systems', 'network', 'database', 'analytics',
+    'bi', 'intelligence', 'research', 'science', 'ml', 'deep learning',
+    'computer vision', 'nlp', 'robotics', 'firmware', 'embedded',
+    'hardware', 'electronic', 'technical', 'technology', 'development',
+    'developer', 'programmer', 'implementation', 'integration',
+    'solutions engineer', 'technical account', 'support engineer',
+    'professional services', 'devrel', 'developer relations',
+    'site reliability', 'devsecops', 'secops', 'mlops', 'dataops',
+    'release', 'build', 'ci/cd', 'pipeline',
+];
+
+function deriveDomain(department, jobTitle) {
+    const combined = `${department || ''} ${jobTitle || ''}`.toLowerCase();
+    return TECHNICAL_KEYWORDS.some(kw => combined.includes(kw)) ? 'Technical' : 'Non-Technical';
+}
+
 function normalizeArray(values) {
     return Array.isArray(values)
         ? [...new Set(values.filter(Boolean).map(value => String(value).trim()).filter(Boolean))]
@@ -257,10 +280,10 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
     const testLogData = {
         ...mappedJob,
         GermanRequired: aiResult.german_required,
-        Domain: aiResult.domain,
-        SubDomain: aiResult.sub_domain,
+        Domain: deriveDomain(mappedJob.Department, mappedJob.JobTitle),
+        SubDomain: mappedJob.Department || 'Other',
         ConfidenceScore: aiResult.confidence,
-        Evidence: aiResult.evidence,  // ✅ Only contains german_reason
+        Evidence: aiResult.evidence,
         FinalDecision: finalDecision,
         RejectionReason: rejectionReason,
         Status: finalDecision === "accepted" ? "pending_review" : "rejected",
@@ -280,8 +303,8 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
 
     // 10. Create Model
     mappedJob.GermanRequired = aiResult.german_required;
-    mappedJob.Domain = aiResult.domain;
-    mappedJob.SubDomain = aiResult.sub_domain;
+    mappedJob.Domain = deriveDomain(mappedJob.Department, mappedJob.JobTitle);
+    mappedJob.SubDomain = mappedJob.Department || 'Other';
     mappedJob.ConfidenceScore = aiResult.confidence;
     mappedJob.Status = "pending_review";
 

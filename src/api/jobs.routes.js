@@ -1,3 +1,26 @@
+// ...existing code...
+// Place after existing helper functions, before routes
+const TECHNICAL_KEYWORDS = [
+    'engineering', 'software', 'data', 'ai', 'machine learning', 'devops',
+    'infrastructure', 'platform', 'backend', 'frontend', 'fullstack',
+    'full-stack', 'full stack', 'mobile', 'ios', 'android', 'web',
+    'cloud', 'security', 'cybersecurity', 'infosec', 'it', 'sre',
+    'reliability', 'qa', 'quality assurance', 'test', 'automation',
+    'architect', 'systems', 'network', 'database', 'analytics',
+    'bi', 'intelligence', 'research', 'science', 'ml', 'deep learning',
+    'computer vision', 'nlp', 'robotics', 'firmware', 'embedded',
+    'hardware', 'electronic', 'technical', 'technology', 'development',
+    'developer', 'programmer', 'implementation', 'integration',
+    'solutions engineer', 'technical account', 'support engineer',
+    'professional services', 'devrel', 'developer relations',
+    'site reliability', 'devsecops', 'secops', 'mlops', 'dataops',
+    'release', 'build', 'ci/cd', 'pipeline',
+];
+
+function deriveDomain(department, jobTitle) {
+    const combined = `${department || ''} ${jobTitle || ''}`.toLowerCase();
+    return TECHNICAL_KEYWORDS.some(kw => combined.includes(kw)) ? 'Technical' : 'Non-Technical';
+}
 import { Router } from 'express';
 import { ObjectId } from 'mongodb';
 import {
@@ -196,52 +219,66 @@ jobsApiRouter.post('/:id/apply-click', async (req, res) => {
 
 jobsApiRouter.post('/admin/reanalyze-all', verifyToken, verifyAdmin, async (req, res) => {
     try {
-        const jobs = await getJobsEligibleForReanalysis();
-        const skippedManualReview = await countManuallyReviewedJobs();
+        const db = await connectToDb();
+
+        // ── Target: ONLY jobs the AI said "OK" to but admin hasn't reviewed yet ──
+        // Status:        pending_review   (AI accepted, sitting in review queue)
+        // GermanRequired: false           (AI said no German needed — we're double-checking this)
+        // reviewedAt:     null/missing    (admin has NOT manually approved or rejected)
+        // sourceSite:     not Curated     (skip manually added jobs)
+        const jobs = await db.collection('jobs').find({
+            Status: 'pending_review',
+            GermanRequired: false,
+            $or: [{ reviewedAt: { $exists: false } }, { reviewedAt: null }],
+            sourceSite: { $ne: 'Curated' }
+        }).toArray();
 
         const summary = {
             total: jobs.length,
             reanalyzed: 0,
-            changedToRejected: 0,
-            changedToPending: 0,
-            skippedManualReview
+            movedToRejected: 0,   // AI now says German IS required — was a false accept
+            stillAccepted: 0,     // AI confirmed — no German needed, no change
+            failed: 0,
         };
 
-        for (let index = 0; index < jobs.length; index += 1) {
-            const job = jobs[index];
+        console.log(`[Reanalyze All] Checking ${jobs.length} AI-accepted pending_review jobs...`);
 
+        for (const job of jobs) {
             try {
-                const oldGermanRequired = Boolean(job.GermanRequired);
                 const aiResult = await analyzeJobWithGroq(job.JobTitle, job.Description);
 
                 if (!aiResult) {
+                    summary.failed += 1;
                     continue;
                 }
 
-                let nextStatus = job.Status || 'pending_review';
-                let rejectionReason = job.RejectionReason || null;
-
-                if (!oldGermanRequired && aiResult.german_required === true) {
-                    nextStatus = 'rejected';
-                    rejectionReason = 'German language required';
-                    summary.changedToRejected += 1;
-                } else if (oldGermanRequired && aiResult.german_required === false) {
-                    nextStatus = 'pending_review';
-                    rejectionReason = null;
-                    summary.changedToPending += 1;
+                if (aiResult.german_required === true) {
+                    // AI caught a mistake — this job actually requires German
+                    const domain = deriveDomain(job.Department, job.JobTitle);
+                    const subDomain = job.Department || 'Other';
+                    await updateJobAfterReanalysis(
+                        job._id,
+                        aiResult,
+                        'rejected',
+                        'German language required',
+                        domain,
+                        subDomain
+                    );
+                    summary.movedToRejected += 1;
+                    console.log(`[Reanalyze All] ❌ Caught false accept: "${job.JobTitle}" → rejected`);
+                } else {
+                    // AI confirmed — still no German required, leave it alone
+                    summary.stillAccepted += 1;
                 }
 
-                await updateJobAfterReanalysis(job._id, aiResult, nextStatus, rejectionReason);
                 summary.reanalyzed += 1;
             } catch (error) {
                 console.error(`[Reanalyze All] Failed for job ${job?._id}:`, error.message);
-            }
-
-            if (index < jobs.length - 1) {
-                await delay(10000);
+                summary.failed += 1;
             }
         }
 
+        console.log(`[Reanalyze All] Done. Rejected ${summary.movedToRejected} false accepts out of ${summary.total} checked.`);
         res.status(200).json(summary);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -283,7 +320,9 @@ jobsApiRouter.post('/admin/reanalyze/:id', verifyToken, verifyAdmin, async (req,
             rejectionReason = null;
         }
 
-        const updatedJob = await updateJobAfterReanalysis(job._id, aiResult, nextStatus, rejectionReason);
+        const domain = deriveDomain(job.Department, job.JobTitle);
+        const subDomain = job.Department || 'Other';
+        const updatedJob = await updateJobAfterReanalysis(job._id, aiResult, nextStatus, rejectionReason, domain, subDomain);
 
         res.status(200).json({
             skipped: false,
@@ -325,8 +364,8 @@ jobsApiRouter.post('/:id/analyze', async (req, res) => {
                 $set: { 
                     EnglishSpeaking: aiResult.english_speaking,
                     GermanRequired: aiResult.german_required,
-                    Domain: aiResult.domain,
-                    SubDomain: aiResult.sub_domain,
+                    Domain: deriveDomain(job.Department, job.JobTitle),
+                    SubDomain: job.Department || 'Other',
                     ConfidenceScore: aiResult.confidence,
                     Status: newStatus,
                     RejectionReason: rejectionReason,

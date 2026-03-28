@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import {StripHtml} from '../utils.js'
+import { StripHtml } from '../utils.js'
 
 function normalizeArray(values) {
   return [...new Set((values || []).filter(Boolean).map(v => String(v).trim()).filter(Boolean))];
@@ -47,7 +47,11 @@ const companySiteNames = [
   // Tech companies with frequent job postings
  'welocalize',
  // --- BEGIN APPENDED ENTRIES ---
- 'veeva','crytek','sonarsource','agicap','coupa','qonto','pipedrive','brevo','spotify','contentsquare','bazaarvoice','didomi','sophos',
+ 'veeva',
+ 'crytek',
+ 'sonarsource',
+ 'agicap',
+//  'coupa','qonto','pipedrive','brevo','spotify','contentsquare','bazaarvoice','didomi','sophos',
  // --- END APPENDED ENTRIES ---
   
 
@@ -173,6 +177,93 @@ const leverConfig = {
   
   // Each "page" = one company
   limit: 1,
+  
+  // ✅ FIX: Lever's company listing API returns only a short intro snippet.
+  // Setting this to true triggers processor.js to call getDetails() for the full description.
+  needsDescriptionScraping: true,
+
+  /**
+   * Fetches the full job details from the Lever per-job API.
+   * URL format: https://api.lever.co/v0/postings/{company}/{jobId}
+   * This returns the complete description including all sections (lists, additional info, etc.)
+   */
+  async getDetails(rawJob, _sessionHeaders) {
+    try {
+      // Extract company slug and job ID from the hosted URL
+      // e.g. https://jobs.lever.co/spotify/abc-def-ghi
+      let companySlug = null;
+      let jobId = rawJob.id;
+
+      if (rawJob.hostedUrl) {
+        try {
+          const urlParts = new URL(rawJob.hostedUrl).pathname.split('/').filter(Boolean);
+          // pathname = ['spotify', 'abc-def-ghi']
+          if (urlParts.length >= 2) {
+            companySlug = urlParts[0];
+          }
+        } catch (_) {
+          // ignore parse errors
+        }
+      }
+
+      if (!companySlug || !jobId) {
+        console.warn(`[Lever] Could not determine company slug or jobId for job: ${rawJob.text}`);
+        return null;
+      }
+
+      const detailUrl = `${LEVER_BASE_URL}/${companySlug}/${jobId}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
+
+      let data;
+      try {
+        const res = await fetch(detailUrl, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          console.warn(`[Lever] Detail API returned ${res.status} for ${detailUrl}`);
+          return null;
+        }
+        data = await res.json();
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
+      // Lever detail API returns a single job object.
+      // description = intro HTML, lists = array of {text, content} sections, additional = closing HTML
+      const parts = [];
+
+      if (data.description) {
+        parts.push(StripHtml(data.description));
+      }
+
+      if (Array.isArray(data.lists)) {
+        for (const section of data.lists) {
+          if (section.text) parts.push(`\n${section.text}:`);
+          if (section.content) parts.push(StripHtml(section.content));
+        }
+      }
+
+      if (data.additional) {
+        parts.push(StripHtml(data.additional));
+      }
+
+      const fullDescription = parts.join('\n').replace(/\s{3,}/g, '\n\n').trim();
+
+      if (!fullDescription || fullDescription.length < 50) {
+        console.warn(`[Lever] Detail API returned empty/short description for: ${rawJob.text}`);
+        return null;
+      }
+
+      console.log(`[Lever] ✅ Got full description (${fullDescription.length} chars) for: ${String(rawJob.text || '').substring(0, 50)}`);
+      return { Description: fullDescription };
+
+    } catch (error) {
+      console.error(`[Lever] getDetails error for "${rawJob.text}": ${error.message}`);
+      return null;
+    }
+  },
   
   // Base URL
   baseUrl: LEVER_BASE_URL,
@@ -302,18 +393,19 @@ const leverConfig = {
   },
 
   /**
-   * Extract description
+   * Extract description from the list API response.
+   * Note: This will typically be a short intro only — getDetails() fetches the full version.
    */
   extractDescription: (job) => {
-    if (job.descriptionPlain) {
+    // descriptionPlain is sometimes available on the list endpoint
+    if (job.descriptionPlain && job.descriptionPlain.length > 100) {
       return StripHtml(job.descriptionPlain);
     }
-    
-    if (job.description) {
-      return StripHtml(job.description)
+    if (job.description && job.description.length > 100) {
+      return StripHtml(job.description);
     }
-    
-    return 'No description available';
+    // Return empty string so needsDescriptionScraping triggers getDetails()
+    return '';
   },
 
   /**

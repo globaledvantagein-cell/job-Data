@@ -64,7 +64,7 @@ app.listen(PORT, async () => {
         // ✅ UPDATED: This block is now UNCOMMENTED.
         // This will run the scraper ONCE every time the server starts.
         console.log('--- Running initial scrape on start... ---');
-        // runScraper();
+        runScraper();
         // runMatcher();
 
 

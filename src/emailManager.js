@@ -1,16 +1,11 @@
     // emailManager.js
-    import nodemailer from "nodemailer";
-    import { EMAIL_CONFIG } from "./env.js";
+import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
+import { SES_CONFIG } from "./env.js";
 
-    const transporter = nodemailer.createTransport({
-      host: EMAIL_CONFIG.host,
-      port: EMAIL_CONFIG.port,
-      secure: EMAIL_CONFIG.secure,
-      auth: {
-        user: EMAIL_CONFIG.auth.user,
-        pass: EMAIL_CONFIG.auth.pass,
-      },
-    });
+const sesClient = new SESClient({
+    region: SES_CONFIG.region,
+    credentials: SES_CONFIG.credentials,
+});
 
     /**
      * Formats a list of jobs into HTML for a personalized email.
@@ -79,28 +74,41 @@
     /**
      * Sends a personalized email with matching jobs to a single user.
      */
-    export async function sendEmailNotification(user, jobs) {
-      if (!user || !jobs || jobs.length === 0) {
+export async function sendEmailNotification(user, jobs) {
+    if (!user || !jobs || jobs.length === 0) {
         console.log(`No new jobs to send to ${user.name}.`);
         return false;
-      }
+    }
 
-      const subject = `✨ ${jobs.length} New Job Matches Just For You!`;
-      const htmlContent = formatJobsToHtml(user, jobs);
+    const subject = `✨ ${jobs.length} New Job Matches Just For You!`;
+    const htmlContent = formatJobsToHtml(user, jobs);
 
-      const mailOptions = {
-        from: EMAIL_CONFIG.from,
-        to: user.email,
-        subject: subject,
-        html: htmlContent,
-      };
+    const params = {
+        Source: SES_CONFIG.fromEmail,
+        Destination: {
+            ToAddresses: [user.email],
+        },
+        Message: {
+            Subject: {
+                Data: subject,
+                Charset: 'UTF-8',
+            },
+            Body: {
+                Html: {
+                    Data: htmlContent,
+                    Charset: 'UTF-8',
+                },
+            },
+        },
+    };
 
-      try {
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`✅ Email sent successfully to ${user.email}! Message ID: ${info.messageId}`);
+    try {
+        const command = new SendEmailCommand(params);
+        const result = await sesClient.send(command);
+        console.log(`✅ Email sent successfully to ${user.email}! Message ID: ${result.MessageId}`);
         return true;
-      } catch (error) {
+    } catch (error) {
         console.error(`❌ Failed to send email to ${user.email}: ${error}`);
         return false;
-      }
     }
+}
