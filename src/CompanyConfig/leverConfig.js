@@ -51,7 +51,7 @@ const companySiteNames = [
  'crytek',
  'sonarsource',
  'agicap',
-//  'coupa','qonto','pipedrive','brevo','spotify','contentsquare','bazaarvoice','didomi','sophos',
+ 'coupa','qonto','pipedrive','brevo','spotify','contentsquare','bazaarvoice','didomi','sophos',
  // --- END APPENDED ENTRIES ---
   
 

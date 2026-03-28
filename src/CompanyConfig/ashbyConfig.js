@@ -40,8 +40,8 @@ export const ashbyConfig = {
     // ✅ VERIFIED WORKING COMPANIES (with Germany jobs potential)
     companyBoardNames: [
         // Companies confirmed to have Germany jobs
-        // 'Ashby',
-        // 'Deel',
+        'Ashby',
+        'Deel',
         // 'OpenAI',
         // 'Cohere',
         // 'Linear',
@@ -72,10 +72,10 @@ export const ashbyConfig = {
         // 'Inflection',
         // 'Personio',
         // 'Contentful',
-        'Celonis',
-        'Taxfix',
-        'Raisin',
-        'N26',
+        // 'Celonis',
+        // 'Taxfix',
+        // 'Raisin',
+        // 'N26',
         // 'Trade-Republic',
         // 'Sennder',
         // 'Adjust',
@@ -87,7 +87,7 @@ export const ashbyConfig = {
         // 'Rocket-Internet',
         // // --- BEGIN APPENDED ENTRIES ---
         // 'moss','upvest','deepl','amboss','bunch','leapsome','carwow','rohlik','pleo','lemon-markets','forto','billie','alephalpha','docker','babbel','mollie','cosmos','rasa','airwallex','redis','uipath','deliveroo','camunda','enpal','neon','langchain','kestra','voodoo',
-        // // --- END APPENDED ENTRIES ---
+        // --- END APPENDED ENTRIES ---
     ],
     
     // Internal state
