@@ -13,7 +13,7 @@ export const SITES_CONFIG = [
   greenhouseConfig,
   ashbyConfig,
   leverConfig ,
-  workdayConfig.,
+  workdayConfig,
   workableConfig,
 
 
