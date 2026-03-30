@@ -15,6 +15,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@aws-sdk/client-ses": "^3.1019.0",
     "@google/generative-ai": "^0.24.1",
     "abort-controller": "^3.0.0",
     "axios": "^1.12.2",

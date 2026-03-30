@@ -24,7 +24,7 @@ export const runScraper = async function () {
 
         // Shared across ALL sites — detects same job posted by different legal entities
         // e.g., "Databricks GmbH" on Greenhouse and "Databricks Inc." on Ashby
-        const crossEntityKeys = new Set();
+        const crossEntityKeys = new Map();
 
         for (const siteConfig of SITES_CONFIG) {
             if (!siteConfig || !siteConfig.siteName) continue; 

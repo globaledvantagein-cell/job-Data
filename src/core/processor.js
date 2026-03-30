@@ -192,10 +192,11 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
     if (crossEntityKeys) {
         const crossKey = generateCrossEntityKey(mappedJob.JobTitle, mappedJob.Company, mappedJob.Location);
         if (crossEntityKeys.has(crossKey)) {
-            console.log(`[Cross-Entity Dedup] ♻️ Skipping duplicate: "${mappedJob.JobTitle}" at "${mappedJob.Company}" (same as another entity)`);
+            const originalEntity = crossEntityKeys.get(crossKey);
+            console.log(`[Cross-Entity Dedup] ♻️ Skipping duplicate: "${mappedJob.JobTitle}" at "${mappedJob.Company}" (same as another entity: "${originalEntity}")`);
             return null;
         }
-        crossEntityKeys.add(crossKey);
+        crossEntityKeys.set(crossKey, mappedJob.Company);
     }
 
     await Analytics.increment('jobsScraped');

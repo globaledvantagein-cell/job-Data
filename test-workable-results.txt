@@ -1,0 +1,39 @@
+﻿=== Testing all 3 Workable API endpoints ===
+
+
+--- personio ---
+[OLD API] personio: status=200, jobs=0
+[BOARD API] personio: status=200, jobs=0, name=Personio
+
+--- constructor ---
+[OLD API] constructor: ERROR - invalid json response body at https://apply.workable.com/api/v1/widget/accounts/constructor?details=true reason: Unexpected token 'N', "Not Found" is not valid JSON
+[BOARD API] constructor: ERROR - invalid json response body at https://apply.workable.com/api/v1/widget/accounts/constructor reason: Unexpected token 'N', "Not Found" is not valid JSON
+
+--- mLabs ---
+[OLD API] mLabs: ERROR - invalid json response body at https://apply.workable.com/api/v1/widget/accounts/mLabs?details=true reason: Unexpected token 'N', "Not Found" is not valid JSON
+[BOARD API] mLabs: ERROR - invalid json response body at https://apply.workable.com/api/v1/widget/accounts/mLabs reason: Unexpected token 'N', "Not Found" is not valid JSON
+
+--- NIPPON EXPRESS ---
+[OLD API] NIPPON EXPRESS: ERROR - invalid json response body at https://apply.workable.com/api/v1/widget/accounts/NIPPON%20EXPRESS?details=true reason: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+[BOARD API] NIPPON EXPRESS: ERROR - invalid json response body at https://apply.workable.com/api/v1/widget/accounts/NIPPON%20EXPRESS reason: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+
+--- Arbonics ---
+[OLD API] Arbonics: ERROR - invalid json response body at https://apply.workable.com/api/v1/widget/accounts/Arbonics?details=true reason: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+[BOARD API] Arbonics: ERROR - invalid json response body at https://apply.workable.com/api/v1/widget/accounts/Arbonics reason: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+
+--- Sastrify ---
+[OLD API] Sastrify: ERROR - invalid json response body at https://apply.workable.com/api/v1/widget/accounts/Sastrify?details=true reason: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+[BOARD API] Sastrify: ERROR - invalid json response body at https://apply.workable.com/api/v1/widget/accounts/Sastrify reason: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+
+--- SORACOM ---
+[OLD API] SORACOM: ERROR - invalid json response body at https://apply.workable.com/api/v1/widget/accounts/SORACOM?details=true reason: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+[BOARD API] SORACOM: ERROR - invalid json response body at https://apply.workable.com/api/v1/widget/accounts/SORACOM reason: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+
+--- Hadley Designs ---
+[OLD API] Hadley Designs: ERROR - invalid json response body at https://apply.workable.com/api/v1/widget/accounts/Hadley%20Designs?details=true reason: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+[BOARD API] Hadley Designs: ERROR - invalid json response body at https://apply.workable.com/api/v1/widget/accounts/Hadley%20Designs reason: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+
+
+=== Testing jobs.workable.com Germany search ===
+Total Germany jobs on Workable: 4148
+Response keys: title, totalSize, nextPageToken, jobs, autoAppliedFilters

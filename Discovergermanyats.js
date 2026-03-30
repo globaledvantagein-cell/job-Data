@@ -1,78 +1,126 @@
 #!/usr/bin/env node
 
 /**
- * Workday Career Site Discovery — GERMANY EDITION
+ * ============================================================================
+ * WORKABLE CAREER SITE DISCOVERY — GERMANY EDITION
+ * ============================================================================
  *
- * Tests 1000+ company slugs against Workday's /wday/cxs/ JSON API.
- * Tries multiple instance×site combos per slug.
- * Filters results to Germany-only jobs.
- * Outputs copy-paste config ready for workdayConfig.js
+ * Usage:   node discoverWorkable.js
+ * Output:  Copy-paste slug list ready for workableConfig.js
  *
- * Usage: node discoverWorkdayGermany.js
+ * ── HOW WORKABLE WORKS ──────────────────────────────────────────────────────
  *
- * Endpoint: POST https://{slug}.{instance}.myworkdayjobs.com/wday/cxs/{slug}/{site}/jobs
- * Body:     { appliedFacets: {}, limit: 20, offset: 0, searchText: "" }
+ * Workable is a hosted ATS where each company gets a subdomain.
+ * Every company's public job board is accessible at:
+ *
+ *   GET https://www.workable.com/api/accounts/{slug}?details=true
+ *
+ * Returns JSON:
+ *   {
+ *     name: "Company Name",
+ *     description: "...",
+ *     jobs: [ { title, country, city, department, telecommuting, ... } ]
+ *   }
+ *
+ * Key points:
+ *   - No auth, no API key, completely public
+ *   - ?details=true adds `description`, `industry`, `function`, `experience`, `education`
+ *   - `country` = full name like "Germany" (not a country code)
+ *   - `telecommuting` = boolean (true = remote)
+ *   - 404 means the company doesn't use Workable or their slug is different
+ *   - No pagination — all jobs returned in one response
+ *
+ * ── HOW TO FIND SLUGS ───────────────────────────────────────────────────────
+ *
+ * 1. Visit a company's careers page
+ * 2. If they use Workable, the URL will contain `.workable.com` or redirect there
+ * 3. The subdomain IS the slug: `celonis.workable.com` → slug = `celonis`
+ * 4. Also check job listings on LinkedIn — Workable apply URLs expose the slug
+ * 5. Just try guessing: `{companyname}` or `{company-name}` — 404 if wrong
+ *
+ * ── HOW TO ADAPT THIS SCRIPT FOR OTHER ATS PLATFORMS ────────────────────────
+ *
+ * This discovery script follows a universal pattern. To port it to a new ATS:
+ *
+ * STEP 1: Find the public API endpoint
+ *   - Every ATS has a public job feed. Find it by:
+ *     a) Checking developer docs
+ *     b) Opening DevTools → Network tab on the company's careers page
+ *     c) Looking for XHR/fetch calls that return job JSON
+ *   - Pattern examples:
+ *       Greenhouse:  GET  https://boards-api.greenhouse.io/v1/boards/{slug}/jobs
+ *       Lever:       GET  https://api.lever.co/v0/postings/{slug}?mode=json
+ *       Recruitee:   GET  https://{slug}.recruitee.com/api/offers
+ *       SmartRecruiters: GET https://api.smartrecruiters.com/v1/companies/{slug}/postings
+ *
+ * STEP 2: Identify the slug format
+ *   - Is it a subdomain? ({slug}.workable.com)  → replace SLUG in URL
+ *   - Is it a path param? (boards-api.../boards/{slug}/...) → replace SLUG in path
+ *   - Does it need combos? (Workday needs instance+site tested) → see discoverWorkdayGermany.js
+ *
+ * STEP 3: Identify the Germany filter field
+ *   - Workable:    job.country === 'Germany'
+ *   - Greenhouse:  job.location.name includes 'Germany' or German city
+ *   - Lever:       job.country === 'de' or job.categories.location includes Germany
+ *   - Recruitee:   job.location includes 'Germany'
+ *   - SmartRec:    job.location.country === 'DE'
+ *
+ * STEP 4: Update these constants in this file:
+ *   - ATS_NAME          → human-readable name for logs
+ *   - buildUrl(slug)    → returns the API URL for a slug
+ *   - fetchJobs(slug)   → fetches and returns { companyName, jobs }
+ *   - hasGermany(job)   → returns true if job is Germany-based
+ *   - companySlugs      → your list of slugs to test
+ *
+ * STEP 5: Run and collect results
+ *   node discoverWorkable.js 2>&1 | tee results.txt
+ *
+ * ============================================================================
  */
 
-const CONCURRENCY   = 30;
-const BATCH_DELAY_MS = 200;
-const TIMEOUT_MS     = 9000;
+// ─── Config ───────────────────────────────────────────────────────────────────
 
-// ─── Instance × site combos (ordered by frequency — stop on first hit) ────────
-const FAST_COMBOS = [
-  ['wd1', 'External'],       ['wd1', 'Careers'],       ['wd1', 'External_Careers'], ['wd1', 'Jobs'],
-  ['wd3', 'External'],       ['wd3', 'Careers'],       ['wd3', 'External_Careers'], ['wd3', 'Jobs'],
-  ['wd5', 'External'],       ['wd5', 'Careers'],       ['wd5', 'External_Careers'], ['wd5', 'Jobs'],
-  ['wd12', 'External'],      ['wd12', 'Careers'],      ['wd12', 'External_Careers'],
-  ['wd2', 'External'],       ['wd2', 'Careers'],
-  ['wd4', 'External'],       ['wd4', 'Careers'],
-  ['wd1', 'en-US'],          ['wd3', 'en-US'],          ['wd5', 'en-US'],
-  ['wd1', 'ExternalCareerSite'], ['wd5', 'ExternalCareerSite'],
-  ['wd1', 'job'],            ['wd5', 'job'],
-];
+const ATS_NAME       = 'Workable';
+const CONCURRENCY    = 8;      // Parallel requests — keep ≤10 to avoid 429s
+const BATCH_DELAY_MS = 600;    // Delay between batches (ms)
+const TIMEOUT_MS     = 12000;  // Per-request timeout (ms)
 
-// ─── ALREADY IN YOUR CONFIGS — skip these entirely ────────────────────────────
-// Greenhouse tokens, Ashby board names, Lever site names, and workdayConfig companies
+// ─── Already integrated — skip these ─────────────────────────────────────────
+// Add any slug you've already confirmed and added to workableConfig.js here.
+// This prevents re-testing known slugs on future runs.
 const ALREADY_INTEGRATED = new Set([
-  // ── Greenhouse ──
-  'airbnb','stripe','figma','airtable','gitlab','reddit','pinterest','twitch',
-  'deliveryhero','getaround','wolt','personio','contentful','celonis','adjust',
-  'signavio','sennder','n26','gorillas','flink','trade-republic','taxfix','raisin',
-  'heyjobs','omio','scalablecapital','eyeo','jimdo','shopify','datadog','notion',
-  'miro','zapier','asana','dropbox','docusign','confluent','databricks','snowflake',
-  'hashicorp','cloudflare','mongodb','elastic','okta','zendesk','hubspot','intercom',
-  'segment','amplitude','mixpanel','launchdarkly','pagerduty','sumo-logic','new-relic',
-  'splunk','dynatrace','doctolib','sumup','flix','jetbrains','ionos','helsing',
-  'isaraerospace','staffbase','moia','freenow','scout24','parloa','autoscout24',
-  'trustpilot','finanzcheck','nice','grafanalabs','catawiki','navvis','clickhouse',
-  'flaconi','moonfare','trivago','adyen','zscaler','anaplan','think-cell',
-  'commercetools','grover','pleo','apaleo','idnow','typeform','dataiku','workato',
-  'mirakl','bitpanda','tanium','smartsheet','anydesk','spryker','strato','fivetran',
-  'tripadvisor','fireblocks','bitgo','beyondtrust','tekla','adahealth','qualtrics',
-  'sofi','riotgames','udemy','klaviyo','cultureamp','planradar','five9','wooga',
-  'braze','bloomreach','konux','jfrog','cockroachlabs','scaleai','algolia','veracode',
-  'wrike','zuora','propstack','pendo',
-  // ── Ashby ──
-  'ashby','deel','openai','cohere','linear','ramp','mercury','lattice','supabase',
-  'vercel','replit','cal','modal','sourcegraph','grammarly','scale','hugging-face',
-  'weights-biases','dbt-labs','replicate','together','perplexity','cursor','anthropic',
-  'mistral','stability','adept','character','inflection',
-  'moss','upvest','deepl','amboss','bunch','leapsome','carwow','rohlik','billie',
-  'alephalpha','docker','babbel','mollie','cosmos','rasa','airwallex','redis','uipath',
-  'deliveroo','camunda','enpal','neon','langchain','kestra','voodoo','lemon-markets',
-  'forto','pleo',
-  // ── Lever ──
-  'welocalize','veeva','crytek','sonarsource','agicap','coupa','qonto','pipedrive',
-  'brevo','spotify','contentsquare','bazaarvoice','didomi','sophos',
-  // ── workdayConfig (already added) ──
-  'bayer','basf','henkel','infineon','beiersdorf','covestro','lanxess','evonik','sap',
-  'siemenshealthineers','daimlertruck','zalando','teamviewer','amazon','cisco','oracle',
-  'salesforce','adobe','vmware','ibm','paypal','nxp','qualys','astrazeneca','takeda',
-  'analogdevices','kone','equinix','trendmicro','broadridge','thales','dupont',
-  'sprinklr','mars','dell','unisys','intel','globalfoundries','micron',
+  // From workableConfig.js initial list:
+  'personio','celonis','taxfix','raisin','sennder','idealo','staffbase',
+  'flaconi','grover','billie','pleo','forto','home24','westwing','comtravo',
+  'apaleo','kenjo','circula','candis','zeitgold','moonfare','auxmoney',
+  'smava','finanzguru','kontist','exporo','rebuy','momox','inkitt','limehome',
+  'gastrofix','lovoo','wooga','innogames','goodgame','coachhub','sharpist',
+  'masterplan','speexx','chatterbug','door2door','tier','miles','compredict',
+  'twaice','navvis','konux','roboception','magazino','heycar','finanzcheck',
+  'verivox','check24','meinestadt','immowelt','mcmakler','homeday','maklaro',
+  'scoperty','planradar','capmo','brainlab','clue','kaia-health','medbelle',
+  'numa','roadsurfer','holidu','egym','freeletics','gini','mondu','banxware',
+  'upvest','lemon-markets','nuri','creditshelf','companisto','exporo','scalable',
+  'quirion','elinvar','fincite','whitebox','nextmarkets','naga','getyourguide',
+  'hometogo','omio','aboutyou','outfittery','mytheresa','vinted','catawiki',
+  'adyen','mollie','messagebird','tink','trustly','klarna','wise','revolut',
+  'monzo','bunq','qonto','agicap','spendesk','yokoy','payhawk','sumup',
+  'contentsquare','dataiku','blablacar','deezer','uipath','camunda','rasa',
+  'cognigy','parloa','deepl','aleph-alpha','merantix','appliedai','mostly-ai',
+  'statice','understand-ai','fernride','enpal','thermondo','zolar',
+  'one-komma-five','sonnen','has-to-be','gridx','envelio',
 ]);
 
 // ─── Germany detection ────────────────────────────────────────────────────────
+//
+// Workable gives us structured fields:
+//   job.country = "Germany" (full English name)
+//   job.city    = "Berlin"
+//   job.state   = "Berlin" (German Bundesland)
+//
+// Strategy: check country first (most reliable), then fall back to city.
+// For remote jobs (telecommuting=true), check if location text mentions Germany.
+
 const GERMAN_CITIES = [
   'berlin','munich','münchen','hamburg','frankfurt','cologne','köln',
   'stuttgart','düsseldorf','dusseldorf','dortmund','essen','leipzig',
@@ -81,38 +129,483 @@ const GERMAN_CITIES = [
   'karlsruhe','mannheim','augsburg','wiesbaden','mönchengladbach',
   'gelsenkirchen','braunschweig','chemnitz','kiel','aachen','halle',
   'magdeburg','freiburg','krefeld','lübeck','lubeck','oberhausen',
-  'erfurt','mainz','rostock','kassel','hagen','potsdam','saarbrücken',
-  'saarbrucken','hamm','ludwigshafen','leverkusen','oldenburg',
-  'osnabrück','osnabruck','solingen','heidelberg','darmstadt',
-  'regensburg','ingolstadt','würzburg','wurzburg','wolfsburg',
-  'göttingen','gottingen','heilbronn','ulm','pforzheim','offenbach',
-  'bottrop','trier','jena','siegen','hildesheim','salzgitter',
-  'gütersloh','gutersloh','konstanz','bayreuth','bamberg','paderborn',
-  'reutlingen','erlangen','ingolstadt','ludwigsburg','tübingen','tubingen',
+  'erfurt','mainz','rostock','kassel','hagen','potsdam','leverkusen',
+  'oldenburg','heidelberg','darmstadt','regensburg','ingolstadt',
+  'wolfsburg','göttingen','gottingen','heilbronn','ulm','erlangen',
+  'ludwigshafen','konstanz','bayreuth','paderborn','reutlingen',
 ];
 
-function hasGermany(text) {
-  if (!text) return false;
-  const t = text.toLowerCase();
-  if (t.includes('germany') || t.includes('deutschland')) return true;
-  if (GERMAN_CITIES.some(c => t.includes(c))) return true;
+function hasGermany(job) {
+  // 1. Country field is most reliable — Workable uses full English country names
+  if (job.country) {
+    const c = job.country.toLowerCase().trim();
+    if (c === 'germany' || c === 'deutschland') return true;
+    // If a non-Germany country is explicitly set, reject immediately
+    // (avoids false-positives from city name matches in other countries)
+    if (c.length > 0) return false;
+  }
+
+  // 2. City field
+  if (job.city) {
+    const city = job.city.toLowerCase().trim();
+    if (GERMAN_CITIES.some(gc => city.includes(gc))) return true;
+  }
+
+  // 3. State field (German Bundesländer)
+  if (job.state) {
+    const state = job.state.toLowerCase().trim();
+    const germanStates = [
+      'bavaria','bayarn','berlin','hamburg','hesse','hessen',
+      'north rhine-westphalia','nordrhein-westfalen','nrw',
+      'lower saxony','niedersachsen','saxony','sachsen',
+      'rhineland-palatinate','rheinland-pfalz','thuringia','thüringen',
+      'saxony-anhalt','sachsen-anhalt','mecklenburg','schleswig-holstein',
+      'saarland','bremen','brandenburg','baden-württemberg','baden-wurttemberg',
+    ];
+    if (germanStates.some(s => state.includes(s))) return true;
+  }
+
+  // 4. Remote jobs: only count if location explicitly mentions Germany
+  if (job.telecommuting === true) {
+    const loc = `${job.city || ''} ${job.country || ''} ${job.state || ''}`.toLowerCase();
+    if (loc.includes('germany') || loc.includes('deutschland') ||
+        GERMAN_CITIES.some(gc => loc.includes(gc))) return true;
+  }
+
   return false;
 }
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+// ─── Core fetch function ───────────────────────────────────────────────────────
+//
+// TO ADAPT FOR ANOTHER ATS: Replace this function.
+// It must return: { companyName: string, jobs: array } | null
+//
+// For ATS with multiple URL combos to try (like Workday), loop through combos
+// and return on first success. See discoverWorkdayGermany.js for that pattern.
 
-// ─────────────────────────────────────────────────────────────────────────────
-// COMPANY SLUGS — 1000+ entries, zero overlap with ALREADY_INTEGRATED
-// Grouped by sector for easy maintenance
-// ─────────────────────────────────────────────────────────────────────────────
+function buildUrl(slug) {
+  // ?details=true adds: description, industry, function, experience, education
+  return `https://www.workable.com/api/accounts/${slug}?details=true`;
+}
+
+async function fetchJobs(slug) {
+  const url  = buildUrl(slug);
+  const ctrl = new AbortController();
+  const tid  = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+
+  try {
+    const res = await fetch(url, {
+      method:  'GET',
+      signal:  ctrl.signal,
+      headers: {
+        'Accept':     'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+      },
+    });
+    clearTimeout(tid);
+
+    if (!res.ok) return null;  // 404 = not on Workable, 429 = rate limited
+
+    const data = await res.json();
+    if (!data.jobs || !Array.isArray(data.jobs)) return null;
+
+    return {
+      companyName: data.name || slug,
+      jobs:        data.jobs,
+    };
+  } catch {
+    clearTimeout(tid);
+    return null;
+  }
+}
+
+// ─── Slug list ────────────────────────────────────────────────────────────────
+//
+// How to build this list:
+//   - Start with known companies that use Workable (LinkedIn, their careers page)
+//   - Try the company name as-is, with hyphens for spaces
+//   - Common patterns: "n26" / "trade-republic" / "hellofresh"
+//   - Wrong slugs just 404 — no cost to trying
+
 const companySlugs = [
 
-  // ══════════════════════════════════════════════════════════════════════════
-  //  A — GERMAN HQ COMPANIES (large + Mittelstand)
-  // ══════════════════════════════════════════════════════════════════════════
+  // ── German startups / scale-ups ───────────────────────────────────────────
+  'pitch',           // Berlin presentation tool
+  'blinkist',        // Berlin book summaries
+  'ecosia',          // Berlin green search
+  'komoot',          // Berlin route planner
+  'vivid-money',     // Berlin neobank
+  'getmoss',         // Berlin spend management
+  'liqid',           // Berlin digital wealth
+  'ginmon',          // Frankfurt robo-advisor
+  'weltsparen',      // Berlin savings
+  'deposit-solutions', // Berlin savings marketplace
+  'zinsbaustein',    // Berlin real estate
+  'bergfuerst',      // Berlin crowdinvesting
+  'backmarket',      // Paris/Berlin refurb devices
+  'grover-de',       // Berlin tech rental
+  'rebuy',           // Berlin recommerce
+  'momox-de',        // Berlin secondhand
+  'aboutyou-group',  // Hamburg fashion tech
+  'fashionette',     // Düsseldorf fashion
+  'stylight',        // Munich fashion aggregator
+  'lovescout24',     // Berlin dating
+  'onefootball',     // Berlin football app
+  'kaia',            // Munich digital health
+  'selfapy',         // Berlin mental health
+  'mindable',        // Berlin mental health
+  'ottonova',        // Munich digital health insurer
+  'teleclinic',      // Munich telehealth
+  'mednow',          // Berlin digital pharmacy
+  'zava',            // London/Berlin telehealth
+  'instafreight',    // Berlin logistics
+  'sennder-de',      // Berlin freight (alternate slug)
+  'timocom',         // Düsseldorf logistics platform
+  'freighthub',      // Berlin freight
+  'shipmonk',        // Berlin fulfillment
+  'parcellab',       // Munich post-purchase
+  'sendcloud',       // Eindhoven/DE parcel
+  'seven-senders',   // Berlin parcel delivery
+  'zenjob',          // Berlin flexible staffing
+  'coyo',            // Hamburg employee comms
+  'usercentrics',    // Munich consent mgmt
+  'didomi-de',       // Paris/Berlin consent
+  'onetrust',        // Atlanta/Berlin privacy
+  'collibra',        // Brussels/Berlin data governance
+  'celonis-munich',  // Munich process mining (alt)
+  'signavio-de',     // Berlin process mgmt
+  'leanix',          // Bonn enterprise arch
+  'aris',            // Saarbrücken process mgmt
+  'symbio',          // Munich PLM
+  'centric',         // Netherlands/DE software
+  'adito',           // Rosenheim CRM
+  'scopevisio',      // Bonn ERP
+  'weclapp',         // Frankfurt ERP
+  'xentral',         // Augsburg ERP
+  'actindo',         // Dortmund e-commerce ERP
+  'plentymarkets',   // Kassel e-commerce
+  'shopware',        // Schöppingen e-commerce
+  'novalnet',        // Munich payments
+  'heidelpay',       // Heidelberg payments
+  'computop',        // Bamberg payments
+  'payone',          // Frankfurt payments
+  'unzer',           // Heidelberg payments
+  'concardis',       // Frankfurt payments
+  'elavon-de',       // Cork/DE payments
+  'payworks',        // Munich POS payments
+  'orderbird',       // Berlin POS
+  'gastromatic',     // Hamburg HR software
+  'personizer',      // Freiburg HR
+  'rexx-systems',    // Hamburg HR
+  'umantis',         // Konstanz HR
+  'haufe-umantis',   // Konstanz HR
+  'cegid',           // Lyon/Berlin HR
+  'sage-de',         // Newcastle/Berlin HR
+  'bmdc',            // Berlin marketing
+  'facelift',        // Hamburg social media mgmt
+  'emplifi',         // Prague/Berlin social
+  'brandwatch',      // Brighton/Berlin social analytics
+  'talkwalker',      // Luxembourg/Berlin analytics
+  'mention',         // Paris/Berlin monitoring
+  'uberall',         // Berlin local marketing
+  'yext-de',         // NYC/Berlin listings
+  'searchmetrics',   // Berlin SEO
+  'sistrix',         // Bonn SEO
+  'ryte',            // Munich website intelligence
+  'uptain',          // Hamburg e-commerce opt.
+  'econda',          // Karlsruhe analytics
+  'etracker',        // Hamburg analytics
+  'webtrekk',        // Berlin analytics (acquired by Mapp)
+  'mapp-de',         // San Diego/Berlin analytics
+  'intelliad',       // Erlangen attribution
+  'adtriba',         // Hamburg attribution
+  'exactag',         // Hamburg attribution
+  'crossengage',     // Berlin customer data
+  'xtremepush',      // Dublin/Berlin push
+  'optilyz',         // Berlin direct mail
+  'mailingwork',     // Limbach-O. email
+  'cleverreach',     // Rastede email
+  'rapidmail',       // Freiburg email
+  'newsletter2go',   // Berlin email
+  'klicktipp',       // Leipzig email
+  'artegic',         // Bonn digital marketing
+  'evalanche',       // Grasbrunn marketing auto
+  'sc-networks',     // Grasbrunn email auto
+  'mautic-de',       // Berlin open source mktg
+  'hubspot-de',      // Cambridge/Berlin CRM (alt)
+  'zammad',          // Munich help desk
+  'serview',         // Bad Homburg ITSM
+  'matrix42-de',     // Frankfurt ITSM
+  'baramundi-de',    // Augsburg endpoint mgmt
+  'docuware-de',     // Germering DMS
+  'd-velop',         // Gescher DMS
+  'windream',        // Bochum ECM
+  'easy-software',   // Mülheim ECM
+  'fabasoft',        // Linz/Munich ECM
+  'ceyoniq',         // Bielefeld ECM
+  'optimal-systems', // Berlin ECM
+  'intrexx',         // Freiburg low-code
+  'bpanda',          // Berlin BPM
+  'signavio-low-code', // Berlin BPM
+  'fluxus',          // Berlin low-code
+  'axon-ivy',        // Zurich/DE BPM
+  'finanzplaner',    // Munich fintech
+  'ginlo',           // Munich secure messaging
+  'idnow-de',        // Munich identity (alt)
+  'authada',         // Darmstadt identity
+  'webid',           // Berlin identity
+  'veriff-de',       // Tallinn/Berlin identity
+  'onfido-de',       // London/Berlin identity
+  'jumio-de',        // Scotts Valley/Berlin identity
+  'fourthline',      // Amsterdam/Berlin KYC
+  'comply-advantage', // London/Berlin AML
+  'riskified-de',    // Tel Aviv/Berlin fraud
+  'forter-de',       // Tel Aviv/Berlin fraud
+  'signifyd-de',     // San Jose/Berlin fraud
+  'kount-de',        // Boise/Berlin fraud
+  'seon-de',         // Budapest/Berlin fraud
+  'nethone',         // Warsaw/Berlin fraud
+  'ravelin-de',      // London/Berlin fraud
+  'fraugster',       // Berlin fraud (AI)
+  'risk-ident',      // Hamburg fraud
+  'tonbeller',       // Darmstadt compliance
+  'pwc-de',          // Frankfurt consulting
+  'kpmg-de',         // Frankfurt consulting
+  'ey-de',           // Frankfurt consulting
+  'deloitte-de',     // Düsseldorf consulting
+  'accenture-de',    // Frankfurt consulting
+  'mck-de',          // Düsseldorf consulting
+  'bcg-de',          // Munich consulting
 
-  // ── Chemicals / Materials ─────────────────────────────────────────────────
-  'wacker','wacker-chemie','evonik-industries','saltigo','currenta',
+  // ── European companies with Germany offices ───────────────────────────────
+  'revolut-de',      // London fintech (alt)
+  'n26-tech',        // Berlin neobank (alt)
+  'paysend',         // London transfers
+  'curve',           // London card aggregator
+  'izettle',         // Stockholm payments
+  'bambora',         // Stockholm payments
+  'nets-de',         // Copenhagen payments
+  'nexi-de',         // Milan payments
+  'worldline',       // Bezons payments
+  'concardis-de',    // Frankfurt payments
+  'wirecard-de',     // Munich payments
+  'paypal-de',       // San Jose/Berlin
+  'braintree-de',    // Chicago/Berlin
+  'stripe-de',       // San Francisco/Berlin
+  'checkout-de',     // London/Berlin
+  'adyen-de',        // Amsterdam (alt)
+  'mollie-de',       // Amsterdam (alt)
+  'qonto-de',        // Paris (alt)
+  'agicap-de',       // Lyon (alt)
+  'spendesk-de',     // Paris (alt)
+  'yokoy-de',        // Zurich (alt)
+  'payhawk-de',      // Sofia (alt)
+  'pleo-de',         // Copenhagen (alt)
+  'moss-de',         // Berlin (already Ashby but trying workable alt)
+  'soldo-de',        // London spend mgmt
+  'equals-de',       // London spend mgmt
+  'paycircle',       // Mannheim payroll
+  'personio-payroll', // Munich payroll alt
+  'datev-lodas',     // Nuremberg payroll
+  'lexware-de',      // Freiburg payroll
+  'sage-payroll-de', // payroll
+  'lohnfix',         // Berlin payroll
+  'payfit-de',       // Paris payroll
+  'bitkom',          // Berlin IT association
+  'giga-group',      // Berlin tech
+  'arlanis',         // Hamburg Salesforce consulting
+  'sinkm',           // Hannover Salesforce
+  'te-systems',      // Bonn Salesforce
+  'pikon',           // Saarbrücken SAP consulting
+  'convista',        // Cologne SAP
+  'natuvion',        // Walldorf SAP
+  'clarivo',         // Frankfurt SAP
+  'accsense',        // Hamburg SAP
+  'itelligence',     // Bielefeld SAP
+  'ntt-data-business-solutions', // Bielefeld SAP
+  'steelcase-de',    // Grand Rapids/Munich furniture
+  'nespresso-de',    // Lausanne/DE
+  'hugo-boss',       // Metzingen fashion
+  'tamaris',         // Düsseldorf shoes
+  'deichmann',       // Essen shoes
+  'esprit-de',       // Düsseldorf fashion
+  's-oliver',        // Rottendorf fashion
+  'gerry-weber',     // Halle/Westfalen fashion
+  'betty-barclay',   // Wiesloch fashion
+  'brax',            // Herford fashion
+  'bausback',        // Heidelberg fashion
+
+  // ── US tech companies with Germany offices ────────────────────────────────
+  'mongodb-de',
+  'elastic-de',
+  'confluent-de',
+  'databricks-de',
+  'snowflake-de',
+  'datadog-de',
+  'splunk-de',
+  'dynatrace-de',
+  'newrelic-de',
+  'sumoLogic-de',
+  'pagerduty-de',
+  'launchdarkly-de',
+  'amplitude-de',
+  'mixpanel-de',
+  'segment-de',
+  'braze-de',
+  'iterable-de',
+  'klaviyo-de',
+  'sendgrid-de',
+  'mailgun-de',
+  'twilio-de',
+  'zendesk-de',
+  'hubspot-careers',
+  'intercom-de',
+  'freshdesk-de',
+  'freshworks-de',
+  'salesforce-de',
+  'servicenow-de',
+  'workday-de',
+  'sap-de',
+  'oracle-de',
+  'ibm-de',
+  'microsoft-de',
+  'google-de',
+  'amazon-de',
+  'meta-de',
+  'apple-de',
+  'netflix-de',
+  'spotify-de',
+  'uber-de',
+  'airbnb-de',
+  'palantir-de',
+  'atlassian-de',
+  'github-de',
+  'gitlab-de',
+  'jetbrains-de',
+  'hashicorp-de',
+  'cloudflare-de',
+  'okta-de',
+  'crowdstrike-de',
+  'sentinelone-de',
+  'paloalto-de',
+  'fortinet-de',
+  'checkpoint-de',
+  'rapid7-de',
+  'tenable-de',
+  'qualys-de',
+  'cyberark-de',
+  'sailpoint-de',
+  'varonis-de',
+  'proofpoint-de',
+  'mimecast-de',
+  'knowbe4-de',
+  'darktrace-de',
+  'snyk-de',
+  'veracode-de',
+  'checkmarx-de',
+  'sonatype-de',
+  'jfrog-de',
+  'aquasecurity',
+  'lacework-de',
+  'orca-de',
+  'wiz-de',
+  'sysdig-de',
+  'noname-security',
+  'salt-security',
+  'wallarm',
+  'signal-sciences',
+  'fastly-de',
+  'akamai-de',
+  'cloudfront-de',
+  'imperva-de',
+  'f5-de',
+  'radware-de',
+  'netscout-de',
+  'gigamon-de',
+  'extrahop-de',
+  'darktrace',
+  'vectra-de',
+  'exabeam-de',
+  'securonix-de',
+  'logrhythm-de',
+  'ibm-qradar',
+  'splunk-soar',
+  'chronicle-de',
+  'siemplify',
+  'palo-alto-cortex',
+  'microsoft-sentinel',
+  'aws-security',
+  'google-chronicle',
+  'fireeye-de',
+  'mandiant-de',
+  'crowdstrike-falcon',
+
+  // ── More German Mittelstand / scale-ups ───────────────────────────────────
+  'sievert',         // Osnabrück materials
+  'goldbeck',        // Bielefeld construction
+  'max-boegl',       // Neumarkt construction
+  'züblin',          // Stuttgart construction
+  'ed-züblin',       // Stuttgart construction
+  'hochtief-de',     // Essen construction
+  'bilfinger-de',    // Mannheim engineering
+  'implenia-de',     // Zürich/DE construction
+  'peri-formwork',   // Weißenhorn formwork
+  'doka-de',         // Amstetten/DE formwork
+  'harsco-de',       // Camp Hill/DE industrial
+  'metallbau-de',    // steel construction
+  'rwe-de',          // Essen energy
+  'eon-de',          // Essen energy
+  'enbw-de',         // Karlsruhe energy
+  'vattenfall',      // Stockholm/Berlin energy
+  'uniper-de',       // Düsseldorf energy
+  'wintershall-dea', // Hamburg oil gas
+  'sbm-offshore-de', // Amsterdam/Hamburg offshore
+  'vopak-de',        // Rotterdam/Hamburg terminals
+  'rhenus-de',       // Holzwickede logistics
+  'dachser-de',      // Kempten logistics
+  'hellmann-de',     // Osnabrück logistics
+  'fiege-de',        // Greven logistics
+  'noerpel',         // Ulm logistics
+  'fercam-de',       // Bolzano/DE logistics
+  'senator-international', // Hamburg freight
+  'ahlers-de',       // Hamburg forwarding
+  'kn-de',           // Schindellegi/DE forwarding
+  'dsv-de',          // Hedehusene/DE forwarding
+  'dhl-de',          // Bonn parcel
+  'ups-de',          // Atlanta/DE parcel
+  'fedex-de',        // Memphis/DE express
+  'hermes-de',       // Hamburg parcel
+  'gls-de',          // Brussels/DE parcel
+  'dpd-de',          // Aschaffenburg parcel
+  'db-schenker-de',  // Frankfurt freight
+  'bmw-group',       // Munich auto
+  'audi-jobs',       // Ingolstadt auto
+  'porsche-jobs',    // Stuttgart auto
+  'volkswagen-jobs', // Wolfsburg auto
+  'mercedes-jobs',   // Stuttgart auto
+  'ford-de',         // Cologne auto
+  'opel',            // Rüsselsheim auto
+  'honda-de',        // Offenbach auto
+  'toyota-de',       // Cologne auto
+  'hyundai-de',      // Offenbach auto
+  'kia-de',          // Frankfurt auto
+  'stellantis-de',   // Amsterdam/DE auto
+  'renault-de',      // Brühl auto
+  'peugeot-de',      // Köln auto
+  'volvo-de',        // Gothenburg/Hamburg auto
+  'scania-de',       // Södertälje/Koblenz trucks
+  'iveco-de',        // Turin/Ulm trucks
+  'daf-trucks-de',   // Eindhoven/DE trucks
+  'wabco-de',        // Brussels/Hannover commercial
+  'knorr-bremse-de', // Munich brakes
+  'haldex-de',       // Landskrona/DE brakes
+  'continental-de',  // Hannover tires/auto
+  'michelin-de',     // Clermont-Ferrand/DE
+  'pirelli-de',      // Milan/DE tires
+  'goodyear-de',     // Akron/DE tires
+  'dunlop-de',       // Hanau tires
+  'bridgestone-de',  // Tokyo/DE tires
+    'wacker','wacker-chemie','evonik-industries','saltigo','currenta',
   'altana','altana-ag','merck','merck-group','emd','emdsigma',
   'brenntag','brenntag-ag','clariant','clariant-ag',
   'h-c-starck','hcstarck','schlenk','schlenk-metallic',
@@ -750,103 +1243,65 @@ const companySlugs = [
 
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Workday API tester
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Discovery engine ─────────────────────────────────────────────────────────
 
-async function tryEndpoint(slug, instance, site) {
-  const url = `https://${slug}.${instance}.myworkdayjobs.com/wday/cxs/${slug}/${site}/jobs`;
-  const ctrl = new AbortController();
-  const tid  = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      signal: ctrl.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept':       'application/json',
-        'User-Agent':   'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-      },
-      body: JSON.stringify({ appliedFacets: {}, limit: 20, offset: 0, searchText: '' }),
-    });
-    clearTimeout(tid);
-    if (!res.ok) return null;
-
-    const data = await res.json();
-    if (typeof data.total === 'undefined') return null;
-
-    const jobs        = data.jobPostings || [];
-    const germanyJobs = jobs.filter(j => hasGermany(j.locationsText));
-
-    // Check location facets for a better count than first-page sample
-    let facetGermany = 0;
-    if (data.facets) {
-      const locGroup = data.facets.find(f => f.facetParameter === 'locationMainGroup');
-      if (locGroup?.values?.[0]?.values) {
-        for (const loc of locGroup.values[0].values) {
-          if (hasGermany(loc.descriptor)) facetGermany += loc.count || 0;
-        }
-      }
-    }
-
-    return {
-      slug, instance, site,
-      total:       data.total || 0,
-      germany:     Math.max(germanyJobs.length, facetGermany),
-      germanyJobs,
-      url:  `https://${slug}.${instance}.myworkdayjobs.com/${site}`,
-      api:  url,
-    };
-  } catch {
-    clearTimeout(tid);
-    return null;
-  }
-}
-
-async function testWorkday(slug) {
-  // Skip any slug that somehow slipped through
+async function testSlug(slug) {
   if (ALREADY_INTEGRATED.has(slug.toLowerCase())) return null;
 
-  for (const [instance, site] of FAST_COMBOS) {
-    const r = await tryEndpoint(slug, instance, site);
-    if (r !== null) return r;  // Stop on first working combo
-  }
-  return null;
+  const result = await fetchJobs(slug);
+  if (!result) return null;
+
+  const { companyName, jobs } = result;
+  if (jobs.length === 0) return null;
+
+  const germanyJobs = jobs.filter(hasGermany);
+
+  return {
+    slug,
+    companyName,
+    total:       jobs.length,
+    germany:     germanyJobs.length,
+    germanyJobs: germanyJobs.slice(0, 3), // sample only
+    url:         buildUrl(slug),
+  };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Main
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Main ─────────────────────────────────────────────────────────────────────
+
 async function main() {
-  const uniqueSlugs = [...new Set(companySlugs)].filter(s => !ALREADY_INTEGRATED.has(s.toLowerCase()));
-  const startTime   = Date.now();
+  const uniqueSlugs = [...new Set(companySlugs)]
+    .filter(s => !ALREADY_INTEGRATED.has(s.toLowerCase()));
 
-  console.log(`\n🇩🇪 WORKDAY GERMANY DISCOVERY — Testing ${uniqueSlugs.length} slugs`);
-  console.log(`   Excluded: ${companySlugs.length - uniqueSlugs.length} already-integrated`);
-  console.log(`   Combos per slug: ${FAST_COMBOS.length} | Concurrency: ${CONCURRENCY}\n`);
+  const skipped   = companySlugs.length - uniqueSlugs.length;
+  const startTime = Date.now();
 
-  const allFound    = [];   // every Workday board discovered
-  const withGermany = [];   // boards that have Germany jobs
+  console.log(`\n🇩🇪 ${ATS_NAME.toUpperCase()} GERMANY DISCOVERY — Testing ${uniqueSlugs.length} slugs`);
+  console.log(`   Skipped ${skipped} already-integrated`);
+  console.log(`   Concurrency: ${CONCURRENCY} | Timeout: ${TIMEOUT_MS}ms\n`);
+
+  const allFound    = [];  // every board that returned jobs (any country)
+  const withGermany = [];  // boards with ≥1 Germany job
   let tested = 0;
 
   for (let i = 0; i < uniqueSlugs.length; i += CONCURRENCY) {
     const batch   = uniqueSlugs.slice(i, i + CONCURRENCY);
-    const results = await Promise.all(batch.map(testWorkday));
+    const results = await Promise.all(batch.map(testSlug));
 
     for (const r of results) {
       if (!r) continue;
       allFound.push(r);
       if (r.germany > 0) {
         withGermany.push(r);
-        console.log(`  ✅ ${r.slug} (${r.instance}/${r.site}): ${r.germany} 🇩🇪 / ${r.total} total`);
+        console.log(`  ✅ ${r.slug} (${r.companyName}): ${r.germany} 🇩🇪 / ${r.total} total`);
       }
     }
 
     tested = Math.min(i + CONCURRENCY, uniqueSlugs.length);
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
     process.stdout.write(
-      `\r  [${tested}/${uniqueSlugs.length}] ${elapsed}s | Workday boards: ${allFound.length} | 🇩🇪 Germany: ${withGermany.length}   `
+      `\r  [${tested}/${uniqueSlugs.length}] ${elapsed}s | Boards: ${allFound.length} | 🇩🇪 Germany: ${withGermany.length}   `
     );
 
     if (i + CONCURRENCY < uniqueSlugs.length) await sleep(BATCH_DELAY_MS);
@@ -854,68 +1309,73 @@ async function main() {
 
   const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
 
-  // ── RESULTS ──────────────────────────────────────────────────────────────
+  // ── Results ────────────────────────────────────────────────────────────────
 
   console.log(`\n\n${'═'.repeat(80)}`);
-  console.log(`📊 WORKDAY GERMANY DISCOVERY (${totalTime}s)`);
-  console.log(`   ${uniqueSlugs.length} slugs tested | ${allFound.length} Workday boards found | ${withGermany.length} with Germany jobs`);
+  console.log(`📊 ${ATS_NAME.toUpperCase()} GERMANY DISCOVERY (${totalTime}s)`);
+  console.log(`   ${uniqueSlugs.length} slugs tested | ${allFound.length} boards found | ${withGermany.length} with Germany jobs`);
   console.log(`${'═'.repeat(80)}`);
 
-  if (withGermany.length > 0) {
-    const sorted = [...withGermany].sort((a, b) => b.germany - a.germany);
-
-    console.log(`\n🇩🇪 BOARDS WITH GERMANY JOBS (${sorted.length}) — sorted by count:`);
-    console.log(`${'─'.repeat(80)}`);
-    for (const r of sorted) {
-      const pad = ' '.repeat(Math.max(1, 32 - r.slug.length));
-      console.log(`  ${r.slug}${pad}${r.instance}/${r.site.padEnd(22)} 🇩🇪 ${String(r.germany).padStart(4)} / ${r.total} total`);
-    }
-
-    // ── Copy-paste config ─────────────────────────────────────────────────
-    console.log(`\n${'═'.repeat(80)}`);
-    console.log(`📋 COPY-PASTE → workdayConfig.js companyBoards:`);
-    console.log(`${'═'.repeat(80)}\n`);
-    console.log(`const companyBoards = [`);
-    for (const r of sorted) {
-      const cPad = ' '.repeat(Math.max(1, 28 - r.slug.length));
-      const sPad = ' '.repeat(Math.max(1, 24 - r.site.length));
-      console.log(`  { company: '${r.slug}',${cPad}instance: '${r.instance}', site: '${r.site}',${sPad}name: '${r.slug}' },  // ${r.germany} DE / ${r.total} total`);
-    }
-    console.log(`];\n`);
-
-    // ── Sample jobs ───────────────────────────────────────────────────────
-    console.log(`${'═'.repeat(80)}`);
-    console.log(`🔍 SAMPLE GERMANY JOBS (top 25, up to 3 per company):`);
-    console.log(`${'═'.repeat(80)}`);
-    for (const r of sorted.slice(0, 25)) {
-      console.log(`\n  📌 ${r.slug} (${r.instance}/${r.site}) — ${r.germany} Germany jobs:`);
-      for (const j of r.germanyJobs.slice(0, 3)) {
-        console.log(`     • ${j.title}`);
-        console.log(`       ${j.locationsText || ''} | ${j.postedOn || ''}`);
-      }
-    }
+  if (withGermany.length === 0) {
+    console.log(`\n  No Germany jobs found. Try adding more slugs to companySlugs.\n`);
+    return;
   }
 
-  if (allFound.length > 0) {
+  const sorted = [...withGermany].sort((a, b) => b.germany - a.germany);
+
+  // ── Ranked table ──────────────────────────────────────────────────────────
+  console.log(`\n🇩🇪 BOARDS WITH GERMANY JOBS (${sorted.length}) — sorted by count:`);
+  console.log(`${'─'.repeat(80)}`);
+  for (const r of sorted) {
+    const pad = ' '.repeat(Math.max(1, 30 - r.slug.length));
+    console.log(`  ${r.slug}${pad}${r.companyName.padEnd(28)} 🇩🇪 ${String(r.germany).padStart(4)} / ${r.total} total`);
+  }
+
+  // ── Copy-paste config ──────────────────────────────────────────────────────
+  console.log(`\n${'═'.repeat(80)}`);
+  console.log(`📋 COPY-PASTE → workableConfig.js companySlugs:`);
+  console.log(`${'═'.repeat(80)}\n`);
+  console.log(`  // ── Auto-discovered ${new Date().toISOString().slice(0, 10)} ──`);
+  for (const r of sorted) {
+    const pad = ' '.repeat(Math.max(1, 30 - r.slug.length - 2));
+    console.log(`  '${r.slug}',${pad}// ${r.companyName} — ${r.germany} DE / ${r.total} total`);
+  }
+
+  // ── All found (including non-Germany) ─────────────────────────────────────
+  if (allFound.length > withGermany.length) {
     console.log(`\n${'═'.repeat(80)}`);
-    console.log(`📋 ALL WORKDAY BOARDS FOUND (including zero Germany) — ${allFound.length} total:`);
+    console.log(`📋 ALL FOUND (including zero Germany) — ${allFound.length} total:`);
     console.log(`${'─'.repeat(80)}`);
     const sortedAll = [...allFound].sort((a, b) => b.total - a.total);
     for (const r of sortedAll) {
       const flag = r.germany > 0 ? `🇩🇪 ${String(r.germany).padStart(4)}` : `   none`;
-      const pad  = ' '.repeat(Math.max(1, 32 - r.slug.length));
-      console.log(`  ${r.slug}${pad}${r.instance}/${r.site.padEnd(22)} ${flag} / ${r.total} total`);
+      const pad  = ' '.repeat(Math.max(1, 30 - r.slug.length));
+      console.log(`  ${r.slug}${pad}${flag} / ${r.total} total`);
     }
   }
 
+  // ── Sample Germany jobs ────────────────────────────────────────────────────
+  console.log(`\n${'═'.repeat(80)}`);
+  console.log(`🔍 SAMPLE GERMANY JOBS (top 20, up to 3 per company):`);
+  console.log(`${'═'.repeat(80)}`);
+  for (const r of sorted.slice(0, 20)) {
+    console.log(`\n  📌 ${r.slug} (${r.companyName}) — ${r.germany} Germany jobs:`);
+    for (const j of r.germanyJobs) {
+      console.log(`     • ${j.title}`);
+      console.log(`       ${j.city || ''}${j.city && j.country ? ', ' : ''}${j.country || ''} | ${j.employment_type || ''} | ${j.telecommuting ? '🏠 Remote' : '🏢 Onsite'}`);
+    }
+  }
+
+  // ── Final summary ──────────────────────────────────────────────────────────
   console.log(`\n${'═'.repeat(80)}`);
   console.log(`📊 FINAL SUMMARY`);
   console.log(`${'─'.repeat(80)}`);
-  console.log(`  Slugs tested:        ${uniqueSlugs.length}`);
-  console.log(`  Workday boards found: ${allFound.length}`);
-  console.log(`  With Germany jobs:    ${withGermany.length}`);
-  console.log(`  Total Germany jobs:   ${withGermany.reduce((s, r) => s + r.germany, 0)}`);
-  console.log(`  Time:                ${totalTime}s`);
+  console.log(`  Slugs tested:       ${uniqueSlugs.length}`);
+  console.log(`  Skipped (existing): ${skipped}`);
+  console.log(`  Boards found:       ${allFound.length}`);
+  console.log(`  With Germany jobs:  ${withGermany.length}`);
+  console.log(`  Total Germany jobs: ${withGermany.reduce((s, r) => s + r.germany, 0)}`);
+  console.log(`  Time:               ${totalTime}s`);
   console.log(`${'═'.repeat(80)}\n`);
 }
 
