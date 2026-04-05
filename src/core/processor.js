@@ -7,7 +7,7 @@ import { createJobModel } from '../models/jobModel.js';
 import { createJobTestLog } from '../models/Jobtestlogmodel.js';
 import { saveJobTestLog, findTestLogByFingerprint } from '../Db/databaseManager.js';
 import { Analytics } from '../models/analyticsModel.js';
-import { BANNED_ROLES, generateJobFingerprint, generateCrossEntityKey } from '../utils.js';
+import { BANNED_ROLES, generateJobFingerprint, generateCrossEntityKey, normalizeCompanyName } from '../utils.js';
 
 // ─── Domain Classification (derived from Department + Title, no AI needed) ──
 const TECHNICAL_KEYWORDS = [
@@ -30,6 +30,185 @@ const TECHNICAL_KEYWORDS = [
 function deriveDomain(department, jobTitle) {
     const combined = `${department || ''} ${jobTitle || ''}`.toLowerCase();
     return TECHNICAL_KEYWORDS.some(kw => combined.includes(kw)) ? 'Technical' : 'Non-Technical';
+}
+
+// ─── Title-Based German Detection (skips AI entirely) ────────────────────────
+// If the job TITLE already says "German Speaking" or similar, we reject immediately
+// without calling the AI. Saves tokens, cost, and ~2 seconds per job.
+//
+// Returns { matched: true, phrase: "..." } or null
+//
+const GERMAN_TITLE_PATTERNS = [
+    // English patterns
+    /\bgerman[\s-]*speak(?:ing|er)\b/i,          // "German Speaking", "German-speaking", "German Speaker"
+    /\bgerman[\s-]*fluent\b/i,                    // "German fluent"
+    /\bfluent[\s-]*german\b/i,                    // "Fluent German"
+    /\bgerman[\s-]*native\b/i,                    // "German native"
+    /\bnative[\s-]*german\b/i,                    // "Native German"
+    /\bgerman[\s-]*(?:required|mandatory)\b/i,    // "German required", "German mandatory"
+    /\bgerman[\s-]*(?:c[12]|b[12])\b/i,           // "German C1", "German B2"
+    /\b(?:c[12]|b[12])[\s-]*german\b/i,           // "C1 German", "B2 German"
+
+    // German-language patterns in titles
+    /\bdeutschsprachig(?:e[rn]?)?\b/i,            // "Deutschsprachig", "Deutschsprachiger"
+    /\bmuttersprachler(?:in)?\b/i,                // "Muttersprachler", "Muttersprachlerin"
+    /\bflie[ßs]end[\s-]*deutsch\b/i,              // "fließend Deutsch", "fliessend Deutsch"
+    /\bdeutschkenntnisse\b/i,                     // "Deutschkenntnisse"
+];
+
+function detectGermanRequiredFromTitle(title) {
+    if (!title) return null;
+    const titleStr = String(title);
+
+    for (const pattern of GERMAN_TITLE_PATTERNS) {
+        const match = titleStr.match(pattern);
+        if (match) {
+            return { matched: true, phrase: match[0] };
+        }
+    }
+    return null;
+}
+
+// ─── Pre-AI Non-English Description Detection ────────────────────────────────
+// Catches obviously non-English descriptions (fully French, Spanish, etc.)
+// BEFORE calling the AI. Saves tokens for clear-cut cases like SumUp France x7.
+//
+// Strategy: count high-frequency French/Spanish/Italian/Dutch words in the
+// first 600 chars. If they exceed a threshold → it's not English.
+// Conservative: only catches descriptions that are CLEARLY non-English.
+//
+const NON_ENGLISH_MARKERS = {
+    french: [
+        // Words that almost never appear in English job descriptions
+        'nous', 'vous', 'sont', 'avec', 'pour', 'dans', 'votre', 'notre',
+        'être', 'avoir', 'cette', 'aussi', 'mais', 'chez', 'depuis',
+        'toutes', 'leurs', 'comme', 'après', 'entre', 'fait', 'très',
+        'peut', 'plus', 'tout', 'elle', 'aux', 'ces', 'ses', 'une',
+        'des', 'les', 'sur', 'par', 'qui', 'que', 'est', 'ont',
+    ],
+    spanish: [
+        'para', 'como', 'está', 'tiene', 'puede', 'todos', 'esta',
+        'desde', 'cuando', 'entre', 'donde', 'hacia', 'según', 'sobre',
+        'nuestro', 'nuestra', 'también', 'porque', 'empresa', 'trabajo',
+    ],
+    dutch: [
+        'voor', 'zijn', 'worden', 'naar', 'hebben', 'onze', 'deze',
+        'maar', 'ook', 'niet', 'bij', 'jouw', 'jij', 'wij', 'ons',
+    ],
+    italian: [
+        'sono', 'della', 'questo', 'anche', 'essere', 'questo',
+        'nella', 'delle', 'nostro', 'nostra', 'lavoro', 'ogni',
+    ],
+    polish: [
+        'jest', 'oraz', 'jako', 'przez', 'będzie', 'które', 'więcej',
+        'nasz', 'pracy', 'może', 'tylko', 'jeśli', 'bardzo',
+    ],
+};
+
+function detectNonEnglishDescription(description) {
+    if (!description || description.length < 100) return null;
+
+    const sample = description.substring(0, 600).toLowerCase();
+    const words = sample.split(/\s+/);
+    if (words.length < 20) return null;
+
+    for (const [language, markers] of Object.entries(NON_ENGLISH_MARKERS)) {
+        let hits = 0;
+        for (const marker of markers) {
+            // Match whole words only
+            const regex = new RegExp(`\\b${marker}\\b`, 'g');
+            const matches = sample.match(regex);
+            if (matches) hits += matches.length;
+        }
+        // If >15% of words in the sample are non-English markers → flag it
+        const ratio = hits / words.length;
+        if (ratio > 0.15) {
+            return { language, ratio: Math.round(ratio * 100) };
+        }
+    }
+    return null;
+}
+
+// ─── Pre-AI Citizenship / Nationality Detection ──────────────────────────────
+// "German citizenship is mandatory" is NOT a language requirement — the AI
+// correctly returns german_required=false. But the job should still be rejected
+// because it excludes most of our international audience.
+//
+// Returns { matched: true, phrase: "..." } or null
+//
+const CITIZENSHIP_PATTERNS = [
+    // English — German citizenship
+    /\bgerman\s+(?:citizenship|nationality)\s+(?:is\s+)?(?:required|mandatory|essential|necessary|needed)\b/i,
+    /\b(?:require[sd]?|must\s+have|must\s+hold|must\s+possess)\s+german\s+(?:citizenship|nationality)\b/i,
+    /\bmust\s+be\s+a\s+german\s+citizen\b/i,
+    /\bgerman\s+(?:citizen|national)\s+(?:only|required)\b/i,
+    /\b(?:no|not)\s+dual\s+citizenship\b/i,
+    /\bdual\s+citizenship\s+(?:is\s+)?not\s+(?:allowed|accepted|permitted)\b/i,
+
+    // English — EU/EEA citizenship (still excludes non-EU internationals)
+    /\b(?:eu|eea)\s+(?:citizenship|nationality|work\s+(?:permit|authorization))\s+(?:is\s+)?(?:required|mandatory|essential)\b/i,
+    /\b(?:require[sd]?|must\s+have|must\s+hold)\s+(?:eu|eea)\s+(?:citizenship|nationality)\b/i,
+    /\bmust\s+be\s+(?:an?\s+)?(?:eu|eea)\s+(?:citizen|national|resident)\b/i,
+
+    // German language — citizenship/nationality
+    /\bStaatsbürgerschaft\s+erforderlich\b/i,
+    /\bdeutsche\s+Staats(?:bürgerschaft|angehörigkeit)\b/i,
+    /\bdeutsche[rn]?\s+(?:Pass|Ausweis)\s+erforderlich\b/i,
+];
+
+function detectCitizenshipRequirement(description) {
+    if (!description) return null;
+    const text = String(description);
+
+    for (const pattern of CITIZENSHIP_PATTERNS) {
+        const match = text.match(pattern);
+        if (match) {
+            return { matched: true, phrase: match[0] };
+        }
+    }
+    return null;
+}
+
+// ─── Pre-AI Other Language Requirement Detection ─────────────────────────────
+// "Dutch C2 required" / "French native speaker" / "fluent in Polish"
+// These are NOT English-language jobs even if they're in Berlin.
+// Catches Jobs 32, 33, 143, 165 from the report.
+//
+// Returns { matched: true, language: "...", phrase: "..." } or null
+//
+const OTHER_LANGUAGES = [
+    'french', 'dutch', 'polish', 'turkish', 'spanish', 'italian',
+    'portuguese', 'czech', 'hungarian', 'romanian', 'danish',
+    'swedish', 'norwegian', 'finnish', 'greek', 'arabic',
+    'russian', 'ukrainian', 'japanese', 'chinese', 'mandarin',
+    'cantonese', 'korean', 'hindi', 'hebrew',
+];
+
+const OTHER_LANG_PATTERNS = OTHER_LANGUAGES.map(lang => ({
+    language: lang,
+    patterns: [
+        new RegExp(`\\b(?:fluent|fluency|native|proficient|proficiency)\\s+(?:in\\s+)?${lang}\\b`, 'i'),
+        new RegExp(`\\b${lang}\\s+(?:required|mandatory|essential|fluent|native|proficiency)\\b`, 'i'),
+        new RegExp(`\\b${lang}\\s+(?:c[12]|b2)\\b`, 'i'),
+        new RegExp(`\\b(?:c[12]|b2)\\s+(?:level\\s+)?(?:in\\s+)?${lang}\\b`, 'i'),
+        new RegExp(`\\b${lang}\\s+(?:native\\s+)?speaker\\b`, 'i'),
+        new RegExp(`\\bnative[\\s-]+(?:level\\s+)?${lang}\\b`, 'i'),
+    ],
+}));
+
+function detectOtherLanguageRequired(description) {
+    if (!description) return null;
+    const text = String(description);
+
+    for (const { language, patterns } of OTHER_LANG_PATTERNS) {
+        for (const pattern of patterns) {
+            const match = text.match(pattern);
+            if (match) {
+                return { matched: true, language, phrase: match[0] };
+            }
+        }
+    }
+    return null;
 }
 
 function normalizeArray(values) {
@@ -197,6 +376,17 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
             return null;
         }
         crossEntityKeys.set(crossKey, mappedJob.Company);
+
+        // 2c. Same-Company City-Variant Dedup
+        // MongoDB posts "Solutions Architect" in Berlin, Munich, Hamburg, Frankfurt, Cologne, Stuttgart
+        // All 6 are identical jobs with different city. We keep the first, skip the rest.
+        const titleDedupKey = `TITLE_DEDUP|${normalizeCompanyName(mappedJob.Company)}|${mappedJob.JobTitle.toLowerCase().trim()}`;
+        if (crossEntityKeys.has(titleDedupKey)) {
+            const firstCity = crossEntityKeys.get(titleDedupKey);
+            console.log(`[City Dedup] ♻️ Skipping city-variant: "${mappedJob.JobTitle}" at "${mappedJob.Company}" — already accepted for ${firstCity}`);
+            return null;
+        }
+        crossEntityKeys.set(titleDedupKey, mappedJob.Location || 'unknown');
     }
 
     await Analytics.increment('jobsScraped');
@@ -238,6 +428,110 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
     
     if (!mappedJob.Description) return null;
 
+    // ✅ 5b. TITLE-BASED GERMAN CHECK — Skip AI entirely if title says it all
+    // "Enterprise BDR (German Speaking)" → reject instantly, zero AI cost
+    const titleGermanMatch = detectGermanRequiredFromTitle(mappedJob.JobTitle);
+    if (titleGermanMatch) {
+        console.log(`🏷️ [Title Reject] "${mappedJob.JobTitle}" — matched: "${titleGermanMatch.phrase}" — skipping AI`);
+
+        const fingerprint = generateJobFingerprint(mappedJob.JobTitle, mappedJob.Company, mappedJob.Description);
+        const testLogData = {
+            ...mappedJob,
+            GermanRequired: true,
+            Domain: deriveDomain(mappedJob.Department, mappedJob.JobTitle),
+            SubDomain: mappedJob.Department || 'Other',
+            ConfidenceScore: 1.0,
+            Evidence: { german_reason: `German required detected from job title: "${titleGermanMatch.phrase}"` },
+            FinalDecision: 'rejected',
+            RejectionReason: 'German language required (title)',
+            Status: 'rejected',
+            fingerprint: fingerprint,
+        };
+
+        const jobTestLog = createJobTestLog(testLogData, siteConfig.siteName);
+        await saveJobTestLog(jobTestLog);
+        console.log(`📝 [Test Log] Saved title-rejected job: ${mappedJob.JobTitle}`);
+        return null;
+    }
+
+    // ✅ 5c. PRE-AI NON-ENGLISH CHECK — Catch fully French/Spanish/etc. descriptions
+    // "Commercial(e) Terrain Indépendant" with French description → reject, skip AI
+    const nonEnglishMatch = detectNonEnglishDescription(mappedJob.Description);
+    if (nonEnglishMatch) {
+        console.log(`🌐 [Non-English Reject] "${mappedJob.JobTitle}" — ${nonEnglishMatch.ratio}% ${nonEnglishMatch.language} detected — skipping AI`);
+
+        const fingerprint = generateJobFingerprint(mappedJob.JobTitle, mappedJob.Company, mappedJob.Description);
+        const testLogData = {
+            ...mappedJob,
+            GermanRequired: false,
+            Domain: deriveDomain(mappedJob.Department, mappedJob.JobTitle),
+            SubDomain: mappedJob.Department || 'Other',
+            ConfidenceScore: 1.0,
+            Evidence: { german_reason: `Description is primarily in ${nonEnglishMatch.language} (${nonEnglishMatch.ratio}% marker density) — not an English-language job` },
+            FinalDecision: 'rejected',
+            RejectionReason: `Non-English description (${nonEnglishMatch.language})`,
+            Status: 'rejected',
+            fingerprint: fingerprint,
+        };
+
+        const jobTestLog = createJobTestLog(testLogData, siteConfig.siteName);
+        await saveJobTestLog(jobTestLog);
+        console.log(`📝 [Test Log] Saved non-English-rejected job: ${mappedJob.JobTitle}`);
+        return null;
+    }
+
+    // ✅ 5d. PRE-AI CITIZENSHIP CHECK — "German citizenship mandatory" ≠ language
+    // The AI correctly says german_required=false for these, but they still need rejection
+    const citizenshipMatch = detectCitizenshipRequirement(mappedJob.Description);
+    if (citizenshipMatch) {
+        console.log(`🛂 [Citizenship Reject] "${mappedJob.JobTitle}" — matched: "${citizenshipMatch.phrase}" — skipping AI`);
+
+        const fingerprint = generateJobFingerprint(mappedJob.JobTitle, mappedJob.Company, mappedJob.Description);
+        const testLogData = {
+            ...mappedJob,
+            GermanRequired: false,
+            Domain: deriveDomain(mappedJob.Department, mappedJob.JobTitle),
+            SubDomain: mappedJob.Department || 'Other',
+            ConfidenceScore: 1.0,
+            Evidence: { german_reason: `Citizenship/nationality requirement detected: "${citizenshipMatch.phrase}"` },
+            FinalDecision: 'rejected',
+            RejectionReason: 'Citizenship or nationality requirement',
+            Status: 'rejected',
+            fingerprint: fingerprint,
+        };
+
+        const jobTestLog = createJobTestLog(testLogData, siteConfig.siteName);
+        await saveJobTestLog(jobTestLog);
+        console.log(`📝 [Test Log] Saved citizenship-rejected job: ${mappedJob.JobTitle}`);
+        return null;
+    }
+
+    // ✅ 5e. PRE-AI OTHER LANGUAGE CHECK — "Dutch C2 required" / "French native speaker"
+    // Not an English-language job even if based in Berlin
+    const otherLangMatch = detectOtherLanguageRequired(mappedJob.Description);
+    if (otherLangMatch) {
+        console.log(`🗣️ [Other Language Reject] "${mappedJob.JobTitle}" — ${otherLangMatch.language}: "${otherLangMatch.phrase}" — skipping AI`);
+
+        const fingerprint = generateJobFingerprint(mappedJob.JobTitle, mappedJob.Company, mappedJob.Description);
+        const testLogData = {
+            ...mappedJob,
+            GermanRequired: false,
+            Domain: deriveDomain(mappedJob.Department, mappedJob.JobTitle),
+            SubDomain: mappedJob.Department || 'Other',
+            ConfidenceScore: 1.0,
+            Evidence: { german_reason: `Non-English/German primary language required: ${otherLangMatch.language} — "${otherLangMatch.phrase}"` },
+            FinalDecision: 'rejected',
+            RejectionReason: `${otherLangMatch.language.charAt(0).toUpperCase() + otherLangMatch.language.slice(1)} language required`,
+            Status: 'rejected',
+            fingerprint: fingerprint,
+        };
+
+        const jobTestLog = createJobTestLog(testLogData, siteConfig.siteName);
+        await saveJobTestLog(jobTestLog);
+        console.log(`📝 [Test Log] Saved other-language-rejected job: ${mappedJob.JobTitle}`);
+        return null;
+    }
+
     // ✅ 6. FINGERPRINT CHECK — Reuse old AI result if we already analyzed this job
     const fingerprint = generateJobFingerprint(mappedJob.JobTitle, mappedJob.Company, mappedJob.Description);
     const cachedResult = await findTestLogByFingerprint(fingerprint);
@@ -265,7 +559,8 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
         }
     }
 
-    // ✅ 7. FILTERING LOGIC - ONLY CHECK GERMAN REQUIREMENT
+    // ✅ 7. FILTERING LOGIC — AI only checks German requirement
+    // (Other language, non-English description, citizenship are already handled pre-AI in steps 5b-5e)
     let finalDecision = "accepted";
     let rejectionReason = null;
     

@@ -4,6 +4,7 @@ import { ashbyConfig } from './CompanyConfig/ashbyConfig.js';
 import { leverConfig } from './CompanyConfig/leverConfig.js';
 import { workdayConfig } from './CompanyConfig/Workdayconfig.js';
 import { workableConfig } from './CompanyConfig/Workableconfig.js';
+import { recruiteeConfig } from './CompanyConfig/Recruiteeconfig.js';
 
 export const SITES_CONFIG = [
 
@@ -15,6 +16,7 @@ export const SITES_CONFIG = [
   leverConfig ,
   workdayConfig,
   workableConfig,
+  recruiteeConfig,
 
 
 

@@ -155,14 +155,104 @@ function allKeysRpdExhausted() {
     return keyStates.every(ks => ks.isRpdExhausted());
 }
 
-// ─── Requirements Section Extractor ───────────────────────────────────────────
+// ─── Boilerplate Stripper ─────────────────────────────────────────────────────
+// Removes junk text that wastes token budget and displaces language requirements.
+// Run this BEFORE any snippet extraction.
+
+function stripBoilerplate(text) {
+    if (!text) return '';
+
+    let cleaned = text;
+
+    // Remove LinkedIn tracking tags: #LI-MR3, #LI-Remote, #LI-Hybrid, #LI-DNI, etc.
+    cleaned = cleaned.replace(/#LI-[A-Za-z0-9]+/g, '');
+
+    // Remove common trailing boilerplate (equal opportunity, AEDT, etc.)
+    // We keep the FIRST match only (some descriptions have multiple)
+    const boilerplateStarts = [
+        /\n\s*(?:we are (?:proud to be )?an equal opportunity employer)/i,
+        /\n\s*(?:equal employment opportunity)/i,
+        /\n\s*(?:AEDT|automated employment decision tool)/i,
+        /\n\s*(?:pursuant to the (?:san francisco|los angeles|new york))/i,
+    ];
+
+    for (const pattern of boilerplateStarts) {
+        const match = cleaned.match(pattern);
+        if (match && match.index > cleaned.length * 0.7) {
+            // Only strip if it's in the last 30% of the text
+            cleaned = cleaned.substring(0, match.index).trim();
+            break;
+        }
+    }
+
+    // Clean up extra whitespace left behind
+    cleaned = cleaned.replace(/\s{3,}/g, '\n\n').trim();
+
+    return cleaned;
+}
+
+// ─── German-Word Context Scanner ─────────────────────────────────────────────
+// Scans the FULL description for German trigger words. If found, extracts
+// 1000 chars before + 1000 chars after the match — focused context for the AI.
+// This is the user's approach: find German first, then give AI only the relevant part.
+//
+// Returns a ~2000 char snippet, or null if no German trigger found.
+
+const GERMAN_SCAN_PATTERNS = [
+    // Language requirement phrases
+    /\b(?:fluent|fluency|proficien(?:t|cy)|native)[\s\-]+(?:in\s+)?german/i,
+    /\bgerman[\s\-]+(?:fluent|native|required|mandatory|essential|speaker|proficiency)/i,
+    /\bgerman\s*\((?:fluent|native|required|mandatory|C[12]|B[12])\)/i,
+    /\bcommunication(?:\s+skills?)?\s+(?:in\s+)?(?:both\s+)?(?:english\s+and\s+)?german/i,
+    /\bgerman\s+(?:and|&|\+)\s+english/i,
+    /\benglish\s+(?:and|&|\+)\s+german/i,
+
+    // CEFR levels with German
+    /\bgerman\s*[\(\-]?\s*(?:A[12]|B[12]|C[12])[\+\)]?/i,
+    /\b(?:A[12]|B[12]|C[12])[\+\-]?\s*(?:level\s+)?(?:in\s+)?german/i,
+
+    // German-language phrases
+    /\bDeutschkenntnisse/i,
+    /\bVerhandlungssichere?s?\s*Deutsch/i,
+    /\bflie[ßs]end(?:e[srnm]?)?\s*Deutsch/i,
+    /\bMuttersprachler(?:in)?\b/i,
+    /\bDu\s+sprichst\b/i,
+    /\bDu\s+verf[üu]gst\b/i,
+    /\bgute[rns]?\s+Deutsch/i,
+    /\bSprachkenntnisse/i,
+];
+
+function scanForGermanContext(fullText) {
+    if (!fullText || fullText.length < 100) return null;
+
+    for (const pattern of GERMAN_SCAN_PATTERNS) {
+        const match = fullText.match(pattern);
+        if (!match) continue;
+
+        // Found a German trigger — grab 1000 chars before + 1000 chars after
+        const matchPos = match.index;
+        const contextStart = Math.max(0, matchPos - 1000);
+        const contextEnd = Math.min(fullText.length, matchPos + match[0].length + 1000);
+        const context = fullText.substring(contextStart, contextEnd).trim();
+
+        console.log(`[Snippet] 🎯 German trigger found: "${match[0]}" at position ${matchPos} — using focused 2000-char context`);
+        return context;
+    }
+
+    return null;
+}
+
+// ─── Requirements Section Extractor (improved) ───────────────────────────────
+// Only used as FALLBACK when no German trigger word is found.
 
 function extractRequirementsSection(text) {
     if (!text) return null;
 
     const sectionPatterns = [
-        /(?:^|\n)\s*(?:requirements|what you['']ll bring|what we['']re looking for|your profile|qualifications|what you bring|your expertise|who you are|must[- ]?have|minimum requirements|required skills|key requirements|what we expect|your skills|skills and experience|about you|what you need|desired qualifications|preferred qualifications)\s*[:\-]?\s*\n/im,
-        /(?:^|\n)\s*(?:anforderungen|was du mitbringst|dein profil|qualifikationen|was wir erwarten|deine skills|voraussetzungen|das bringst du mit|was sie mitbringen|ihr profil)\s*[:\-]?\s*\n/im,
+        // English headers (expanded — added missing ones from the report)
+        /(?:^|\n)\s*(?:requirements|what you['']ll bring|what we['']re looking for|your profile|qualifications|what you bring|your expertise|who you are|must[- ]?have|minimum requirements|required skills|key requirements|what we expect|your skills|skills and experience|about you|what you need|desired qualifications|preferred qualifications|you have|humble expectations|technical qualifications|core competencies|essential skills|your background|key qualifications|what you['']ll need|experience and skills|our requirements)\s*[:\-]?\s*\n/im,
+        // German headers (expanded)
+        /(?:^|\n)\s*(?:anforderungen|was du mitbringst|dein profil|qualifikationen|was wir erwarten|deine skills|voraussetzungen|das bringst du mit|was sie mitbringen|ihr profil|das solltest du mitbringen|deine qualifikationen|das zeichnet dich aus|das erwarten wir|dein hintergrund)\s*[:\-]?\s*\n/im,
     ];
 
     for (const pattern of sectionPatterns) {
@@ -172,24 +262,12 @@ function extractRequirementsSection(text) {
         const startIndex = match.index + match[0].length;
         const remainingText = text.substring(startIndex);
 
-        const nextSectionPattern = /\n\s*(?:benefits|what we offer|how we['']ll take care|our commitment|about us|about the|the team|your responsibilities|what you['']ll do|our offer|was wir bieten|unser angebot|location|salary|compensation|perks|why join|why us|apply|how to apply|nice to have|bonus points)\s*[:\-]?\s*\n/im;
+        const nextSectionPattern = /\n\s*(?:benefits|what we offer|how we['']ll take care|our commitment|about us|about the|the team|your responsibilities|what you['']ll do|our offer|was wir bieten|unser angebot|location|salary|compensation|perks|why join|why us|apply|how to apply|nice to have|bonus points|unsere benefits|was wir dir bieten)\s*[:\-]?\s*\n/im;
         const nextMatch = remainingText.match(nextSectionPattern);
-        const endIndex = nextMatch ? nextMatch.index : Math.min(remainingText.length, 2000);
+        const endIndex = nextMatch ? nextMatch.index : Math.min(remainingText.length, 3000);
         const section = remainingText.substring(0, endIndex).trim();
 
         if (section.length >= 100) return section;
-    }
-
-    const languagePatterns = [
-        /german|deutsch|german\s*(?:language|proficiency|fluency|skills|required|mandatory|native|b[12]|c[12])/i,
-        /fließend|muttersprachler|deutschkenntnisse|sprachkenntnisse/i,
-    ];
-    for (const pattern of languagePatterns) {
-        const match = text.match(pattern);
-        if (!match) continue;
-        const contextStart = Math.max(0, match.index - 500);
-        const contextEnd   = Math.min(text.length, match.index + match[0].length + 500);
-        return text.substring(contextStart, contextEnd).trim();
     }
 
     return null;
@@ -214,36 +292,70 @@ export async function analyzeJobWithGroq(jobTitle, description) {
     if (!description || description.length < 50) return null;
 
     // ── Build the prompt snippet ──────────────────────────────────────────────
-    const cleanDescription = StripHtml(description);
+    // FLOW:
+    //   1. Strip #LI tags and boilerplate (frees up character budget)
+    //   2. Scan full text for German trigger words
+    //   3. If German found → extract 1000 chars before + 1000 after (focused, ~2000 chars)
+    //   4. If not found → normal snippet (improved extraction, bigger tail)
+    //
+    const cleanDescription = stripBoilerplate(StripHtml(description));
     let descriptionSnippet;
 
-    if (cleanDescription.length <= 4000) {
+    // Step 1: Try German-word-first approach on the full text
+    const germanContext = scanForGermanContext(cleanDescription);
+
+    if (germanContext) {
+        // German trigger found — send ONLY the focused context to AI
+        // Much cheaper than sending 4000+ chars, and AI sees exactly the relevant part
+        descriptionSnippet = germanContext;
+    } else if (cleanDescription.length <= 4000) {
+        // Short description — send all of it
         descriptionSnippet = cleanDescription;
     } else {
+        // Long description, no German trigger found — use improved section extraction
         const requirementsSection = extractRequirementsSection(cleanDescription);
         if (requirementsSection && requirementsSection.length >= 100) {
-            const intro  = cleanDescription.substring(0, 1000);
-            const outro  = cleanDescription.slice(-500);
+            const intro = cleanDescription.substring(0, 1000);
+            const outro = cleanDescription.slice(-1000);
             descriptionSnippet = intro + "\n\n--- REQUIREMENTS SECTION ---\n" + requirementsSection + "\n--- END REQUIREMENTS ---\n\n" + outro;
-            if (descriptionSnippet.length > 5000) descriptionSnippet = descriptionSnippet.substring(0, 5000);
+            if (descriptionSnippet.length > 5500) descriptionSnippet = descriptionSnippet.substring(0, 5500);
         } else {
+            // No section found — take first 1500 + last 2500
             const first = cleanDescription.substring(0, 1500);
             const last  = cleanDescription.slice(-2500);
             descriptionSnippet = first + "\n...\n" + last;
         }
     }
 
-    const prompt = `Analyze this job description. Is German language REQUIRED?
+    const prompt = `Analyze this job posting. Is German language REQUIRED?
 
 ${descriptionSnippet}
 
-german_required = true if description says: fluent/fluency in German, German required/mandatory/essential, German native speaker, Muttersprachler, any CEFR German level (B2/C1/C2), Deutschkenntnisse, Verhandlungssicheres Deutsch, communication in both German and English, German language proficiency required, or entire text is written in German.
+german_required = true if the description contains ANY of these:
+- fluent/fluency in German, fluent German, German (fluent), fluent/native in German
+- German required/mandatory/essential, German is essential
+- German native speaker, native-level German, native German level
+- Muttersprachler, Muttersprachlerin
+- any CEFR German level: A1, A2, B1, B2, C1, C2 (including "B2+", "min. B1", "C1/C2")
+- Deutschkenntnisse, exzellente Deutschkenntnisse, Verhandlungssicheres Deutsch, Verhandlungssichere Deutschkenntnisse
+- fließend Deutsch, fließend Deutsch und Englisch, Du sprichst fließend Deutsch
+- communication in German and English, communication skills in German
+- German language proficiency, proficient in German, strong proficiency in German
+- good German language skills, good English and German language skills
+- entire text is written in German, or more than 40% of the text is German sentences
 
-german_required = false if: German not mentioned, German is only "nice to have"/"plus"/"preferred", only English required, or German appears only as a country/region name not a language requirement.
+IMPORTANT — OR-conditions: If German is listed as one option among alternatives (e.g. "German or French", "either German or Dutch", "fluency in German or another European language"), STILL set german_required = true. For jobs in Germany, being able to substitute another language does not remove the German requirement.
 
-evidence.german_reason: exact copy-paste quote from the text proving German is required. If not required: "No German language requirement found in description"
+IMPORTANT — Bilingual descriptions: If the description mixes German and English text, and the German portions contain language requirements (e.g. "Du verfügst über Deutschkenntnisse"), set german_required = true. Do NOT ignore German-language sections.
 
-Return JSON: {"german_required":bool,"confidence":0.0-1.0,"evidence":{"german_reason":"exact quote"}}`;
+IMPORTANT — Conditional headings: If German fluency appears under "You'll thrive if", "Nice to have", "Great if you have", or "Preferred" BUT the fluency level is C1/C2/native AND the role's core function requires German (e.g. selling to German customers, managing German accounts, coaching German workers), set german_required = true.
+
+german_required = false ONLY if: German is not mentioned at all, OR German appears only as a country/region name (not a language), OR German is listed as genuinely optional with no specific level (e.g. "German is a plus" without any CEFR level).
+
+evidence.german_reason: If german_required=true, copy the exact phrase from the text. If false: "No German language requirement found in description"
+
+Return ONLY this JSON, no other text:
+{"german_required":bool,"confidence":0.0-1.0,"evidence":{"german_reason":"exact quote"}}`;
 
     // ── Attempt loop ──────────────────────────────────────────────────────────
     for (let attempt = 1; attempt <= MAX_RETRIES_PER_CALL; attempt++) {

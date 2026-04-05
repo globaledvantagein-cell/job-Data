@@ -2,1381 +2,822 @@
 
 /**
  * ============================================================================
- * WORKABLE CAREER SITE DISCOVERY — GERMANY EDITION
+ * RECRUITEE CAREER SITE DISCOVERY — GERMANY EDITION
  * ============================================================================
  *
- * Usage:   node discoverWorkable.js
- * Output:  Copy-paste slug list ready for workableConfig.js
+ * Usage:   node discoverRecruitee.js
+ * Output:  Copy-paste subdomain list ready for recruiteeConfig.js
  *
- * ── HOW WORKABLE WORKS ──────────────────────────────────────────────────────
+ * ── HOW RECRUITEE WORKS ─────────────────────────────────────────────────────
  *
- * Workable is a hosted ATS where each company gets a subdomain.
- * Every company's public job board is accessible at:
+ * Recruitee is a hosted ATS where each company gets a subdomain.
+ * Every company's public job feed is accessible at:
  *
- *   GET https://www.workable.com/api/accounts/{slug}?details=true
+ *   GET https://{subdomain}.recruitee.com/api/offers/
  *
  * Returns JSON:
  *   {
- *     name: "Company Name",
- *     description: "...",
- *     jobs: [ { title, country, city, department, telecommuting, ... } ]
+ *     offers: [
+ *       {
+ *         id, title, slug, status, description, requirements,
+ *         company_name, department, employment_type_code,
+ *         experience_code, education_code, category_code,
+ *         remote, on_site, hybrid,
+ *         city, country, country_code, location,
+ *         locations: [ { id, city, country, country_code, state, ... } ],
+ *         careers_url, careers_apply_url,
+ *         tags: [ ... ],
+ *         salary: { min, max, currency, period },
+ *         published_at, created_at, updated_at, close_at,
+ *         min_hours, max_hours
+ *       }
+ *     ]
  *   }
  *
  * Key points:
- *   - No auth, no API key, completely public
- *   - ?details=true adds `description`, `industry`, `function`, `experience`, `education`
- *   - `country` = full name like "Germany" (not a country code)
- *   - `telecommuting` = boolean (true = remote)
- *   - 404 means the company doesn't use Workable or their slug is different
- *   - No pagination — all jobs returned in one response
+ *   - No auth, no API key, completely free & public
+ *   - All published jobs returned in one response (no pagination needed)
+ *   - `locations` array has structured data: city, country, country_code per location
+ *   - `remote`, `on_site`, `hybrid` are separate boolean flags
+ *   - `country_code` uses ISO 2-letter codes ("DE" for Germany)
+ *   - `employment_type_code` = "fulltime", "parttime", "contract", etc.
+ *   - `experience_code` = "entry_level", "mid_level", "senior_level", etc.
+ *   - 404 means the subdomain doesn't exist or company doesn't use Recruitee
+ *   - `description` and `requirements` are HTML — need stripping for analysis
  *
- * ── HOW TO FIND SLUGS ───────────────────────────────────────────────────────
+ * ── HOW TO FIND SUBDOMAINS ──────────────────────────────────────────────────
  *
  * 1. Visit a company's careers page
- * 2. If they use Workable, the URL will contain `.workable.com` or redirect there
- * 3. The subdomain IS the slug: `celonis.workable.com` → slug = `celonis`
- * 4. Also check job listings on LinkedIn — Workable apply URLs expose the slug
- * 5. Just try guessing: `{companyname}` or `{company-name}` — 404 if wrong
+ * 2. If they use Recruitee, the URL will be like {subdomain}.recruitee.com/...
+ * 3. The subdomain IS the slug: "solaris.recruitee.com" → subdomain = "solaris"
+ * 4. Check job listings on LinkedIn — Recruitee apply URLs expose the subdomain
+ * 5. Just guess: try "{companyname}" or "{company-name}" — 404 if wrong
+ * 6. Some companies use custom domains but the API still works on the subdomain
  *
- * ── HOW TO ADAPT THIS SCRIPT FOR OTHER ATS PLATFORMS ────────────────────────
+ * ── DIFFERENCE FROM WORKABLE DISCOVERY ──────────────────────────────────────
  *
- * This discovery script follows a universal pattern. To port it to a new ATS:
- *
- * STEP 1: Find the public API endpoint
- *   - Every ATS has a public job feed. Find it by:
- *     a) Checking developer docs
- *     b) Opening DevTools → Network tab on the company's careers page
- *     c) Looking for XHR/fetch calls that return job JSON
- *   - Pattern examples:
- *       Greenhouse:  GET  https://boards-api.greenhouse.io/v1/boards/{slug}/jobs
- *       Lever:       GET  https://api.lever.co/v0/postings/{slug}?mode=json
- *       Recruitee:   GET  https://{slug}.recruitee.com/api/offers
- *       SmartRecruiters: GET https://api.smartrecruiters.com/v1/companies/{slug}/postings
- *
- * STEP 2: Identify the slug format
- *   - Is it a subdomain? ({slug}.workable.com)  → replace SLUG in URL
- *   - Is it a path param? (boards-api.../boards/{slug}/...) → replace SLUG in path
- *   - Does it need combos? (Workday needs instance+site tested) → see discoverWorkdayGermany.js
- *
- * STEP 3: Identify the Germany filter field
- *   - Workable:    job.country === 'Germany'
- *   - Greenhouse:  job.location.name includes 'Germany' or German city
- *   - Lever:       job.country === 'de' or job.categories.location includes Germany
- *   - Recruitee:   job.location includes 'Germany'
- *   - SmartRec:    job.location.country === 'DE'
- *
- * STEP 4: Update these constants in this file:
- *   - ATS_NAME          → human-readable name for logs
- *   - buildUrl(slug)    → returns the API URL for a slug
- *   - fetchJobs(slug)   → fetches and returns { companyName, jobs }
- *   - hasGermany(job)   → returns true if job is Germany-based
- *   - companySlugs      → your list of slugs to test
- *
- * STEP 5: Run and collect results
- *   node discoverWorkable.js 2>&1 | tee results.txt
+ *  WHAT CHANGED           WORKABLE                    RECRUITEE
+ *  ─────────────────────  ──────────────────────────  ──────────────────────────
+ *  URL pattern            .../accounts/{slug}         {slug}.recruitee.com/api/offers/
+ *  Slug placement         Path parameter              Subdomain
+ *  Response root          { name, jobs: [...] }       { offers: [...] }
+ *  Company name field     data.name                   offer.company_name
+ *  Country field          job.country (full name)     locations[].country_code ("DE")
+ *  City field             job.city                    locations[].city
+ *  Remote field           job.telecommuting (bool)    offer.remote (bool)
+ *  Pagination             None (all in one)           None (all in one)
+ *  Description            Included with ?details=true Always included (HTML)
  *
  * ============================================================================
  */
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const ATS_NAME       = 'Workable';
-const CONCURRENCY    = 8;      // Parallel requests — keep ≤10 to avoid 429s
-const BATCH_DELAY_MS = 600;    // Delay between batches (ms)
-const TIMEOUT_MS     = 12000;  // Per-request timeout (ms)
+const ATS_NAME       = 'Recruitee';
+const CONCURRENCY    = 6;      // Parallel requests — Recruitee is tolerant but be polite
+const BATCH_DELAY_MS = 500;    // Delay between batches (ms)
+const TIMEOUT_MS     = 15000;  // Per-request timeout (ms)
 
 // ─── Already integrated — skip these ─────────────────────────────────────────
-// Add any slug you've already confirmed and added to workableConfig.js here.
-// This prevents re-testing known slugs on future runs.
+// Add any subdomain you've already confirmed and added to recruiteeConfig.js.
+// Prevents re-testing known subdomains on future runs.
 const ALREADY_INTEGRATED = new Set([
-  // From workableConfig.js initial list:
-  'personio','celonis','taxfix','raisin','sennder','idealo','staffbase',
-  'flaconi','grover','billie','pleo','forto','home24','westwing','comtravo',
-  'apaleo','kenjo','circula','candis','zeitgold','moonfare','auxmoney',
-  'smava','finanzguru','kontist','exporo','rebuy','momox','inkitt','limehome',
-  'gastrofix','lovoo','wooga','innogames','goodgame','coachhub','sharpist',
-  'masterplan','speexx','chatterbug','door2door','tier','miles','compredict',
-  'twaice','navvis','konux','roboception','magazino','heycar','finanzcheck',
-  'verivox','check24','meinestadt','immowelt','mcmakler','homeday','maklaro',
-  'scoperty','planradar','capmo','brainlab','clue','kaia-health','medbelle',
-  'numa','roadsurfer','holidu','egym','freeletics','gini','mondu','banxware',
-  'upvest','lemon-markets','nuri','creditshelf','companisto','exporo','scalable',
-  'quirion','elinvar','fincite','whitebox','nextmarkets','naga','getyourguide',
-  'hometogo','omio','aboutyou','outfittery','mytheresa','vinted','catawiki',
-  'adyen','mollie','messagebird','tink','trustly','klarna','wise','revolut',
-  'monzo','bunq','qonto','agicap','spendesk','yokoy','payhawk','sumup',
-  'contentsquare','dataiku','blablacar','deezer','uipath','camunda','rasa',
-  'cognigy','parloa','deepl','aleph-alpha','merantix','appliedai','mostly-ai',
-  'statice','understand-ai','fernride','enpal','thermondo','zolar',
-  'one-komma-five','sonnen','has-to-be','gridx','envelio',
+    // From recruiteeConfig.js initial list:
+    // (paste your existing subdomains here as you add them)
 ]);
 
 // ─── Germany detection ────────────────────────────────────────────────────────
 //
-// Workable gives us structured fields:
-//   job.country = "Germany" (full English name)
-//   job.city    = "Berlin"
-//   job.state   = "Berlin" (German Bundesland)
+// Recruitee gives us STRUCTURED data — much more reliable than Workable.
 //
-// Strategy: check country first (most reliable), then fall back to city.
-// For remote jobs (telecommuting=true), check if location text mentions Germany.
+// Priority order:
+//   1. locations[].country_code === "DE"    (most reliable — ISO code from Recruitee's DB)
+//   2. locations[].country === "Germany"    (human-readable fallback)
+//   3. locations[].city matches German city (for sloppy data entry)
+//   4. Flat fields: country_code, country, city (detail endpoint format)
+//   5. location string field               (last resort)
+//
+// NOTE: Unlike Workable where job.country is the ONLY reliable field,
+// Recruitee has a proper locations[] array with structured objects.
+// Each location has its own country_code — so a multi-location job like
+// "Berlin + Amsterdam" will have two location objects, and we check each one.
 
 const GERMAN_CITIES = [
-  'berlin','munich','münchen','hamburg','frankfurt','cologne','köln',
-  'stuttgart','düsseldorf','dusseldorf','dortmund','essen','leipzig',
-  'bremen','dresden','hanover','hannover','nuremberg','nürnberg',
-  'duisburg','bochum','wuppertal','bielefeld','bonn','münster','munster',
-  'karlsruhe','mannheim','augsburg','wiesbaden','mönchengladbach',
-  'gelsenkirchen','braunschweig','chemnitz','kiel','aachen','halle',
-  'magdeburg','freiburg','krefeld','lübeck','lubeck','oberhausen',
-  'erfurt','mainz','rostock','kassel','hagen','potsdam','leverkusen',
-  'oldenburg','heidelberg','darmstadt','regensburg','ingolstadt',
-  'wolfsburg','göttingen','gottingen','heilbronn','ulm','erlangen',
-  'ludwigshafen','konstanz','bayreuth','paderborn','reutlingen',
+    'berlin', 'munich', 'münchen', 'hamburg', 'frankfurt', 'cologne', 'köln',
+    'stuttgart', 'düsseldorf', 'dusseldorf', 'dortmund', 'essen', 'leipzig',
+    'bremen', 'dresden', 'hanover', 'hannover', 'nuremberg', 'nürnberg',
+    'duisburg', 'bochum', 'wuppertal', 'bielefeld', 'bonn', 'münster', 'munster',
+    'karlsruhe', 'mannheim', 'augsburg', 'wiesbaden', 'mönchengladbach',
+    'gelsenkirchen', 'braunschweig', 'chemnitz', 'kiel', 'aachen', 'halle',
+    'magdeburg', 'freiburg', 'krefeld', 'lübeck', 'lubeck', 'oberhausen',
+    'erfurt', 'mainz', 'rostock', 'kassel', 'hagen', 'potsdam', 'leverkusen',
+    'oldenburg', 'heidelberg', 'darmstadt', 'regensburg', 'ingolstadt',
+    'wolfsburg', 'göttingen', 'gottingen', 'heilbronn', 'ulm', 'erlangen',
+    'ludwigshafen', 'konstanz', 'bayreuth', 'paderborn', 'reutlingen',
+    'jena', 'schwerin', 'flensburg', 'esslingen', 'ludwigsburg',
+    'tübingen', 'tubingen',
 ];
 
-function hasGermany(job) {
-  // 1. Country field is most reliable — Workable uses full English country names
-  if (job.country) {
-    const c = job.country.toLowerCase().trim();
-    if (c === 'germany' || c === 'deutschland') return true;
-    // If a non-Germany country is explicitly set, reject immediately
-    // (avoids false-positives from city name matches in other countries)
-    if (c.length > 0) return false;
-  }
+function hasGermany(offer) {
+    // ── 1. Structured locations array (MOST RELIABLE for Recruitee) ──────────
+    // This is the key difference from Workable — Recruitee gives us an array
+    // of location objects, each with its own country_code, country, city, etc.
+    if (Array.isArray(offer.locations) && offer.locations.length > 0) {
+        for (const loc of offer.locations) {
+            // 1a. ISO country code — most reliable
+            if (loc.country_code && String(loc.country_code).toUpperCase() === 'DE') return true;
 
-  // 2. City field
-  if (job.city) {
-    const city = job.city.toLowerCase().trim();
-    if (GERMAN_CITIES.some(gc => city.includes(gc))) return true;
-  }
+            // 1b. Country name
+            const country = String(loc.country || '').toLowerCase().trim();
+            if (country === 'germany' || country === 'deutschland') return true;
 
-  // 3. State field (German Bundesländer)
-  if (job.state) {
-    const state = job.state.toLowerCase().trim();
-    const germanStates = [
-      'bavaria','bayarn','berlin','hamburg','hesse','hessen',
-      'north rhine-westphalia','nordrhein-westfalen','nrw',
-      'lower saxony','niedersachsen','saxony','sachsen',
-      'rhineland-palatinate','rheinland-pfalz','thuringia','thüringen',
-      'saxony-anhalt','sachsen-anhalt','mecklenburg','schleswig-holstein',
-      'saarland','bremen','brandenburg','baden-württemberg','baden-wurttemberg',
-    ];
-    if (germanStates.some(s => state.includes(s))) return true;
-  }
+            // 1c. City name fallback
+            const city = String(loc.city || '').toLowerCase().trim();
+            if (city && GERMAN_CITIES.some(gc => city.includes(gc))) return true;
+        }
+    }
 
-  // 4. Remote jobs: only count if location explicitly mentions Germany
-  if (job.telecommuting === true) {
-    const loc = `${job.city || ''} ${job.country || ''} ${job.state || ''}`.toLowerCase();
-    if (loc.includes('germany') || loc.includes('deutschland') ||
-        GERMAN_CITIES.some(gc => loc.includes(gc))) return true;
-  }
+    // ── 2. Flat country_code field (some responses use this instead) ─────────
+    if (offer.country_code && String(offer.country_code).toUpperCase() === 'DE') return true;
 
-  return false;
+    // ── 3. Flat country field ────────────────────────────────────────────────
+    const country = String(offer.country || '').toLowerCase().trim();
+    if (country === 'germany' || country === 'deutschland') return true;
+    // If a non-Germany country is explicitly set, reject
+    if (country.length > 0) return false;
+
+    // ── 4. Flat city field ──────────────────────────────────────────────────
+    const city = String(offer.city || '').toLowerCase().trim();
+    if (city && GERMAN_CITIES.some(gc => city.includes(gc))) return true;
+
+    // ── 5. Location string field (least reliable) ────────────────────────────
+    const locationStr = String(offer.location || '').toLowerCase();
+    if (locationStr.includes('germany') || locationStr.includes('deutschland')) return true;
+    if (GERMAN_CITIES.some(gc => locationStr.includes(gc))) return true;
+
+    return false;
 }
 
-// ─── Core fetch function ───────────────────────────────────────────────────────
+// ─── Core fetch function ──────────────────────────────────────────────────────
 //
-// TO ADAPT FOR ANOTHER ATS: Replace this function.
-// It must return: { companyName: string, jobs: array } | null
+// WHAT CHANGED FROM WORKABLE:
 //
-// For ATS with multiple URL combos to try (like Workday), loop through combos
-// and return on first success. See discoverWorkdayGermany.js for that pattern.
+// Workable:   GET https://www.workable.com/api/accounts/{slug}?details=true
+//             → slug goes in the PATH
+//             → returns { name: "Company", jobs: [...] }
+//
+// Recruitee:  GET https://{slug}.recruitee.com/api/offers/
+//             → slug goes in the SUBDOMAIN
+//             → returns { offers: [...] }
+//             → company_name is INSIDE each offer object, not at the top level
+//
+// This is the #1 thing you change when adapting for a new ATS.
 
-function buildUrl(slug) {
-  // ?details=true adds: description, industry, function, experience, education
-  return `https://www.workable.com/api/accounts/${slug}?details=true`;
+function buildUrl(subdomain) {
+    return `https://${subdomain}.recruitee.com/api/offers/`;
 }
 
-async function fetchJobs(slug) {
-  const url  = buildUrl(slug);
-  const ctrl = new AbortController();
-  const tid  = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+async function fetchJobs(subdomain) {
+    const url  = buildUrl(subdomain);
+    const ctrl = new AbortController();
+    const tid  = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
 
-  try {
-    const res = await fetch(url, {
-      method:  'GET',
-      signal:  ctrl.signal,
-      headers: {
-        'Accept':     'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-      },
-    });
-    clearTimeout(tid);
+    try {
+        const res = await fetch(url, {
+            method:  'GET',
+            signal:  ctrl.signal,
+            headers: {
+                'Accept':     'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+            },
+        });
+        clearTimeout(tid);
 
-    if (!res.ok) return null;  // 404 = not on Workable, 429 = rate limited
+        if (!res.ok) return null;  // 404 = not on Recruitee
 
-    const data = await res.json();
-    if (!data.jobs || !Array.isArray(data.jobs)) return null;
+        const data = await res.json();
 
-    return {
-      companyName: data.name || slug,
-      jobs:        data.jobs,
-    };
-  } catch {
-    clearTimeout(tid);
-    return null;
-  }
+        // ── KEY DIFFERENCE: Recruitee wraps jobs in "offers" not "jobs" ──────
+        if (!data.offers || !Array.isArray(data.offers)) return null;
+
+        // ── KEY DIFFERENCE: company_name is per-offer, not top-level ─────────
+        // We grab it from the first offer. If no offers, fall back to subdomain.
+        const companyName = data.offers.length > 0
+            ? (data.offers[0].company_name || subdomain)
+            : subdomain;
+
+        // Filter to only published offers
+        const publishedOffers = data.offers.filter(o => !o.status || o.status === 'published');
+
+        return {
+            companyName,
+            jobs: publishedOffers,
+        };
+    } catch {
+        clearTimeout(tid);
+        return null;
+    }
 }
 
-// ─── Slug list ────────────────────────────────────────────────────────────────
+// ─── Subdomain list ───────────────────────────────────────────────────────────
 //
-// How to build this list:
-//   - Start with known companies that use Workable (LinkedIn, their careers page)
-//   - Try the company name as-is, with hyphens for spaces
-//   - Common patterns: "n26" / "trade-republic" / "hellofresh"
-//   - Wrong slugs just 404 — no cost to trying
+// HOW TO BUILD THIS LIST:
+//
+// 1. Visit company careers pages — look for ".recruitee.com" in the URL
+// 2. Check LinkedIn job postings — Recruitee apply URLs contain the subdomain
+// 3. Google: site:recruitee.com "Germany" OR "Berlin" OR "Munich"
+// 4. Try common patterns: company name, company-name, companyname
+// 5. Wrong subdomains just 404 — no cost to trying
+//
+// SLUG FORMAT:
+//   - Always lowercase
+//   - Hyphens for spaces: "trade-republic" not "traderepublic"
+//   - Sometimes has suffixes: "billie1", "adjust1", "moss1" (when base name is taken)
+//   - No trailing slashes needed
 
-const companySlugs = [
+const companySubdomains = [
 
-  // ── German startups / scale-ups ───────────────────────────────────────────
-  'pitch',           // Berlin presentation tool
-  'blinkist',        // Berlin book summaries
-  'ecosia',          // Berlin green search
-  'komoot',          // Berlin route planner
-  'vivid-money',     // Berlin neobank
-  'getmoss',         // Berlin spend management
-  'liqid',           // Berlin digital wealth
-  'ginmon',          // Frankfurt robo-advisor
-  'weltsparen',      // Berlin savings
-  'deposit-solutions', // Berlin savings marketplace
-  'zinsbaustein',    // Berlin real estate
-  'bergfuerst',      // Berlin crowdinvesting
-  'backmarket',      // Paris/Berlin refurb devices
-  'grover-de',       // Berlin tech rental
-  'rebuy',           // Berlin recommerce
-  'momox-de',        // Berlin secondhand
-  'aboutyou-group',  // Hamburg fashion tech
-  'fashionette',     // Düsseldorf fashion
-  'stylight',        // Munich fashion aggregator
-  'lovescout24',     // Berlin dating
-  'onefootball',     // Berlin football app
-  'kaia',            // Munich digital health
-  'selfapy',         // Berlin mental health
-  'mindable',        // Berlin mental health
-  'ottonova',        // Munich digital health insurer
-  'teleclinic',      // Munich telehealth
-  'mednow',          // Berlin digital pharmacy
-  'zava',            // London/Berlin telehealth
-  'instafreight',    // Berlin logistics
-  'sennder-de',      // Berlin freight (alternate slug)
-  'timocom',         // Düsseldorf logistics platform
-  'freighthub',      // Berlin freight
-  'shipmonk',        // Berlin fulfillment
-  'parcellab',       // Munich post-purchase
-  'sendcloud',       // Eindhoven/DE parcel
-  'seven-senders',   // Berlin parcel delivery
-  'zenjob',          // Berlin flexible staffing
-  'coyo',            // Hamburg employee comms
-  'usercentrics',    // Munich consent mgmt
-  'didomi-de',       // Paris/Berlin consent
-  'onetrust',        // Atlanta/Berlin privacy
-  'collibra',        // Brussels/Berlin data governance
-  'celonis-munich',  // Munich process mining (alt)
-  'signavio-de',     // Berlin process mgmt
-  'leanix',          // Bonn enterprise arch
-  'aris',            // Saarbrücken process mgmt
-  'symbio',          // Munich PLM
-  'centric',         // Netherlands/DE software
-  'adito',           // Rosenheim CRM
-  'scopevisio',      // Bonn ERP
-  'weclapp',         // Frankfurt ERP
-  'xentral',         // Augsburg ERP
-  'actindo',         // Dortmund e-commerce ERP
-  'plentymarkets',   // Kassel e-commerce
-  'shopware',        // Schöppingen e-commerce
-  'novalnet',        // Munich payments
-  'heidelpay',       // Heidelberg payments
-  'computop',        // Bamberg payments
-  'payone',          // Frankfurt payments
-  'unzer',           // Heidelberg payments
-  'concardis',       // Frankfurt payments
-  'elavon-de',       // Cork/DE payments
-  'payworks',        // Munich POS payments
-  'orderbird',       // Berlin POS
-  'gastromatic',     // Hamburg HR software
-  'personizer',      // Freiburg HR
-  'rexx-systems',    // Hamburg HR
-  'umantis',         // Konstanz HR
-  'haufe-umantis',   // Konstanz HR
-  'cegid',           // Lyon/Berlin HR
-  'sage-de',         // Newcastle/Berlin HR
-  'bmdc',            // Berlin marketing
-  'facelift',        // Hamburg social media mgmt
-  'emplifi',         // Prague/Berlin social
-  'brandwatch',      // Brighton/Berlin social analytics
-  'talkwalker',      // Luxembourg/Berlin analytics
-  'mention',         // Paris/Berlin monitoring
-  'uberall',         // Berlin local marketing
-  'yext-de',         // NYC/Berlin listings
-  'searchmetrics',   // Berlin SEO
-  'sistrix',         // Bonn SEO
-  'ryte',            // Munich website intelligence
-  'uptain',          // Hamburg e-commerce opt.
-  'econda',          // Karlsruhe analytics
-  'etracker',        // Hamburg analytics
-  'webtrekk',        // Berlin analytics (acquired by Mapp)
-  'mapp-de',         // San Diego/Berlin analytics
-  'intelliad',       // Erlangen attribution
-  'adtriba',         // Hamburg attribution
-  'exactag',         // Hamburg attribution
-  'crossengage',     // Berlin customer data
-  'xtremepush',      // Dublin/Berlin push
-  'optilyz',         // Berlin direct mail
-  'mailingwork',     // Limbach-O. email
-  'cleverreach',     // Rastede email
-  'rapidmail',       // Freiburg email
-  'newsletter2go',   // Berlin email
-  'klicktipp',       // Leipzig email
-  'artegic',         // Bonn digital marketing
-  'evalanche',       // Grasbrunn marketing auto
-  'sc-networks',     // Grasbrunn email auto
-  'mautic-de',       // Berlin open source mktg
-  'hubspot-de',      // Cambridge/Berlin CRM (alt)
-  'zammad',          // Munich help desk
-  'serview',         // Bad Homburg ITSM
-  'matrix42-de',     // Frankfurt ITSM
-  'baramundi-de',    // Augsburg endpoint mgmt
-  'docuware-de',     // Germering DMS
-  'd-velop',         // Gescher DMS
-  'windream',        // Bochum ECM
-  'easy-software',   // Mülheim ECM
-  'fabasoft',        // Linz/Munich ECM
-  'ceyoniq',         // Bielefeld ECM
-  'optimal-systems', // Berlin ECM
-  'intrexx',         // Freiburg low-code
-  'bpanda',          // Berlin BPM
-  'signavio-low-code', // Berlin BPM
-  'fluxus',          // Berlin low-code
-  'axon-ivy',        // Zurich/DE BPM
-  'finanzplaner',    // Munich fintech
-  'ginlo',           // Munich secure messaging
-  'idnow-de',        // Munich identity (alt)
-  'authada',         // Darmstadt identity
-  'webid',           // Berlin identity
-  'veriff-de',       // Tallinn/Berlin identity
-  'onfido-de',       // London/Berlin identity
-  'jumio-de',        // Scotts Valley/Berlin identity
-  'fourthline',      // Amsterdam/Berlin KYC
-  'comply-advantage', // London/Berlin AML
-  'riskified-de',    // Tel Aviv/Berlin fraud
-  'forter-de',       // Tel Aviv/Berlin fraud
-  'signifyd-de',     // San Jose/Berlin fraud
-  'kount-de',        // Boise/Berlin fraud
-  'seon-de',         // Budapest/Berlin fraud
-  'nethone',         // Warsaw/Berlin fraud
-  'ravelin-de',      // London/Berlin fraud
-  'fraugster',       // Berlin fraud (AI)
-  'risk-ident',      // Hamburg fraud
-  'tonbeller',       // Darmstadt compliance
-  'pwc-de',          // Frankfurt consulting
-  'kpmg-de',         // Frankfurt consulting
-  'ey-de',           // Frankfurt consulting
-  'deloitte-de',     // Düsseldorf consulting
-  'accenture-de',    // Frankfurt consulting
-  'mck-de',          // Düsseldorf consulting
-  'bcg-de',          // Munich consulting
+    // ══════════════════════════════════════════════════════════════════════════
+    //  A — GERMAN STARTUPS & SCALE-UPS (most likely to have Germany jobs)
+    // ══════════════════════════════════════════════════════════════════════════
 
-  // ── European companies with Germany offices ───────────────────────────────
-  'revolut-de',      // London fintech (alt)
-  'n26-tech',        // Berlin neobank (alt)
-  'paysend',         // London transfers
-  'curve',           // London card aggregator
-  'izettle',         // Stockholm payments
-  'bambora',         // Stockholm payments
-  'nets-de',         // Copenhagen payments
-  'nexi-de',         // Milan payments
-  'worldline',       // Bezons payments
-  'concardis-de',    // Frankfurt payments
-  'wirecard-de',     // Munich payments
-  'paypal-de',       // San Jose/Berlin
-  'braintree-de',    // Chicago/Berlin
-  'stripe-de',       // San Francisco/Berlin
-  'checkout-de',     // London/Berlin
-  'adyen-de',        // Amsterdam (alt)
-  'mollie-de',       // Amsterdam (alt)
-  'qonto-de',        // Paris (alt)
-  'agicap-de',       // Lyon (alt)
-  'spendesk-de',     // Paris (alt)
-  'yokoy-de',        // Zurich (alt)
-  'payhawk-de',      // Sofia (alt)
-  'pleo-de',         // Copenhagen (alt)
-  'moss-de',         // Berlin (already Ashby but trying workable alt)
-  'soldo-de',        // London spend mgmt
-  'equals-de',       // London spend mgmt
-  'paycircle',       // Mannheim payroll
-  'personio-payroll', // Munich payroll alt
-  'datev-lodas',     // Nuremberg payroll
-  'lexware-de',      // Freiburg payroll
-  'sage-payroll-de', // payroll
-  'lohnfix',         // Berlin payroll
-  'payfit-de',       // Paris payroll
-  'bitkom',          // Berlin IT association
-  'giga-group',      // Berlin tech
-  'arlanis',         // Hamburg Salesforce consulting
-  'sinkm',           // Hannover Salesforce
-  'te-systems',      // Bonn Salesforce
-  'pikon',           // Saarbrücken SAP consulting
-  'convista',        // Cologne SAP
-  'natuvion',        // Walldorf SAP
-  'clarivo',         // Frankfurt SAP
-  'accsense',        // Hamburg SAP
-  'itelligence',     // Bielefeld SAP
-  'ntt-data-business-solutions', // Bielefeld SAP
-  'steelcase-de',    // Grand Rapids/Munich furniture
-  'nespresso-de',    // Lausanne/DE
-  'hugo-boss',       // Metzingen fashion
-  'tamaris',         // Düsseldorf shoes
-  'deichmann',       // Essen shoes
-  'esprit-de',       // Düsseldorf fashion
-  's-oliver',        // Rottendorf fashion
-  'gerry-weber',     // Halle/Westfalen fashion
-  'betty-barclay',   // Wiesloch fashion
-  'brax',            // Herford fashion
-  'bausback',        // Heidelberg fashion
+    // ── Berlin Fintech ──────────────────────────────────────────────────────
+    'solaris', 'solarisgroup', 'solarisbank',
+    'n26', 'n26-tech',
+    'trade-republic', 'traderepublic',
+    'raisin', 'raisin-ds', 'weltsparen',
+    'moonfare',
+    'billie', 'billie1', 'billie-io',
+    'penta', 'penta-banking',
+    'kontist',
+    'smava',
+    'auxmoney',
+    'liqid',
+    'ginmon',
+    'fincompare',
+    'bonify',
+    'creditshelf',
+    'companisto',
+    'exporo',
+    'scalable', 'scalable-capital',
+    'vivid', 'vivid-money',
+    'mondu',
+    'banxware',
+    'upvest',
+    'lemon-markets',
+    'moss', 'moss1', 'getmoss',
 
-  // ── US tech companies with Germany offices ────────────────────────────────
-  'mongodb-de',
-  'elastic-de',
-  'confluent-de',
-  'databricks-de',
-  'snowflake-de',
-  'datadog-de',
-  'splunk-de',
-  'dynatrace-de',
-  'newrelic-de',
-  'sumoLogic-de',
-  'pagerduty-de',
-  'launchdarkly-de',
-  'amplitude-de',
-  'mixpanel-de',
-  'segment-de',
-  'braze-de',
-  'iterable-de',
-  'klaviyo-de',
-  'sendgrid-de',
-  'mailgun-de',
-  'twilio-de',
-  'zendesk-de',
-  'hubspot-careers',
-  'intercom-de',
-  'freshdesk-de',
-  'freshworks-de',
-  'salesforce-de',
-  'servicenow-de',
-  'workday-de',
-  'sap-de',
-  'oracle-de',
-  'ibm-de',
-  'microsoft-de',
-  'google-de',
-  'amazon-de',
-  'meta-de',
-  'apple-de',
-  'netflix-de',
-  'spotify-de',
-  'uber-de',
-  'airbnb-de',
-  'palantir-de',
-  'atlassian-de',
-  'github-de',
-  'gitlab-de',
-  'jetbrains-de',
-  'hashicorp-de',
-  'cloudflare-de',
-  'okta-de',
-  'crowdstrike-de',
-  'sentinelone-de',
-  'paloalto-de',
-  'fortinet-de',
-  'checkpoint-de',
-  'rapid7-de',
-  'tenable-de',
-  'qualys-de',
-  'cyberark-de',
-  'sailpoint-de',
-  'varonis-de',
-  'proofpoint-de',
-  'mimecast-de',
-  'knowbe4-de',
-  'darktrace-de',
-  'snyk-de',
-  'veracode-de',
-  'checkmarx-de',
-  'sonatype-de',
-  'jfrog-de',
-  'aquasecurity',
-  'lacework-de',
-  'orca-de',
-  'wiz-de',
-  'sysdig-de',
-  'noname-security',
-  'salt-security',
-  'wallarm',
-  'signal-sciences',
-  'fastly-de',
-  'akamai-de',
-  'cloudfront-de',
-  'imperva-de',
-  'f5-de',
-  'radware-de',
-  'netscout-de',
-  'gigamon-de',
-  'extrahop-de',
-  'darktrace',
-  'vectra-de',
-  'exabeam-de',
-  'securonix-de',
-  'logrhythm-de',
-  'ibm-qradar',
-  'splunk-soar',
-  'chronicle-de',
-  'siemplify',
-  'palo-alto-cortex',
-  'microsoft-sentinel',
-  'aws-security',
-  'google-chronicle',
-  'fireeye-de',
-  'mandiant-de',
-  'crowdstrike-falcon',
+    // ── Berlin / Germany E-commerce & Marketplaces ──────────────────────────
+    'aboutyou', 'aboutyou-group', 'about-you',
+    'grover', 'grover-group', 'grover-de',
+    'rebuy',
+    'momox', 'momox-de',
+    'home24',
+    'westwing', 'westwing-de',
+    'outfittery',
+    'mytheresa',
+    'flaconi', 'flaconi-de',
+    'catawiki', 'catawiki-de',
+    'vinted', 'vinted-de',
+    'backmarket', 'backmarket-de',
+    'idealo', 'idealo-de',
 
-  // ── More German Mittelstand / scale-ups ───────────────────────────────────
-  'sievert',         // Osnabrück materials
-  'goldbeck',        // Bielefeld construction
-  'max-boegl',       // Neumarkt construction
-  'züblin',          // Stuttgart construction
-  'ed-züblin',       // Stuttgart construction
-  'hochtief-de',     // Essen construction
-  'bilfinger-de',    // Mannheim engineering
-  'implenia-de',     // Zürich/DE construction
-  'peri-formwork',   // Weißenhorn formwork
-  'doka-de',         // Amstetten/DE formwork
-  'harsco-de',       // Camp Hill/DE industrial
-  'metallbau-de',    // steel construction
-  'rwe-de',          // Essen energy
-  'eon-de',          // Essen energy
-  'enbw-de',         // Karlsruhe energy
-  'vattenfall',      // Stockholm/Berlin energy
-  'uniper-de',       // Düsseldorf energy
-  'wintershall-dea', // Hamburg oil gas
-  'sbm-offshore-de', // Amsterdam/Hamburg offshore
-  'vopak-de',        // Rotterdam/Hamburg terminals
-  'rhenus-de',       // Holzwickede logistics
-  'dachser-de',      // Kempten logistics
-  'hellmann-de',     // Osnabrück logistics
-  'fiege-de',        // Greven logistics
-  'noerpel',         // Ulm logistics
-  'fercam-de',       // Bolzano/DE logistics
-  'senator-international', // Hamburg freight
-  'ahlers-de',       // Hamburg forwarding
-  'kn-de',           // Schindellegi/DE forwarding
-  'dsv-de',          // Hedehusene/DE forwarding
-  'dhl-de',          // Bonn parcel
-  'ups-de',          // Atlanta/DE parcel
-  'fedex-de',        // Memphis/DE express
-  'hermes-de',       // Hamburg parcel
-  'gls-de',          // Brussels/DE parcel
-  'dpd-de',          // Aschaffenburg parcel
-  'db-schenker-de',  // Frankfurt freight
-  'bmw-group',       // Munich auto
-  'audi-jobs',       // Ingolstadt auto
-  'porsche-jobs',    // Stuttgart auto
-  'volkswagen-jobs', // Wolfsburg auto
-  'mercedes-jobs',   // Stuttgart auto
-  'ford-de',         // Cologne auto
-  'opel',            // Rüsselsheim auto
-  'honda-de',        // Offenbach auto
-  'toyota-de',       // Cologne auto
-  'hyundai-de',      // Offenbach auto
-  'kia-de',          // Frankfurt auto
-  'stellantis-de',   // Amsterdam/DE auto
-  'renault-de',      // Brühl auto
-  'peugeot-de',      // Köln auto
-  'volvo-de',        // Gothenburg/Hamburg auto
-  'scania-de',       // Södertälje/Koblenz trucks
-  'iveco-de',        // Turin/Ulm trucks
-  'daf-trucks-de',   // Eindhoven/DE trucks
-  'wabco-de',        // Brussels/Hannover commercial
-  'knorr-bremse-de', // Munich brakes
-  'haldex-de',       // Landskrona/DE brakes
-  'continental-de',  // Hannover tires/auto
-  'michelin-de',     // Clermont-Ferrand/DE
-  'pirelli-de',      // Milan/DE tires
-  'goodyear-de',     // Akron/DE tires
-  'dunlop-de',       // Hanau tires
-  'bridgestone-de',  // Tokyo/DE tires
-    'wacker','wacker-chemie','evonik-industries','saltigo','currenta',
-  'altana','altana-ag','merck','merck-group','emd','emdsigma',
-  'brenntag','brenntag-ag','clariant','clariant-ag',
-  'h-c-starck','hcstarck','schlenk','schlenk-metallic',
-  'fuchs','fuchs-petrolub','fuchs-oil',
+    // ── Berlin / Germany Travel & Mobility ──────────────────────────────────
+    'omio', 'omio-de',
+    'getyourguide', 'getyourguide-tech',
+    'hometogo', 'hometogo-de',
+    'comtravo',
+    'tourlane',
+    'flixbus', 'flixmobility', 'flix-tech',
+    'door2door', 'door2door-de',
+    'freenow', 'freenow-de',
+    'miles', 'miles-mobility',
+    'tier', 'tier-mobility', 'tiermobility',
+    'sixt', 'sixt-se',
+    'roadsurfer',
+    'holidu',
+    'limehome', 'limehome-de',
+    'numa', 'numa-de',
+    'volocopter',
+    'lilium',
 
-  // ── Engineering / Machinery ───────────────────────────────────────────────
-  'kuka','duerr','duerr-ag','voith','voith-group',
-  'gea','gea-group','krones','krones-ag',
-  'heidelberger','manz','aixtron','suss-microtec',
-  'trumpf','festo','sick','beckhoff','wago',
-  'phoenix-contact','lapp','murrelektronik','turck','harting',
-  'weidmuller','rittal','eaton','eaton-de','atlas-copco','atlas-copco-de',
-  'smc','smc-de','parker','parker-hannifin',
-  'hella','hella-de','knorr-bremse','brose','webasto',
-  'continental','continental-ag','zf','zf-group','schaeffler',
-  'mahle','mahle-group','brose-group',
-  'reinz','victor-reinz','dana','dana-de',
-  'grob','chiron','dmg-mori','rational','rational-ag','brita',
+    // ── Berlin / Germany HR & Recruiting Tech ───────────────────────────────
+    'personio', 'personio-de',
+    'kenjo',
+    'honeypot',
+    'softgarden',
+    'circula',
+    'leapsome', 'leapsome-de',
+    'small-improvements',
+    'workpath',
+    'perdoo',
+    'factorial', 'factorial-de',
+    'hibob', 'hibob-de',
+    'coachhub',
+    'sharpist',
+    'masterplan', 'masterplan-de',
+    'speexx',
+    'chatterbug',
 
-  // ── Automotive OEM / EV ───────────────────────────────────────────────────
-  'bmw','bmwgroup','porsche','porsche-ag',
-  'audi','audi-ag','mercedes','mercedes-benz','mercedesbenz',
-  'volkswagen','volkswagen-ag',
-  'man','man-truck','man-truckbus','daimler',
-  'traton','traton-group','moia-mobility',
-  'cariad','cariad-se','etas','etas-de',
-  'porsche-digital','porscheconsulting','mhp','mhp-consulting',
-  'e-go','sono-motors','sono','sono-group',
-  'electric-brands','electricbrands',
+    // ── Berlin / Germany SaaS & DevTools ────────────────────────────────────
+    'contentful', 'contentful-de',
+    'celonis', 'celonis-ai', 'celonis-ems',
+    'signavio', 'signavio-de',
+    'staffbase', 'staffbase-de',
+    'usercentrics', 'usercentrics-de',
+    'leanix',
+    'pitch', 'pitch-de',
+    'productsup',
+    'movingimage',
+    'jimdo',
+    'eyeo',
+    'adjust', 'adjust1', 'adjust-2',
+    'appsflyer-de',
+    'braze-de',
 
-  // ── Electronics / Semiconductor ───────────────────────────────────────────
-  'siemens','siemens-ag','siemens-energy','siemens-mobility',
-  'siemens-healthineers','osram','ams-osram','osram-gmbh',
-  'carl-zeiss','zeiss','zeiss-group',
-  'rohde-schwarz','rohdeschwarz',
-  'bosch','bosch-group','bosch-rexroth',
+    // ── Berlin / Germany AI & DeepTech ──────────────────────────────────────
+    'merantix', 'merantix-ai',
+    'aleph-alpha', 'alephalpha', 'aleph-alpha-de',
+    'deepl',
+    'cognigy', 'cognigy-de',
+    'rasa', 'rasa-de',
+    'parloa', 'parloa-de',
+    'mostly-ai',
+    'understand-ai',
+    'fernride',
+    'twaice', 'twaice-de',
+    'compredict',
+    'konux', 'konux-de',
+    'navvis',
+    'riskmethods',
+    'neuroflash',
 
-  // ── Telecom / Media / IT ──────────────────────────────────────────────────
-  'deutsche-telekom','telekom','t-systems','t-systems-de',
-  'united-internet','1und1','drillisch','freenet',
-  'otto-group','otto','otto-tech',
-  'axel-springer','axelspringer','springer-nature','springernature',
-  'bertelsmann','bertelsmann-ag','rtlgroup','rtl',
-  'prosiebensat1','prosiebensat1media',
-  'xing','new-work','newwork','kununu',
-  'bechtle','cancom','computacenter','ntt-data-de',
-  'adesso','msg-group','msg','gft','gft-technologies',
-  'valantic','exxeta','maibornwolff','maibornwolff-de',
-  'blue-yonder','blueyonder','sap-fioneer',
-  'software-ag','softwareag','nemetschek','nemetschek-group',
-  'datev','datev-eg','addison','haufe','haufe-group',
-  'lexware','buhl','sevdesk','weclapp','xentral',
-  'scopevisio','weclapp-de','actindo',
-  'd-velop','dvelop','docuware','windream',
-  'matrix42','baramundi',
+    // ── Berlin / Germany Health & Biotech ────────────────────────────────────
+    'kaia', 'kaia-health', 'kaia-health-de',
+    'ada-health', 'ada',
+    'clue', 'clue-app', 'clue-app-de',
+    'teleclinic', 'teleclinic-de',
+    'doctolib', 'doctolib-de',
+    'ottonova',
+    'medbelle', 'medbelle-de',
+    'avi-medical',
+    'brainlab', 'brainlab-de',
+    'amboss', 'amboss-medical',
+    'smartpatient',
 
-  // ── Banking / Finance ─────────────────────────────────────────────────────
-  'commerzbank','commerzbank-ag','deutsche-bank','deutschebank',
-  'dz-bank','dzbank','lbbw','helaba','bayernlb','nord-lb','nordlb',
-  'kfw','kfw-group','deka','dekabank','union-investment',
-  'dws','dws-group','allianz','allianz-se','allianz-technology',
-  'munich-re','munichre','ergo','ergo-group','ergo-digital',
-  'hannover-re','hannoverrre','talanx','hdi-group','signal-iduna',
-  'gothaer','debeka','huk-coburg','lvm','devk','vhv',
-  'provinzial','sparkassen-versicherung','sv-versicherung',
-  'barmenia','concordia','volkswohl-bund','cosmosdirekt',
-  'axa-de','generali-de','zurich-de','swiss-life-de',
-  'clark-insurance','wefox','getsafe','friday-insurance',
-  'element-insurance',
+    // ── Berlin / Germany Energy & CleanTech ──────────────────────────────────
+    'enpal', 'enpal-solar',
+    'zolar',
+    'thermondo',
+    '1komma5', '1komma5grad', 'one-komma-five',
+    'sonnen', 'sonnen-de',
+    'gridx',
+    'envelio',
+    'solarwatt',
+    'next-kraftwerke',
+    'ecoligo',
+    'infarm',
 
-  // ── Pharma / MedTech / Life Sciences ──────────────────────────────────────
-  'boehringer','boehringeringelheim',
-  'fresenius','fresenius-kabi','fresenius-medical-care',
-  'stryker-de','bbraun','b-braun','b-braun-melsungen',
-  'ottobock','ottobock-se','draeger','draeger-werk',
-  'eppendorf','eppendorf-ag','sartorius','sartorius-ag',
-  'biotronik','biotronik-de','qiagen','qiagen-de',
-  'evotec','evotec-ag','curevac','curevac-ag','biontech','biontech-ag',
-  'immatics','miltenyi','miltenyi-biotec',
-  'siemens-healthineers-de','ge-healthcare-de','philips-de',
-  'biotest','biotest-ag','allergopharma',
-  'nordmark','nordmark-pharma','bionorica','stada','stada-arzneimittel',
-  'roche-de','novartis-de',
+    // ── Berlin / Germany PropTech ────────────────────────────────────────────
+    'homeday',
+    'mcmakler',
+    'scoperty',
+    'planradar',
+    'pricehubble',
+    'homepilot',
+    'apaleo', 'apaleo-de',
 
-  // ── Energy / Utilities / CleanTech ────────────────────────────────────────
-  'eon','rwe','enbw','vattenfall-de','uniper','wintershall',
-  'eon-se','rwe-group','enbw-group',
-  'enphase-de','vestas-de','nordex','nordex-ag','enercon',
-  'sunfire','1komma5grad','1komma5','enpal-solar',
-  'thermondo','zolar','memodo','dz4',
-  'gridx','envelio','octopus-energy-de',
-  'siemens-gamesa','siemens-energy-renewables',
-  'varta','varta-ag','akasol','akasol-ag',
-  'instagrid','intilion','tesvolt',
+    // ── Berlin / Germany Gaming ──────────────────────────────────────────────
+    'innogames',
+    'goodgamestudios', 'goodgame',
+    'kolibriGames', 'kolibri-games',
+    'wooga', 'wooga-de',
+    'bigpoint',
+    'crytek', 'crytek-de',
+    'inkitt',
 
-  // ── Logistics / Transport ─────────────────────────────────────────────────
-  'deutsche-bahn','db','db-systel','db-netz','db-cargo',
-  'dhl','deutsche-post','dp-dhl','dpd','gls',
-  'hellmann','rhenus','dachser','schenker','db-schenker',
-  'kuehne-nagel','kuehnenagel','fiege','fiege-group',
-  'hermes-de','hermes-germany','six-group',
-  'fraport','fraport-ag','lufthansa','lufthansa-group',
-  'eurowings','condor','tui','tui-group',
-  'sixt','sixt-se','freenow-de','miles-mobility',
-  'flixmobility','flixbus-de',
-  'transdev-de','abellio',
+    // ── Hamburg / Munich / Other German Cities ───────────────────────────────
+    'babbel', 'babbel-tech',
+    'blinkist', 'blinkist-tech',
+    'ecosia', 'ecosia-de',
+    'komoot',
+    'onefootball', 'onefootball-de',
+    'tonies',
+    'yfood',
+    'soundcloud', 'soundcloud-de',
+    'trivago',
+    'scout24',
+    'check24', 'check24-tech',
+    'verivox', 'verivox-de',
+    'immobilienscout24', 'immowelt',
+    'meinestadt',
+    'stepstone', 'stepstone-de',
+    'xing', 'xing-tech', 'new-work', 'newwork',
+    'freeletics',
+    'egym', 'egym-de',
+    'gini', 'gini-de',
+    'zenjob', 'zenjob-de',
+    'coyo', 'coyo-de',
+    'demodesk',
+    'omr',
+    'friendsurance',
+    'wefox',
+    'clark',
+    'getsafe',
+    'heydata',
+    'localyze',
+    'talkwalker',
+    'yieldlab',
+    'uberall',
+    'applike', 'applike-group',
+    'gastrofix',
+    'medwing',
+    'senacor',
+    'atoss',
+    'hubject',
+    'eagle-eye-networks',
 
-  // ── Retail / Consumer / Food ──────────────────────────────────────────────
-  'schwarz-group','lidl','kaufland','aldi','aldi-sued','aldi-nord',
-  'rewe','rewe-digital','rewe-group','metro','metro-ag',
-  'adidas','puma','hugo-boss','hugoboss','birkenstock',
-  'douglas','dm-drogerie','rossmann','ceconomy',
-  'mediamarkt','saturn-de',
-  'about-you','aboutyou','otto-fashion',
-  'home24','westwing','westwing-de','mytheresa',
-  'outfittery','aboutyou-group',
-  'lieferando','takeaway-de',
-  'rewe-tech','kaufland-ecommerce',
+    // ── German IT Consulting & Enterprise ────────────────────────────────────
+    'adesso',
+    'msg', 'msg-group',
+    'valantic',
+    'exxeta',
+    'maibornwolff', 'maibornwolff-de',
+    'bechtle',
+    'cancom',
+    'computacenter',
+    'ntt-data-de',
+    'gft', 'gft-technologies',
 
-  // ── PropTech / ConTech ────────────────────────────────────────────────────
-  'vonovia','deutsche-wohnen','leg-immobilien',
-  'immobilienscout24','immowelt','meinestadt','mcmakler',
-  'homeday','maklaro','scoperty',
-  'bilfinger','bilfinger-se','hochtief','strabag','goldbeck',
-  'peri','peri-group','implenia','max-boegl',
+    // ── German Automotive & Industrial ───────────────────────────────────────
+    'bmw', 'bmw-group', 'bmwgroup',
+    'porsche', 'porsche-ag', 'porsche-digital',
+    'audi', 'audi-ag',
+    'mercedes', 'mercedes-benz', 'mercedesbenz',
+    'volkswagen', 'volkswagen-ag',
+    'continental', 'continental-ag',
+    'zf', 'zf-group',
+    'schaeffler',
+    'bosch', 'bosch-group',
+    'siemens', 'siemens-ag', 'siemens-energy',
+    'moia', 'moia-mobility',
+    'cariad', 'cariad-se',
 
-  // ── Defense / Security ────────────────────────────────────────────────────
-  'rheinmetall','rheinmetall-ag','hensoldt','diehl',
-  'secunet','genua','myra-security','dracoon',
-  'bundeswehr-it','bwi','dataport','dataport-de',
-  'rohde-schwarz-cybersecurity',
+    // ── German Pharma / Chemicals ───────────────────────────────────────────
+    'bayer', 'bayer-ag',
+    'basf',
+    'covestro',
+    'merck', 'merck-group',
+    'boehringer', 'boehringeringelheim',
+    'fresenius', 'fresenius-kabi',
+    'biontech', 'biontech-ag',
+    'curevac', 'curevac-ag',
+    'sartorius', 'sartorius-ag',
+    'eppendorf', 'eppendorf-ag',
 
-  // ── German Digital Health ─────────────────────────────────────────────────
-  'ada-health','clue-app','kaia-health','teleclinic',
-  'kry-de','ottonova','alley-health','vivy-health',
-  'caresyntax','brainlab-de','intraoperative',
-  'amboss-medical','thieme','elsevier-health-de',
-  'medbelle','numa','limehome',
+    // ── German Banking & Insurance ──────────────────────────────────────────
+    'commerzbank', 'commerzbank-ag',
+    'deutsche-bank', 'deutschebank',
+    'allianz', 'allianz-se', 'allianz-technology',
+    'munich-re', 'munichre',
+    'ergo', 'ergo-group', 'ergo-digital',
 
-  // ── German AI / DeepTech ──────────────────────────────────────────────────
-  'aleph-alpha','alephalpha-de','merantix','merantix-ai',
-  'twenty-first-de','quantco','quantco-de',
-  'deepset','deepset-ai','kern-ai',
-  'mostly-ai','statice','aircloak',
-  'appliedai','appliedai-institute',
-  'twaice','twaice-de','compredict',
-  'understand-ai','fernride',
+    // ── German Logistics & Transport ────────────────────────────────────────
+    'sennder', 'sennder-tech',
+    'forto',
+    'instafreight',
+    'seven-senders',
+    'parcellab',
+    'deutsche-bahn', 'db', 'db-systel',
+    'dhl', 'deutsche-post',
+    'lufthansa', 'lufthansa-group',
 
-  // ══════════════════════════════════════════════════════════════════════════
-  //  B — INTERNATIONAL: BIG TECH WITH GERMANY OFFICES
-  // ══════════════════════════════════════════════════════════════════════════
+    // ── German Retail & Consumer ────────────────────────────────────────────
+    'otto', 'otto-group', 'otto-tech',
+    'adidas', 'adidas-group',
+    'puma',
+    'hugo-boss', 'hugoboss',
+    'dm', 'dm-drogerie',
+    'rewe', 'rewe-digital', 'rewe-group',
+    'lidl', 'schwarz-group',
+    'aldi', 'aldi-sued',
 
-  // ── US Big Tech ───────────────────────────────────────────────────────────
-  'google','alphabet','googledeepmind',
-  'meta','facebook',
-  'apple',
-  'microsoft',
-  'netflix',
-  'nvidia','nvidiacareers',
-  'twitter','x-corp',
-  'uber','lyft',
-  'airbnb-tech',
-  'palantir',
-  'servicenow',
-  'twilio',
-  'atlassian',
+    // ══════════════════════════════════════════════════════════════════════════
+    //  B — EUROPEAN COMPANIES WITH GERMANY OFFICES
+    // ══════════════════════════════════════════════════════════════════════════
 
-  // ── US Enterprise Software ────────────────────────────────────────────────
-  'workday','workday-de',
-  'sap-ariba','sap-concur','sap-fieldglass',
-  'oracle-de',
-  'salesforce-de',
-  'adobe-de',
-  'vmware-de',
-  'redhat','redhat-de',
-  'suse','canonical',
-  'citrix','citrix-de','parallels',
-  'opentext','opentext-de',
-  'micro-focus','microfocus',
-  'verint','verint-de',
-  'nice-systems','genesys','genesys-de',
-  'talkdesk','ringcentral','ringcentral-de',
-  'mitel','mitel-de',
+    // ── Dutch / Benelux ─────────────────────────────────────────────────────
+    'recruitee', 'tellent',
+    'messagebird',
+    'mollie', 'mollie-de',
+    'adyen', 'adyen-de',
+    'picnic',
+    'sendcloud',
+    'catawiki',
+    'channable',
+    'effectory',
+    'bynder',
+    'monta',
+    'teamleader',
+    'showpad',
 
-  // ── US SaaS / DevTools ────────────────────────────────────────────────────
-  'monday','mondaydotcom',
-  'clickup','coda',
-  'freshworks',
-  'surveymonkey',
-  'hotjar','fullstory','heap',
-  'iterable','sendgrid','mailgun',
-  'zenloop','medallia','medallia-de',
-  'posthog',
-  'linear-app',
-  'retool',
-  'loom','loomcareers',
-  'notion-de','coda-de',
-  'basecamp','basecamp-de',
-  'github-de','gitlab-de',
-  'circleci','harness',
-  'jfrog-de','sonatype',
-  'sentry','sentry-de',
-  'grafana-de','logzio','coralogix',
-  'pulumi','env0','spacelift',
+    // ── French ──────────────────────────────────────────────────────────────
+    'spendesk', 'spendesk-de',
+    'qonto', 'qonto-de',
+    'contentsquare',
+    'dataiku',
+    'blablacar',
+    'alan', 'alan-insurance',
+    'deezer',
+    'docplanner',
+    'agicap', 'agicap-de',
+    'swile',
+    'openclassrooms',
 
-  // ── US Cloud / Infra ──────────────────────────────────────────────────────
-  'digitalocean','rackspace-de',
-  'fastly','akamai',
-  'fly-io','render','railway',
-  'supabase-de','planetscale-de',
-  'upstash',
-  'cockroachdb','timescale','questdb','clickhouse-de',
-  'pinecone','weaviate','qdrant',
-  'confluent-de','rabbitmq','solace-de',
-  'elastic-de','opensearch',
+    // ── Nordic / Danish / Swedish ────────────────────────────────────────────
+    'pleo', 'pleo-de',
+    'trustpilot',
+    'templafy',
+    'spotify', 'spotify-de',
+    'klarna', 'klarna-de',
+    'wise', 'wise-de',
 
-  // ── US Security / Cyber ───────────────────────────────────────────────────
-  'sentinelone','cyberark','sailpoint',
-  'rapid7','tenable',
-  'proofpoint','mimecast','recordedfuture',
-  'checkpoint','checkpointsw',
-  'crowdstrike','paloaltonetworks','fortinet',
-  'f5','f5-de',
+    // ── UK / Irish ──────────────────────────────────────────────────────────
+    'hotjar',
+    'revolut', 'revolut-de',
+    'checkout', 'checkout-com',
 
-  // ── US Fintech ────────────────────────────────────────────────────────────
-  'stripe-de',
-  'klarna','klarna-de','wise','wise-de',
-  'revolut','checkout-com',
-  'plaid','marqeta','affirm',
-  'brex','ramp-com',
-  'coinbase','kraken','binance-de',
-  'ripple','circle-internet','fireblocks-de',
-  'billdotcom','tipalti','tipalti-de',
-  'solaris-bank','mambu-de',
-  'thought-machine','10x-banking',
-  'finastra','finastra-de','temenos','temenos-de',
-  'worldpay-de',
+    // ── Swiss / Austrian ────────────────────────────────────────────────────
+    'frontify',
+    'yokoy', 'yokoy-de',
+    'payhawk', 'payhawk-de',
+    'planradar',
 
-  // ── US HR / Recruiting ────────────────────────────────────────────────────
-  'workday-hr','successfactors',
-  'cornerstone','cornerstoneondemand',
-  'smartrecruiters','beamery',
-  'eightfold','eightfold-ai','phenom','phenompeople',
-  'jobvite','teamtailor','breezyhr',
-  'peakon','betterworks',
+    // ══════════════════════════════════════════════════════════════════════════
+    //  C — US / GLOBAL TECH WITH GERMANY OFFICES
+    // ══════════════════════════════════════════════════════════════════════════
 
-  // ── US E-commerce / Marketplace ───────────────────────────────────────────
-  'shopify-de','bigcommerce','magento-de',
-  'spryker-de','commercetools-de',
-  'contentful-de','storyblok',
-  'algolia-de','constructor-io','bloomreach-de',
-  'emarsys','dotdigital','ometria',
-  'yotpo','shippo','easypost','parcellab','sendcloud',
-  'aftership','seven-senders',
-  'ebay','ebay-de','wayfair-de',
-  'tripadvisor-de',
+    // ── Big Tech ────────────────────────────────────────────────────────────
+    'google', 'google-de',
+    'meta', 'facebook',
+    'apple', 'apple-de',
+    'microsoft', 'microsoft-de',
+    'amazon', 'amazon-de',
+    'netflix', 'netflix-de',
+    'uber', 'uber-de',
+    'airbnb', 'airbnb-de',
+    'twitter', 'x-corp',
+    'palantir', 'palantir-de',
+    'salesforce', 'salesforce-de',
+    'oracle', 'oracle-de',
+    'sap', 'sap-de',
 
-  // ══════════════════════════════════════════════════════════════════════════
-  //  C — EUROPEAN TECH WITH GERMANY PRESENCE
-  // ══════════════════════════════════════════════════════════════════════════
+    // ── US SaaS / Cloud ─────────────────────────────────────────────────────
+    'stripe', 'stripe-de',
+    'shopify', 'shopify-de',
+    'datadog', 'datadog-de',
+    'snowflake', 'snowflake-de',
+    'confluent', 'confluent-de',
+    'databricks', 'databricks-de',
+    'elastic', 'elastic-de',
+    'mongodb', 'mongodb-de',
+    'cloudflare', 'cloudflare-de',
+    'hashicorp', 'hashicorp-de',
+    'twilio', 'twilio-de',
+    'zendesk', 'zendesk-de',
+    'hubspot', 'hubspot-de',
+    'atlassian', 'atlassian-de',
+    'github', 'github-de',
+    'gitlab', 'gitlab-de',
+    'notion', 'notion-de',
 
-  // ── European Scale-ups ────────────────────────────────────────────────────
-  'n26-tech','traderepublic-de',
-  'getir-de','gorillas-tech','flink-de',
-  'tier-mobility','tiermobility',
-  'door2door','door2door-de',
-  'getyourguide-tech','hometogo-de',
-  'hellofresh-tech',
-  'delivery-hero-tech',
-  'sennder-tech',
-  'auto1-tech','heycar-de',
-  'flixmobility-tech',
-  'omio-de','rome2rio',
-  'check24-tech','verivox-de',
-  'immobilienscout-tech','autoscout-tech',
-  'idealo-de','ladenzeile-de',
-  'stepstone-de','jobbörse-de',
-  'xing-tech',
+    // ── US Fintech ──────────────────────────────────────────────────────────
+    'plaid', 'plaid-de',
+    'sumup',
+    'brex', 'brex-de',
 
-  // ── Nordic / Benelux with DE offices ──────────────────────────────────────
-  'spotify-de','king','kahoot','mentimeter',
-  'tobii','voi','einride',
-  'northvolt','h2greensteel',
-  'ikea-de','hmgroup-de',
-  'randstad','wolterskluwer','dsv',
-  'asml','stmicro','stmicroelectronics',
-  'signify','tomtom','here-technologies',
-  'ing-de','rabobank-de','nordea-de',
-  'nets','nexi-de',
-  'ubs-de','swisscom-de',
-  'roche-careers','novartis-careers',
-  'abb-de','schneider-electric','schneiderelectric',
-  'holcim',
+    // ── US Security ─────────────────────────────────────────────────────────
+    'crowdstrike', 'crowdstrike-de',
+    'okta', 'okta-de',
+    'snyk', 'snyk-de',
+    'veracode', 'veracode-de',
 
-  // ── French Tech with DE offices ───────────────────────────────────────────
-  'ovhcloud','scaleway',
-  'alan-insurance','deezer','blablacar',
-  'ubisoft-de','gameloft-de',
-  'capgemini','capgeminicareer',
-  'atos','atos-de',
-  'airbus','airbus-de',
-  'safran','dassault','dassaultsystemes',
-  'michelin-de','totalenergies-de',
-  'bnpparibas-de','axa-careers','sanofi-de',
-  'sanofi','sanoficareers',
-  'loreal-de','danone-de',
+    // ── US HR / Recruiting ──────────────────────────────────────────────────
+    'workday', 'workday-de',
+    'smartrecruiters',
+    'beamery',
 
-  // ── UK Tech with DE offices ───────────────────────────────────────────────
-  'improbable','darktrace','graphcore',
-  'sophos-de',
-  'baesystems','rolls-royce','rollsroyce-de',
-  'vodafone-de',
-  'hsbc-de','barclays-de',
-  'astrazeneca-de',
-  'pearson-de','relx','elsevier',
-  'experian','experian-de',
-
-  // ── Swiss / Austrian ──────────────────────────────────────────────────────
-  'roche','novartis',
-  'ubs','credit-suisse','creditsuisse',
-  'temenos','avaloq','temenos-banking',
-  'swisscom',
-
-  // ══════════════════════════════════════════════════════════════════════════
-  //  D — US FORTUNE 500 WITH GERMANY ENGINEERING / MANUFACTURING
-  // ══════════════════════════════════════════════════════════════════════════
-
-  // ── Semiconductor / Hardware ──────────────────────────────────────────────
-  'amd','amdcareers',
-  'qualcomm','qualcomm-de',
-  'broadcom','broadcom-de',
-  'texas-instruments','ti-de',
-  'arm','arm-de',
-  'cadence',
-  'synopsys',
-  'keysight','teradyne','kla',
-  'appliedmaterials','lamresearch',
-  'western-digital','westerndigital-de',
-  'seagate','seagate-de','netapp-de',
-  'juniper','junipernetworks',
-  'arista','aristanetworks',
-  'marvell','marvelltech',
-  'microchip','microchiptechnology',
-
-  // ── Enterprise / Cloud ────────────────────────────────────────────────────
-  'hpe','hpecareers',
-  'ibm-de',
-  'dell-de',
-  'lenovo','lenovo-de',
-  'nttdata','ntt-de',
-  'fujitsu','fujitsu-de',
-  'unisys-de',
-  'cgi','cgicareers',
-  'dxctechnology','dxc-de',
-
-  // ── Consulting ────────────────────────────────────────────────────────────
-  'mckinsey',
-  'bcg','bostonconsulting',
-  'bain','bainandcompany',
-  'deloitte','deloitteglobal',
-  'ey','eyglobal',
-  'pwc','pwcglobal',
-  'kpmg','kpmgglobal',
-  'accenture',
-  'cognizant','cognizant-de',
-  'oliverwyman',
-  'rolandberger','roland-berger',
-  'simonkucher','simon-kucher',
-  'bearingpoint','bearing-point',
-  'horvath','horvath-de',
-  'epam','epam-de','thoughtworks','thoughtworks-de',
-
-  // ── Healthcare / Pharma / MedTech ─────────────────────────────────────────
-  'pfizer-de','johnsoncareers','jnj-de',
-  'abbvie-de','amgen-de',
-  'merck-de','msd-de',
-  'lilly-de','bms-de',
-  'gilead-de','regeneron-de',
-  'medtronic-de','stryker-de',
-  'becton-de','bd-de',
-  'bostonscientific-de','edwardslifesciences-de',
-  'zimmerbiomet-de','intuitive-de',
-  'illumina-de','danaher-de',
-  'thermofisher-de','thermofisherscientific-de',
-  'perkinelmer-de','revvity',
-  'agilent-de','waters-de',
-  'iqvia','iqvia-de','certara','certara-de',
-
-  // ── Aerospace / Defense ───────────────────────────────────────────────────
-  'leidos','leidos-de','saic',
-  'lockheedmartin','northropgrumman',
-  'raytheon','rtx','generaldynamics',
-  'l3harris','textron',
-  'jacobs','jacobscareers','aecom','aecom-de',
-  'fluor','kbr',
-
-  // ── Industrial / Manufacturing ────────────────────────────────────────────
-  'honeywell',
-  'emerson',
-  'ge','gecareers','gevernova',
-  'caterpillar','cat',
-  'deere','johndeere',
-  'rockwellautomation','rockwell',
-  'johnsoncontrols','jci',
-  'carrier','carrierglobal',
-  'otis','otisworldwide',
-  '3m','3mcareers',
-  'ecolab','ecolab-de',
-  'linde-de','airliquide','air-liquide',
-  'saint-gobain','saint-gobain-de',
-  'ppg','ppg-de',
-  'corning','corning-de',
-  'eastman','eastman-de',
-  'dow','dow-de',
-  'mettler-toledo','mettler',
-  'sartorius-stedim','sartorius-careers',
-  'bruker','bruker-de',
-  'hamilton-de',
-  'endress-hauser','endress-hauser-de',
-
-  // ── Automotive Suppliers ──────────────────────────────────────────────────
-  'aptiv','aptiv-de',
-  'lear','lear-de',
-  'magna','magna-de',
-  'denso','denso-de',
-  'borgwarner','borgwarner-de',
-
-  // ── Energy ────────────────────────────────────────────────────────────────
-  'shell','shell-de',
-  'bp-de','totalenergies',
-  'exxonmobil-de',
-  'schlumberger','slb','halliburton-de',
-  'bakerhughes-de',
-  'nextera-de',
-  'enphase-de',
-
-  // ── Finance / Banking ──────────────────────────────────────────────────────
-  'goldmansachs','gs-de',
-  'morganstanley-de',
-  'jpmorgan','jpmc-de',
-  'citigroup','citi-de',
-  'blackrock-de','vanguard-de','statestreet-de',
-  'fidelity-de','invesco-de','amundi',
-  'visa-de','mastercard-de',
-  'zurichinsurance','generali-group',
-  'swissre','munichre-group',
-  'fiserv-de','fis-de','worldpay',
-
-  // ── Retail / Consumer ─────────────────────────────────────────────────────
-  'amazon-de',
-  'nike-de','adidas-group',
-  'loreal','loreal-careers',
-  'proctergamble','pg-de',
-  'colgate-de','reckitt-de',
-  'nestle-de','danone',
-  'diageo-de','heineken-de',
-  'unilever-de',
-  'ferrero','ferrero-de',
-
-  // ── Logistics ─────────────────────────────────────────────────────────────
-  'ups-de','fedex-de',
-  'maersk','maerskcareer',
-  'xpo','xpo-de',
-  'ceva-logistics','ceva-de',
-
-  // ── Real Estate / Infrastructure ──────────────────────────────────────────
-  'cbre','cbre-de',
-  'jll','jll-de',
-  'cushmanwakefield-de','colliers-de',
-  'brookfield-de','prologis-de',
-  'digitalrealty-de','ironmountain-de',
-
-  // ── Telecom ───────────────────────────────────────────────────────────────
-  'ericsson','ericsson-de',
-  'nokia','nokia-de',
-  'telefonica-de','o2-de',
-  'orange-de','bt-de',
-  'ntt-communications',
-
-  // ── Media / Streaming ────────────────────────────────────────────────────
-  'disney-de','wbd-de','paramountglobal',
-  'sky-de','sky-deutschland',
-  'dazn','dazn-de',
-
-  // ── Gaming / Entertainment ────────────────────────────────────────────────
-  'ea-de','electronicarts-de',
-  'activisionblizzard-de',
-  'ubisoft-careers',
-  'roblox-de','unity-de',
-  'take2-de','taketwo-de',
-  'supercell-de',
-
-  // ── Education / Publishing ────────────────────────────────────────────────
-  'coursera-de','udemy-de','pluralsight-de',
-  'duolingo-de',
-  'pearson-careers','mcgrawhill-de',
-  'wiley-de','elsevier-de',
-  'relx-de','springer',
-  'gartner-de','idc-de',
-
-  // ══════════════════════════════════════════════════════════════════════════
-  //  E — MORE GERMAN / EUROPEAN STARTUPS & SCALE-UPS
-  // ══════════════════════════════════════════════════════════════════════════
-
-  // ── Berlin / Hamburg / Munich Startups ────────────────────────────────────
-  'pitch-de','babbel-tech','blinkist-tech','ecosia-de',
-  'komoot','smava','auxmoney','billie-de',
-  'penta-bank','vivid-money','getmoss',
-  'spendesk','celonis-ai','signavio-process',
-  'flaconi-de','home24-de','westwing-tech',
-  'flix-tech',
-  'soundcloud-de',
-  'wooga-de','innogames','goodgame',
-  'bigpoint','crytek-de',
-  'onefootball-de','clue-app-de',
-  'doctolib-de','teleclinic-de',
-  'aleph-alpha-de',
-  'staffbase-de','usercentrics-de',
-  'appsflyer-de','braze-de',
-  'deposit-solutions','weltsparen',
-  'liqid-de','ginmon','finanzguru','kontist',
-  'banxware','mondu-de','exporo','creditshelf',
-  'grover-de','rebuy','backmarket-de',
-  'catawiki-de','vinted-de','momox',
-  'inkitt','medbelle-de','numa-de','limehome-de',
-  'apaleo-de','gastrofix','comtravo',
-  'zeitgold','candis','circula','yokoy','payhawk-de',
-  'kenjo','factorial-de','hibob-de','leapsome-de',
-  'small-improvements','workpath','perdoo',
-  'gtmhub','quantive','coachhub','sharpist','masterplan-de',
-  'speexx','chatterbug','lingoda-de',
-  'lovoo','kaia-health-de','mindable','selfapy',
-  'neuroflash',
-  'wonder-platform','hopin','hubilo',
-  'locoia','tray-io',
-  'cross-engage','xtremepush',
-  'zenjob','zenjob-de','coyo','coyo-de',
-  'freeletics','egym-de',
-  'magazino','roboception',
-  'atoss','softgarden','roadsurfer',
-  'gini-de','sensape',
-  'proxima-solutions','thinxnet',
-  'mobility-house','has-to-be','chargepilot',
-  'sonnen-de','one-komma-five',
-  'konux-de','riskmethods',
-  'celonis-ems','minit','lana-labs',
-  'process-gold','aris-de',
-  'abbyy-de','kofax-de',
-  'automation-hero','workfusion',
-  'parlamind','cognigy','cognigy-de',
-  'rasa-de','botfriends','e-bot7',
-  'parloa-de','solvemate',
-  'novomind','bsi-software',
-  'emarsys-de','qualtrics-de',
-  'medallia-mopinion',
-  'dynamic-yield','kameleoon','ab-tasty',
-  'gainsight-de','totango-de','planhat',
-  'churnzero',
-
-  // ── Dutch / Nordic / Swiss scale-ups ──────────────────────────────────────
-  'messagebird',
-  'tink','trustly','bambora',
-  'unity-de','kahoot-de',
-  'voi-technology','einride-de',
-  'polestar-de',
-  'nxp-careers',
-  'signify-de',
-  'tomtom-de',
-
-  // ══════════════════════════════════════════════════════════════════════════
-  //  F — ADDITIONAL US / GLOBAL (frequently expand to Germany)
-  // ══════════════════════════════════════════════════════════════════════════
-  'ansys','ansys-de','ptc','ptc-de',
-  'siemens-plm','siemens-sw',
-  'dassault-de','msc-software',
-  'altair','altair-de','hexagon-de','hexagon-ab',
-  'leica-geosystems','trimble-de',
-  'garmin-de','tomtom-careers',
-  'esri','esri-de',
-  'bentley','bentley-systems',
-  'autodesk-de',
-  'procore-de',
-  'servicenow-de',
-  'salesforce-tableau','tableau-de',
-  'mulesoft','mulesoft-de',
-  'boomi','boomi-de','jitterbit',
-  'tibco','tibco-de','informatica-de',
-  'opentext-de','micro-focus-de',
-  'ibm-sterling','ibm-maximo',
-  'sap-analytics-cloud','sap-datasphere',
-  'celonis-process',
-  'uipath-de',
-  'automation-anywhere-de','blue-prism-de',
-  'nice-de','genesys-cloud',
-  'five9-de',
-  'vonage-de',
-  'avaya','avaya-de',
-  'cisco-de',
-  'palo-alto-de','checkpoint-de',
-  'fortinet-de','sophos-de','tanium-de',
-  'beyondtrust-de','cyberark-de',
-  'varonis-de','sailpoint-de',
-  'okta-de',
-  'ping-identity','pingidentity',
-  'one-identity',
-  'sailpoint',
-  'saviynt',
-  'delinea','thycotic',
-  'beyond-security',
-  'securonix','exabeam',
-  'logrhythm','sumo-logic-de',
-  'devo','humio',
-  'lacework','orca-security',
-  'wiz','snyk-de',
-  'checkmarx','mend','whitesource',
-  'veracode-de',
-  'sonarqube',
-  'jfrog-de',
-  'aqua-security','twistlock',
-  'prisma-cloud',
-  'hashicorp-de',
-  'terraform','vagrant',
-  'chef-de','puppet-de','ansible-de',
-  'redhat-ansible',
-  'rancher-de','suse-de',
-  'canonical-de',
-  'nutanix','nutanix-de',
-  'pure-storage','purestorage-de',
-  'netapp','netapp-de',
-  'veeam','veeam-de',
-  'cohesity','cohesity-de',
-  'rubrik','rubrik-de',
-  'commvault','commvault-de',
-  'veritas','veritas-de',
-
+    // ══════════════════════════════════════════════════════════════════════════
+    //  D — WILDCARD GUESSES (common German company names)
+    // ══════════════════════════════════════════════════════════════════════════
+    'delivery-hero', 'deliveryhero',
+    'hellofresh', 'hellofresh-tech',
+    'zalando', 'zalando-se',
+    'rocket-internet',
+    'auto1', 'auto1-tech',
+    'heycar', 'heycar-de',
+    'wolt', 'wolt-de',
+    'gorillas', 'gorillas-tech',
+    'flink', 'flink-de',
+    'getir', 'getir-de',
+    'taxfix',
+    'n26',
+    'sennder',
+    'jobs',  // Recruitee/Tellent themselves
+    'lingoda', 'lingoda-de',
+    'babbel',
 ];
 
 // ─── Discovery engine ─────────────────────────────────────────────────────────
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-async function testSlug(slug) {
-  if (ALREADY_INTEGRATED.has(slug.toLowerCase())) return null;
+async function testSubdomain(subdomain) {
+    if (ALREADY_INTEGRATED.has(subdomain.toLowerCase())) return null;
 
-  const result = await fetchJobs(slug);
-  if (!result) return null;
+    const result = await fetchJobs(subdomain);
+    if (!result) return null;
 
-  const { companyName, jobs } = result;
-  if (jobs.length === 0) return null;
+    const { companyName, jobs } = result;
+    if (jobs.length === 0) return null;
 
-  const germanyJobs = jobs.filter(hasGermany);
+    const germanyJobs = jobs.filter(hasGermany);
 
-  return {
-    slug,
-    companyName,
-    total:       jobs.length,
-    germany:     germanyJobs.length,
-    germanyJobs: germanyJobs.slice(0, 3), // sample only
-    url:         buildUrl(slug),
-  };
+    // Build a location summary for logging
+    const locationSample = germanyJobs.slice(0, 3).map(j => {
+        if (Array.isArray(j.locations) && j.locations.length > 0) {
+            const loc = j.locations.find(l => String(l.country_code || '').toUpperCase() === 'DE') || j.locations[0];
+            return `${loc.city || '?'}, ${loc.country || '?'}`;
+        }
+        return j.city || j.location || '?';
+    });
+
+    return {
+        subdomain,
+        companyName,
+        total:          jobs.length,
+        germany:        germanyJobs.length,
+        germanyJobs:    germanyJobs.slice(0, 3),
+        locationSample,
+        url:            buildUrl(subdomain),
+        // Extra Recruitee-specific data we can log
+        hasRemote:      germanyJobs.some(j => j.remote === true),
+        hasSalary:      germanyJobs.some(j => j.salary && (j.salary.min || j.salary.max)),
+        departments:    [...new Set(germanyJobs.map(j => j.department).filter(Boolean))].slice(0, 5),
+    };
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
-  const uniqueSlugs = [...new Set(companySlugs)]
-    .filter(s => !ALREADY_INTEGRATED.has(s.toLowerCase()));
+    const uniqueSubdomains = [...new Set(companySubdomains.map(s => s.toLowerCase()))]
+        .filter(s => !ALREADY_INTEGRATED.has(s));
 
-  const skipped   = companySlugs.length - uniqueSlugs.length;
-  const startTime = Date.now();
+    const skipped   = companySubdomains.length - uniqueSubdomains.length;
+    const startTime = Date.now();
 
-  console.log(`\n🇩🇪 ${ATS_NAME.toUpperCase()} GERMANY DISCOVERY — Testing ${uniqueSlugs.length} slugs`);
-  console.log(`   Skipped ${skipped} already-integrated`);
-  console.log(`   Concurrency: ${CONCURRENCY} | Timeout: ${TIMEOUT_MS}ms\n`);
+    console.log(`\n🇩🇪 ${ATS_NAME.toUpperCase()} GERMANY DISCOVERY — Testing ${uniqueSubdomains.length} subdomains`);
+    console.log(`   Skipped ${skipped} already-integrated / duplicates`);
+    console.log(`   Concurrency: ${CONCURRENCY} | Timeout: ${TIMEOUT_MS}ms\n`);
 
-  const allFound    = [];  // every board that returned jobs (any country)
-  const withGermany = [];  // boards with ≥1 Germany job
-  let tested = 0;
+    const allFound    = [];  // every board that returned offers (any country)
+    const withGermany = [];  // boards with ≥1 Germany offer
+    let tested = 0;
 
-  for (let i = 0; i < uniqueSlugs.length; i += CONCURRENCY) {
-    const batch   = uniqueSlugs.slice(i, i + CONCURRENCY);
-    const results = await Promise.all(batch.map(testSlug));
+    for (let i = 0; i < uniqueSubdomains.length; i += CONCURRENCY) {
+        const batch   = uniqueSubdomains.slice(i, i + CONCURRENCY);
+        const results = await Promise.all(batch.map(testSubdomain));
 
-    for (const r of results) {
-      if (!r) continue;
-      allFound.push(r);
-      if (r.germany > 0) {
-        withGermany.push(r);
-        console.log(`  ✅ ${r.slug} (${r.companyName}): ${r.germany} 🇩🇪 / ${r.total} total`);
-      }
+        for (const r of results) {
+            if (!r) continue;
+            allFound.push(r);
+            if (r.germany > 0) {
+                withGermany.push(r);
+                const remoteFlag = r.hasRemote ? ' 🏠' : '';
+                const salaryFlag = r.hasSalary ? ' 💰' : '';
+                console.log(`  ✅ ${r.subdomain} (${r.companyName}): ${r.germany} 🇩🇪 / ${r.total} total${remoteFlag}${salaryFlag}`);
+            }
+        }
+
+        tested = Math.min(i + CONCURRENCY, uniqueSubdomains.length);
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
+        process.stdout.write(
+            `\r  [${tested}/${uniqueSubdomains.length}] ${elapsed}s | Boards: ${allFound.length} | 🇩🇪 Germany: ${withGermany.length}   `
+        );
+
+        if (i + CONCURRENCY < uniqueSubdomains.length) await sleep(BATCH_DELAY_MS);
     }
 
-    tested = Math.min(i + CONCURRENCY, uniqueSlugs.length);
-    const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
-    process.stdout.write(
-      `\r  [${tested}/${uniqueSlugs.length}] ${elapsed}s | Boards: ${allFound.length} | 🇩🇪 Germany: ${withGermany.length}   `
-    );
+    const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
 
-    if (i + CONCURRENCY < uniqueSlugs.length) await sleep(BATCH_DELAY_MS);
-  }
+    // ── Results ──────────────────────────────────────────────────────────────
 
-  const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`\n\n${'═'.repeat(80)}`);
+    console.log(`📊 ${ATS_NAME.toUpperCase()} GERMANY DISCOVERY (${totalTime}s)`);
+    console.log(`   ${uniqueSubdomains.length} subdomains tested | ${allFound.length} boards found | ${withGermany.length} with Germany jobs`);
+    console.log(`${'═'.repeat(80)}`);
 
-  // ── Results ────────────────────────────────────────────────────────────────
+    if (withGermany.length === 0) {
+        console.log(`\n  No Germany jobs found. Try adding more subdomains.\n`);
+        return;
+    }
 
-  console.log(`\n\n${'═'.repeat(80)}`);
-  console.log(`📊 ${ATS_NAME.toUpperCase()} GERMANY DISCOVERY (${totalTime}s)`);
-  console.log(`   ${uniqueSlugs.length} slugs tested | ${allFound.length} boards found | ${withGermany.length} with Germany jobs`);
-  console.log(`${'═'.repeat(80)}`);
+    const sorted = [...withGermany].sort((a, b) => b.germany - a.germany);
 
-  if (withGermany.length === 0) {
-    console.log(`\n  No Germany jobs found. Try adding more slugs to companySlugs.\n`);
-    return;
-  }
-
-  const sorted = [...withGermany].sort((a, b) => b.germany - a.germany);
-
-  // ── Ranked table ──────────────────────────────────────────────────────────
-  console.log(`\n🇩🇪 BOARDS WITH GERMANY JOBS (${sorted.length}) — sorted by count:`);
-  console.log(`${'─'.repeat(80)}`);
-  for (const r of sorted) {
-    const pad = ' '.repeat(Math.max(1, 30 - r.slug.length));
-    console.log(`  ${r.slug}${pad}${r.companyName.padEnd(28)} 🇩🇪 ${String(r.germany).padStart(4)} / ${r.total} total`);
-  }
-
-  // ── Copy-paste config ──────────────────────────────────────────────────────
-  console.log(`\n${'═'.repeat(80)}`);
-  console.log(`📋 COPY-PASTE → workableConfig.js companySlugs:`);
-  console.log(`${'═'.repeat(80)}\n`);
-  console.log(`  // ── Auto-discovered ${new Date().toISOString().slice(0, 10)} ──`);
-  for (const r of sorted) {
-    const pad = ' '.repeat(Math.max(1, 30 - r.slug.length - 2));
-    console.log(`  '${r.slug}',${pad}// ${r.companyName} — ${r.germany} DE / ${r.total} total`);
-  }
-
-  // ── All found (including non-Germany) ─────────────────────────────────────
-  if (allFound.length > withGermany.length) {
-    console.log(`\n${'═'.repeat(80)}`);
-    console.log(`📋 ALL FOUND (including zero Germany) — ${allFound.length} total:`);
+    // ── Ranked table ────────────────────────────────────────────────────────
+    console.log(`\n🇩🇪 BOARDS WITH GERMANY JOBS (${sorted.length}) — sorted by count:`);
     console.log(`${'─'.repeat(80)}`);
-    const sortedAll = [...allFound].sort((a, b) => b.total - a.total);
-    for (const r of sortedAll) {
-      const flag = r.germany > 0 ? `🇩🇪 ${String(r.germany).padStart(4)}` : `   none`;
-      const pad  = ' '.repeat(Math.max(1, 30 - r.slug.length));
-      console.log(`  ${r.slug}${pad}${flag} / ${r.total} total`);
+    for (const r of sorted) {
+        const pad = ' '.repeat(Math.max(1, 30 - r.subdomain.length));
+        const flags = [
+            r.hasRemote ? '🏠' : '',
+            r.hasSalary ? '💰' : '',
+        ].filter(Boolean).join(' ');
+        console.log(`  ${r.subdomain}${pad}${r.companyName.padEnd(28)} 🇩🇪 ${String(r.germany).padStart(4)} / ${r.total} total  ${flags}`);
     }
-  }
 
-  // ── Sample Germany jobs ────────────────────────────────────────────────────
-  console.log(`\n${'═'.repeat(80)}`);
-  console.log(`🔍 SAMPLE GERMANY JOBS (top 20, up to 3 per company):`);
-  console.log(`${'═'.repeat(80)}`);
-  for (const r of sorted.slice(0, 20)) {
-    console.log(`\n  📌 ${r.slug} (${r.companyName}) — ${r.germany} Germany jobs:`);
-    for (const j of r.germanyJobs) {
-      console.log(`     • ${j.title}`);
-      console.log(`       ${j.city || ''}${j.city && j.country ? ', ' : ''}${j.country || ''} | ${j.employment_type || ''} | ${j.telecommuting ? '🏠 Remote' : '🏢 Onsite'}`);
+    // ── Copy-paste config ────────────────────────────────────────────────────
+    console.log(`\n${'═'.repeat(80)}`);
+    console.log(`📋 COPY-PASTE → recruiteeConfig.js companySubdomains:`);
+    console.log(`${'═'.repeat(80)}\n`);
+    console.log(`    // ── Auto-discovered ${new Date().toISOString().slice(0, 10)} ──`);
+    for (const r of sorted) {
+        const pad = ' '.repeat(Math.max(1, 30 - r.subdomain.length - 2));
+        console.log(`    '${r.subdomain}',${pad}// ${r.companyName} — ${r.germany} DE / ${r.total} total`);
     }
-  }
 
-  // ── Final summary ──────────────────────────────────────────────────────────
-  console.log(`\n${'═'.repeat(80)}`);
-  console.log(`📊 FINAL SUMMARY`);
-  console.log(`${'─'.repeat(80)}`);
-  console.log(`  Slugs tested:       ${uniqueSlugs.length}`);
-  console.log(`  Skipped (existing): ${skipped}`);
-  console.log(`  Boards found:       ${allFound.length}`);
-  console.log(`  With Germany jobs:  ${withGermany.length}`);
-  console.log(`  Total Germany jobs: ${withGermany.reduce((s, r) => s + r.germany, 0)}`);
-  console.log(`  Time:               ${totalTime}s`);
-  console.log(`${'═'.repeat(80)}\n`);
+    // ── All found (including non-Germany) ─────────────────────────────────────
+    if (allFound.length > withGermany.length) {
+        console.log(`\n${'═'.repeat(80)}`);
+        console.log(`📋 ALL BOARDS FOUND (including zero Germany) — ${allFound.length} total:`);
+        console.log(`${'─'.repeat(80)}`);
+        const sortedAll = [...allFound].sort((a, b) => b.total - a.total);
+        for (const r of sortedAll) {
+            const flag = r.germany > 0 ? `🇩🇪 ${String(r.germany).padStart(4)}` : `   none`;
+            const pad  = ' '.repeat(Math.max(1, 30 - r.subdomain.length));
+            console.log(`  ${r.subdomain}${pad}${flag} / ${r.total} total`);
+        }
+    }
+
+    // ── Sample Germany jobs ──────────────────────────────────────────────────
+    console.log(`\n${'═'.repeat(80)}`);
+    console.log(`🔍 SAMPLE GERMANY JOBS (top 20, up to 3 per company):`);
+    console.log(`${'═'.repeat(80)}`);
+    for (const r of sorted.slice(0, 20)) {
+        console.log(`\n  📌 ${r.subdomain} (${r.companyName}) — ${r.germany} Germany jobs:`);
+        if (r.departments.length > 0) {
+            console.log(`     Departments: ${r.departments.join(', ')}`);
+        }
+        for (let idx = 0; idx < r.germanyJobs.length; idx++) {
+            const j = r.germanyJobs[idx];
+
+            // ── KEY DIFFERENCE: Recruitee has more structured data than Workable ──
+            // We can show employment type, experience level, remote/hybrid flags, salary
+            const locStr = r.locationSample[idx] || '?';
+            const empType = j.employment_type_code || '';
+            const remote = j.remote ? '🏠 Remote' : j.hybrid ? '🔄 Hybrid' : '🏢 Onsite';
+            const salary = (j.salary && (j.salary.min || j.salary.max))
+                ? ` | ${j.salary.currency || '€'}${j.salary.min || '?'}-${j.salary.max || '?'}`
+                : '';
+
+            console.log(`     • ${j.title}`);
+            console.log(`       ${locStr} | ${empType} | ${remote}${salary}`);
+        }
+    }
+
+    // ── Department breakdown ─────────────────────────────────────────────────
+    console.log(`\n${'═'.repeat(80)}`);
+    console.log(`🏢 DEPARTMENT BREAKDOWN (across all Germany jobs):`);
+    console.log(`${'─'.repeat(80)}`);
+    const deptCounts = {};
+    for (const r of withGermany) {
+        for (const j of r.germanyJobs) {
+            const dept = j.department || 'Unknown';
+            deptCounts[dept] = (deptCounts[dept] || 0) + 1;
+        }
+    }
+    const deptSorted = Object.entries(deptCounts).sort((a, b) => b[1] - a[1]);
+    for (const [dept, count] of deptSorted.slice(0, 20)) {
+        console.log(`  ${String(count).padStart(4)}  ${dept}`);
+    }
+
+    // ── Final summary ────────────────────────────────────────────────────────
+    const totalGermanyJobs = withGermany.reduce((s, r) => s + r.germany, 0);
+    const withSalary = withGermany.filter(r => r.hasSalary).length;
+    const withRemote = withGermany.filter(r => r.hasRemote).length;
+
+    console.log(`\n${'═'.repeat(80)}`);
+    console.log(`📊 FINAL SUMMARY`);
+    console.log(`${'─'.repeat(80)}`);
+    console.log(`  Subdomains tested:    ${uniqueSubdomains.length}`);
+    console.log(`  Skipped (existing):   ${skipped}`);
+    console.log(`  Boards found:         ${allFound.length}`);
+    console.log(`  With Germany jobs:    ${withGermany.length}`);
+    console.log(`  Total Germany jobs:   ${totalGermanyJobs}`);
+    console.log(`  With salary info:     ${withSalary} companies`);
+    console.log(`  With remote roles:    ${withRemote} companies`);
+    console.log(`  Time:                 ${totalTime}s`);
+    console.log(`${'═'.repeat(80)}\n`);
 }
 
 main();
