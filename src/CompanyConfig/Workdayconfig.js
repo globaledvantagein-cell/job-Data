@@ -30,30 +30,39 @@ function inferEmploymentType(value) {
 // ─── Germany location matching (same logic as leverConfig) ───────────────────
 
 const germanCities = [
-    'berlin', 'munich', 'münchen', 'hamburg', 'cologne', 'köln',
-    'frankfurt', 'stuttgart', 'düsseldorf', 'dusseldorf', 'dortmund',
+    'berlin', 'munich', 'münchen', 'muenchen', 'hamburg', 'cologne', 'köln',
+    'frankfurt', 'stuttgart', 'düsseldorf', 'dusseldorf', 'duesseldorf', 'dortmund',
     'essen', 'leipzig', 'bremen', 'dresden', 'hanover', 'hannover',
-    'nuremberg', 'nürnberg', 'duisburg', 'bochum', 'wuppertal',
-    'bielefeld', 'bonn', 'münster', 'karlsruhe', 'mannheim',
-    'augsburg', 'wiesbaden', 'mönchengladbach', 'gelsenkirchen',
+    'nuremberg', 'nürnberg', 'nuernberg', 'duisburg', 'bochum', 'wuppertal',
+    'bielefeld', 'bonn', 'münster', 'muenster', 'karlsruhe', 'mannheim',
+    'augsburg', 'wiesbaden', 'mönchengladbach', 'moenchengladbach', 'gelsenkirchen',
     'aachen', 'braunschweig', 'kiel', 'chemnitz', 'halle',
-    'magdeburg', 'freiburg', 'krefeld', 'mainz', 'lübeck',
+    'magdeburg', 'freiburg', 'krefeld', 'mainz', 'lübeck', 'luebeck',
     'heidelberg', 'rostock', 'ingolstadt', 'darmstadt', 'wolfsburg',
     'regensburg', 'ulm', 'kassel', 'erlangen', 'oberhausen',
-    'leverkusen', 'göttingen', 'oldenburg', 'potsdam',
+    'leverkusen', 'göttingen', 'goettingen', 'oldenburg', 'potsdam',
+    'tübingen', 'tuebingen', 'würzburg', 'wuerzburg', 'fürth', 'fuerth',
 ];
 
 const germanyKeywords = ['germany', 'deutschland'];
 
-function hasGermanyLocation(locationsText) {
-    if (!locationsText) return false;
+function hasGermanyLocation(job) {
+    // Check locationsText first (most companies populate this)
+    const locationsText = (typeof job === 'string') ? job : (job.locationsText || '');
     const loc = locationsText.toLowerCase();
 
-    // Direct country name match
-    if (germanyKeywords.some(kw => loc.includes(kw))) return true;
+    if (loc) {
+        if (germanyKeywords.some(kw => loc.includes(kw))) return true;
+        if (germanCities.some(city => loc.includes(city))) return true;
+    }
 
-    // German city match
-    if (germanCities.some(city => loc.includes(city))) return true;
+    // Fallback: check bulletFields (some companies like Europcar store country/city here)
+    // bulletFields format: ['Germany', 'Hamburg', 'JR108514'] — country in [0], city in [1]
+    if (typeof job === 'object' && Array.isArray(job.bulletFields)) {
+        const bfText = job.bulletFields.map(b => String(b)).join(' ').toLowerCase();
+        if (germanyKeywords.some(kw => bfText.includes(kw))) return true;
+        if (germanCities.some(city => bfText.includes(city))) return true;
+    }
 
     return false;
 }
@@ -71,26 +80,80 @@ function hasGermanyLocation(locationsText) {
 
 const companyBoards = [
 
-    // ── Only working Workday companies as of 2026-03-28 ──
-    { company: 'leidos',   instance: 'wd5', site: 'External',         name: 'leidos' },
-    { company: 'cadence',  instance: 'wd1', site: 'External_Careers', name: 'cadence' },
-    { company: 'redhat',   instance: 'wd5', site: 'Jobs',             name: 'redhat' },
-    { company: 'paypal',   instance: 'wd1', site: 'Jobs',             name: 'PayPal' },
-    { company: 'nxp',      instance: 'wd3', site: 'Careers',          name: 'NXP' },
-    { company: 'astrazeneca', instance: 'wd3', site: 'Careers',       name: 'AstraZeneca' },
-    { company: 'takeda',   instance: 'wd3', site: 'External',         name: 'Takeda' },
-    { company: 'analogdevices', instance: 'wd1', site: 'External',    name: 'Analog Devices' },
-    { company: 'kone',     instance: 'wd3', site: 'Careers',          name: 'KONE' },
-    { company: 'equinix',  instance: 'wd1', site: 'External',         name: 'Equinix' },
-    { company: 'trendmicro', instance: 'wd3', site: 'External',       name: 'Trend Micro' },
-    { company: 'broadridge', instance: 'wd5', site: 'Careers',        name: 'Broadridge' },
-    { company: 'thales',   instance: 'wd3', site: 'Careers',          name: 'Thales' },
-    { company: 'dupont',   instance: 'wd5', site: 'Jobs',             name: 'DuPont' },
-    { company: 'mars',     instance: 'wd3', site: 'External',         name: 'Mars' },
-    { company: 'dell',     instance: 'wd1', site: 'External',         name: 'Dell' },
-    { company: 'intel',    instance: 'wd1', site: 'External',         name: 'Intel' },
-    { company: 'globalfoundries', instance: 'wd1', site: 'External',  name: 'GlobalFoundries' },
-    { company: 'micron',   instance: 'wd1', site: 'External',         name: 'Micron' },
+    // ── Original verified companies ──
+    { company: 'leidos',          instance: 'wd5',   site: 'External',                              name: 'Leidos' },
+    { company: 'cadence',         instance: 'wd1',   site: 'External_Careers',                      name: 'Cadence' },
+    { company: 'redhat',          instance: 'wd5',   site: 'Jobs',                                  name: 'Red Hat' },
+    { company: 'paypal',          instance: 'wd1',   site: 'Jobs',                                  name: 'PayPal' },
+    { company: 'nxp',             instance: 'wd3',   site: 'Careers',                               name: 'NXP' },
+    { company: 'astrazeneca',     instance: 'wd3',   site: 'Careers',                               name: 'AstraZeneca' },
+    { company: 'takeda',          instance: 'wd3',   site: 'External',                              name: 'Takeda' },
+    { company: 'analogdevices',   instance: 'wd1',   site: 'External',                              name: 'Analog Devices' },
+    { company: 'kone',            instance: 'wd3',   site: 'Careers',                               name: 'KONE' },
+    { company: 'equinix',         instance: 'wd1',   site: 'External',                              name: 'Equinix' },
+    { company: 'trendmicro',      instance: 'wd3',   site: 'External',                              name: 'Trend Micro' },
+    { company: 'broadridge',      instance: 'wd5',   site: 'Careers',                               name: 'Broadridge' },
+    { company: 'thales',          instance: 'wd3',   site: 'Careers',                               name: 'Thales' },
+    { company: 'dupont',          instance: 'wd5',   site: 'Jobs',                                  name: 'DuPont' },
+    { company: 'mars',            instance: 'wd3',   site: 'External',                              name: 'Mars' },
+    { company: 'dell',            instance: 'wd1',   site: 'External',                              name: 'Dell' },
+    { company: 'intel',           instance: 'wd1',   site: 'External',                              name: 'Intel' },
+    { company: 'globalfoundries', instance: 'wd1',   site: 'External',                              name: 'GlobalFoundries' },
+    { company: 'micron',          instance: 'wd1',   site: 'External',                              name: 'Micron' },
+    { company: 'shell',           instance: 'wd3',   site: 'ShellCareers',                          name: 'Shell' },
+
+    // ── New from dorking ──
+    { company: 'mufgub',          instance: 'wd3',   site: 'MUFG-Careers',                          name: 'MUFG' },
+    { company: 'gsk',             instance: 'wd5',   site: 'GSKCareers',                            name: 'GSK' },
+    { company: 'illumina',        instance: 'wd1',   site: 'illumina-careers',                      name: 'Illumina' },
+    { company: 'fastretailing',   instance: 'wd3',   site: 'graduates_eu_Uniqlo',                   name: 'Uniqlo' },
+    { company: 'aresmgmt',        instance: 'wd1',   site: 'External',                              name: 'Ares Management' },
+    { company: 'tmhcc',           instance: 'wd108', site: 'External',                              name: 'Tokio Marine HCC' },
+    { company: 'sabre',           instance: 'wd1',   site: 'SabreJobs',                             name: 'Sabre' },
+    { company: 'maersk',          instance: 'wd3',   site: 'Maersk_Careers',                        name: 'Maersk' },
+    { company: 'philips',         instance: 'wd3',   site: 'jobs-and-careers',                      name: 'Philips' },
+    { company: 'bdx',             instance: 'wd1',   site: 'EXTERNAL_CAREER_SITE_GERMANY',          name: 'BD (Becton Dickinson)' },
+    { company: 'alcon',           instance: 'wd5',   site: 'careers_alcon',                         name: 'Alcon' },
+    { company: 'sandvik',         instance: 'wd3',   site: 'walter-jobs',                           name: 'Walter (Sandvik)' },
+    { company: 'condenast',       instance: 'wd5',   site: 'CondeCareers',                          name: 'Condé Nast' },
+    { company: 'freseniusglobal', instance: 'wd3',   site: 'FK_Careers',                            name: 'Fresenius Kabi' },
+    { company: 'solenis',         instance: 'wd1',   site: 'Solenis',                               name: 'Solenis' },
+    { company: 'athora',          instance: 'wd3',   site: 'athora-careers',                        name: 'Athora' },
+    { company: 'alantra',         instance: 'wd3',   site: 'Alantra',                               name: 'Alantra' },
+    { company: 'aesop',           instance: 'wd3',   site: 'aesopcareers',                          name: 'Aesop' },
+    { company: 'bb',              instance: 'wd3',   site: 'BlackBerry',                            name: 'BlackBerry' },
+    { company: 'novanta',         instance: 'wd5',   site: 'Novanta-Careers',                       name: 'Novanta' },
+    { company: 'airliquidehr',    instance: 'wd3',   site: 'AirLiquideExternalCareer',              name: 'Air Liquide' },
+    { company: 'covestro',        instance: 'wd3',   site: 'cov_external',                          name: 'Covestro' },
+    { company: 'galileo',         instance: 'wd3',   site: 'global_education_germany_career_site',  name: 'Galileo Global Education' },
+    { company: 'insulet',         instance: 'wd5',   site: 'insuletcareers',                        name: 'Insulet (Omnipod)' },
+    { company: 'ossur',           instance: 'wd3',   site: 'ossurcareersglobal',                    name: 'Össur' },
+    { company: 'rentschler',      instance: 'wd3',   site: 'Rentschler_Career',                     name: 'Rentschler Biopharma' },
+    { company: 'raymondjames',    instance: 'wd1',   site: 'RaymondJamesCareers',                   name: 'Raymond James' },
+    { company: 'brenntag',        instance: 'wd3',   site: 'brenntag_jobs',                         name: 'Brenntag' },
+    { company: 'unilever',        instance: 'wd3',   site: 'Unilever_Experienced_Professionals',    name: 'Unilever' },
+    { company: 'iberdrola',       instance: 'wd3',   site: 'Iberdrola',                             name: 'Iberdrola' },
+    { company: 'hl',              instance: 'wd1',   site: 'Campus',                                name: 'Houlihan Lokey' },
+    { company: 'bf',              instance: 'wd5',   site: 'International',                         name: 'Brown-Forman' },
+    { company: 'wilhelmsen',      instance: 'wd3',   site: 'Wilhelmsen',                            name: 'Wilhelmsen' },
+    { company: 'europcar',        instance: 'wd103', site: 'EuropcarCareerPage',                    name: 'Europcar' },
+    { company: 'db',              instance: 'wd3',   site: 'DBWebsite',                             name: 'Deutsche Bank' },
+    { company: 'pae',             instance: 'wd1',   site: 'Amentum_Careers',                       name: 'Amentum' },
+    { company: 'villeroyboch',    instance: 'wd3',   site: 'careers',                               name: 'Villeroy & Boch' },
+    { company: 'holmanautogroup', instance: 'wd1',   site: 'HolmanEnterprisesCareers',              name: 'Holman' },
+    { company: 'kbr',             instance: 'wd5',   site: 'KBR_Careers',                           name: 'KBR' },
+    { company: 'movadogroup',     instance: 'wd1',   site: 'Careers',                               name: 'Movado Group' },
+    { company: 'barrywehmiller',  instance: 'wd1',   site: 'BWCareers',                             name: 'Barry-Wehmiller' },
+    { company: 'skechers',        instance: 'wd5',   site: 'One-career-site',                       name: 'Skechers' },
+    { company: 'otis',            instance: 'wd5',   site: 'REC_Ext_Gateway',                       name: 'Otis' },
+    { company: 'esab',            instance: 'wd5',   site: 'esabcareers',                           name: 'ESAB' },
+    { company: 'ttiemea',         instance: 'wd3',   site: 'TTI',                                   name: 'TTI (Techtronic Industries)' },
+    { company: 'jm',              instance: 'wd103', site: 'External',                              name: 'Johnson Matthey' },
+    { company: 'faro',            instance: 'wd1',   site: 'FARO',                                  name: 'FARO Technologies' },
+    { company: 'cw',              instance: 'wd1',   site: 'External',                              name: 'Curtiss-Wright' },
+    { company: 'livanova',        instance: 'wd5',   site: 'Search',                                name: 'LivaNova' },
+    { company: 'relx',            instance: 'wd3',   site: 'ReedExhibitions',                       name: 'RELX (Reed Exhibitions)' },
+    { company: 'zuehlke',         instance: 'wd3',   site: 'Zuhlke-Careers',                        name: 'Zühlke' },
 
 ];
 
@@ -213,7 +276,7 @@ export const workdayConfig = {
                 }
 
                 // ── Filter to Germany-only ──────────────────────────────────
-                const germanyJobs = allJobs.filter(j => hasGermanyLocation(j.locationsText || ''));
+                const germanyJobs = allJobs.filter(j => hasGermanyLocation(j));
 
                 if (germanyJobs.length > 0) {
                     console.log(`[Workday] ✅ ${company} (${name}): ${germanyJobs.length} Germany jobs (${total} total)`);
@@ -256,8 +319,13 @@ export const workdayConfig = {
     // ── Field extractors (used by processor.js) ───────────────────────────────
 
     extractJobID(job) {
-        // bulletFields[0] is Workday's internal requisition ID — stable across re-posts
-        const reqId = job.bulletFields?.[0] || job.externalPath || '';
+        // externalPath is always unique: /job/Hamburg/Revenue-Analyst_JR108514
+        // bulletFields[0] is SOMETIMES the req ID, but some companies (Europcar)
+        // put country in bulletFields[0] instead. Use externalPath as primary.
+        const path = job.externalPath || '';
+        const reqFromPath = path.split('_').pop() || '';
+        const reqFromBullet = job.bulletFields?.[job.bulletFields?.length - 1] || '';
+        const reqId = reqFromPath || reqFromBullet || path;
         return `workday_${job._company}_${reqId}`;
     },
 
@@ -270,13 +338,28 @@ export const workdayConfig = {
     },
 
     extractLocation(job) {
-        return job.locationsText || '';
+        if (job.locationsText) return job.locationsText;
+        // Fallback: some companies (e.g. Europcar) store location in bulletFields
+        // Format: ['Germany', 'Hamburg', 'JR108514']
+        if (Array.isArray(job.bulletFields) && job.bulletFields.length >= 2) {
+            const country = job.bulletFields[0];
+            const city = job.bulletFields[1];
+            if (city && country) return `${city}, ${country}`;
+            if (country) return country;
+        }
+        return '';
     },
 
     extractAllLocations(job) {
-        // locationsText can be comma-separated when a job is multi-location
-        const raw = job.locationsText || '';
-        return normalizeArray(raw.split(',').map(l => l.trim()));
+        if (job.locationsText) {
+            const raw = job.locationsText;
+            return normalizeArray(raw.split(',').map(l => l.trim()));
+        }
+        // Fallback: bulletFields
+        if (Array.isArray(job.bulletFields) && job.bulletFields.length >= 2) {
+            return normalizeArray([`${job.bulletFields[1]}, ${job.bulletFields[0]}`]);
+        }
+        return [];
     },
 
     extractDepartment(job) {
