@@ -1,6 +1,6 @@
-﻿import fetch from 'node-fetch';
+import fetch from 'node-fetch';
 import { StripHtml } from '../utils.js';
-import { isGermanyString, normalizeWorkplaceType, normalizeEmploymentType } from '../core/locationPrefilters.js';
+import { isGermanyString, normalizeWorkplaceType, normalizeEmploymentType } from '../core/Locationprefilters.js';
 import { normalizeArray } from '../core/jobExtractor.js';
 
 
@@ -19,7 +19,7 @@ const companySiteNames = [
 ];
 
 /**
- * Check if job has Germany location — uses shared GERMAN_CITIES + isGermanyString()
+ * Check if job has Germany location � uses shared GERMAN_CITIES + isGermanyString()
  */
 function hasGermanyLocation(job) {
   try {
@@ -42,7 +42,7 @@ function hasGermanyLocation(job) {
       }
     }
 
-    // 4. Remote — only if explicitly mentions Germany
+    // 4. Remote � only if explicitly mentions Germany
     if (job.workplaceType === 'remote') {
       const desc = (job.descriptionPlain || '').toLowerCase();
       if (desc.includes('remote in germany') || desc.includes('remote - germany') || desc.includes('germany remote')) return true;
@@ -70,7 +70,7 @@ const leverConfig = {
   // Each "page" = one company
   limit: 1,
 
-  // ✅ FIX: Lever's company listing API returns only a short intro snippet.
+  // ? FIX: Lever's company listing API returns only a short intro snippet.
   // Setting this to true triggers processor.js to call getDetails() for the full description.
   needsDescriptionScraping: true,
 
@@ -148,7 +148,7 @@ const leverConfig = {
         return null;
       }
 
-      console.log(`[Lever] ✅ Got full description (${fullDescription.length} chars) for: ${String(rawJob.text || '').substring(0, 50)}`);
+      console.log(`[Lever] ? Got full description (${fullDescription.length} chars) for: ${String(rawJob.text || '').substring(0, 50)}`);
       return { Description: fullDescription };
 
     } catch (error) {
@@ -167,14 +167,14 @@ const leverConfig = {
     const companyIndex = offset;
 
     if (companyIndex >= companySiteNames.length) {
-      console.log(`[Lever] ✅ Finished checking all ${companySiteNames.length} companies`);
+      console.log(`[Lever] ? Finished checking all ${companySiteNames.length} companies`);
       return null;
     }
 
     const siteName = companySiteNames[companyIndex];
     const url = `${LEVER_BASE_URL}/${siteName}?mode=json`;
 
-    console.log(`\n[Lever] 🔍 Company ${companyIndex + 1}/${companySiteNames.length}: ${siteName}`);
+    console.log(`\n[Lever] ?? Company ${companyIndex + 1}/${companySiteNames.length}: ${siteName}`);
 
     return url;
   },
@@ -187,26 +187,26 @@ const leverConfig = {
   getJobs: (data) => {
     // DEBUG: Log what we received
     if (!data) {
-      console.log(`       ❌ No data received from API`);
+      console.log(`       ? No data received from API`);
       return [];
     }
 
     const allJobs = Array.isArray(data) ? data : [];
 
     // DEBUG: Log job count
-    console.log(`       📊 Received ${allJobs.length} total jobs`);
+    console.log(`       ?? Received ${allJobs.length} total jobs`);
 
     if (allJobs.length === 0) {
-      console.log(`       ⊘  No jobs found for this company`);
+      console.log(`       ?  No jobs found for this company`);
       return [];
     }
 
     // DEBUG: Log first job structure (helps diagnose issues)
     if (allJobs.length > 0) {
       const firstJob = allJobs[0];
-      console.log(`       🔍 Sample job fields:`, {
-        id: firstJob.id ? '✓' : '✗',
-        text: firstJob.text ? '✓' : '✗',
+      console.log(`       ?? Sample job fields:`, {
+        id: firstJob.id ? '?' : '?',
+        text: firstJob.text ? '?' : '?',
         country: firstJob.country || 'none',
         location: firstJob.categories?.location || 'none',
         allLocations: firstJob.categories?.allLocations?.length || 0
@@ -217,9 +217,9 @@ const leverConfig = {
     const germanyJobs = allJobs.filter(hasGermanyLocation);
 
     if (germanyJobs.length > 0) {
-      console.log(`       ✅ Found ${germanyJobs.length} Germany jobs!`);
+      console.log(`       ? Found ${germanyJobs.length} Germany jobs!`);
     } else {
-      console.log(`       ⊘  No Germany jobs (checked ${allJobs.length} jobs)`);
+      console.log(`       ?  No Germany jobs (checked ${allJobs.length} jobs)`);
     }
 
     return germanyJobs;
@@ -286,7 +286,7 @@ const leverConfig = {
 
   /**
    * Extract description from the list API response.
-   * Note: This will typically be a short intro only — getDetails() fetches the full version.
+   * Note: This will typically be a short intro only � getDetails() fetches the full version.
    */
   extractDescription: (job) => {
     // descriptionPlain is sometimes available on the list endpoint

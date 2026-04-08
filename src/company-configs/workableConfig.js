@@ -1,6 +1,6 @@
-﻿import fetch from 'node-fetch';
+import fetch from 'node-fetch';
 import { StripHtml } from '../utils.js';
-import { normalizeWorkplaceType, normalizeEmploymentType } from '../core/locationPrefilters.js';
+import { normalizeWorkplaceType, normalizeEmploymentType } from '../core/Locationprefilters.js';
 import { normalizeArray } from '../core/jobExtractor.js';
 
 // Workable-specific: maps experience keywords to ExperienceLevel enum
@@ -14,20 +14,20 @@ function normalizeExperienceLevel(value) {
     return 'Mid';
 }
 
-// ─── Pagination & Fetching ─────────────────────────────────────────────────────
-// The old per-company API (www.workable.com/api/accounts/{slug}) is dead — it
-// returns 302 → apply.workable.com which serves 0 jobs or 404s.
+// --- Pagination & Fetching -----------------------------------------------------
+// The old per-company API (www.workable.com/api/accounts/{slug}) is dead � it
+// returns 302 ? apply.workable.com which serves 0 jobs or 404s.
 //
 // The working API is jobs.workable.com/api/v1/jobs which is a search/aggregator
 // endpoint. We query it with location=Germany to get ALL Workable Germany jobs
 // in one go, paginated via nextPageToken.
-// ────────────────────────────────────────────────────────────────────────────────
+// --------------------------------------------------------------------------------
 
 const API_BASE = 'https://jobs.workable.com/api/v1/jobs';
 const PAGE_SIZE = 100;
-const MAX_PAGES = 8; // Safety cap: 100 × 8 = 800 jobs max per scrape run
+const MAX_PAGES = 8; // Safety cap: 100 � 8 = 800 jobs max per scrape run
 
-// ─── Config export ─────────────────────────────────────────────────────────────
+// --- Config export -------------------------------------------------------------
 
 export const workableConfig = {
     siteName: 'Workable Jobs',
@@ -36,7 +36,7 @@ export const workableConfig = {
     _initialized: false,
     needsDescriptionScraping: false, // description comes from the API response
 
-    // ── Pre-fetch phase: paginate the Germany search API ────────────────────────
+    // -- Pre-fetch phase: paginate the Germany search API ------------------------
     async initialize() {
         if (this._initialized) return;
 
@@ -71,7 +71,7 @@ export const workableConfig = {
                 clearTimeout(timeout);
 
                 if (!res.ok) {
-                    console.log(`[Workable] ❌ API returned HTTP ${res.status} — stopping pagination`);
+                    console.log(`[Workable] ? API returned HTTP ${res.status} � stopping pagination`);
                     break;
                 }
 
@@ -95,10 +95,10 @@ export const workableConfig = {
             } while (pageToken && pageCount < MAX_PAGES);
 
         } catch (err) {
-            console.log(`[Workable] ❌ Fetch error: ${err.message}`);
+            console.log(`[Workable] ? Fetch error: ${err.message}`);
         }
 
-        console.log(`[Workable] ✅ Done: ${totalFetched} Germany jobs queued from ${pageCount} page(s)`);
+        console.log(`[Workable] ? Done: ${totalFetched} Germany jobs queued from ${pageCount} page(s)`);
 
         // Group and log jobs by company to mimic Greenhouse output
         if (this._allJobsQueue.length > 0) {
@@ -122,7 +122,7 @@ export const workableConfig = {
         this._initialized = true;
     },
 
-    // ── Called by network.js ───────────────────────────────────────────────────
+    // -- Called by network.js ---------------------------------------------------
     async fetchPage(offset, limit) {
         if (!this._initialized) await this.initialize();
         const jobs = this._allJobsQueue.slice(offset, offset + limit);
@@ -132,7 +132,7 @@ export const workableConfig = {
     getJobs(data) { return data.jobs || []; },
     getTotal(data) { return data.total || 0; },
 
-    // ── Field extractors ───────────────────────────────────────────────────────
+    // -- Field extractors -------------------------------------------------------
     // The jobs.workable.com API returns objects with this shape:
     //   { id, title, state, description, employmentType, benefitsSection,
     //     requirementsSection, url, language, locations, location { city,
@@ -140,7 +140,7 @@ export const workableConfig = {
     //     website, image, description, url }, workplace, department }
 
     extractJobID(job) {
-        // UUID from the API — guaranteed unique
+        // UUID from the API � guaranteed unique
         return `workable_${job.id}`;
     },
 
@@ -189,7 +189,7 @@ export const workableConfig = {
     },
 
     extractDirectApplyURL(job) {
-        // The jobs.workable.com URL is the listing — same as apply URL
+        // The jobs.workable.com URL is the listing � same as apply URL
         return job.url || null;
     },
 
@@ -218,7 +218,7 @@ export const workableConfig = {
     },
 
     extractExperienceLevel(job) {
-        // The search API doesn't have an experience field — let processor derive from title
+        // The search API doesn't have an experience field � let processor derive from title
         return null;
     },
 

@@ -1,6 +1,6 @@
-﻿import fetch from 'node-fetch';
+import fetch from 'node-fetch';
 import { StripHtml } from '../utils.js';
-import { GERMAN_CITIES, isGermanyString, normalizeWorkplaceType, normalizeEmploymentType } from '../core/locationPrefilters.js';
+import { GERMAN_CITIES, isGermanyString, normalizeWorkplaceType, normalizeEmploymentType } from '../core/Locationprefilters.js';
 import { normalizeArray } from '../core/jobExtractor.js';
 
 
@@ -34,16 +34,16 @@ function parseSalaryFromText(text) {
     const cleaned = StripHtml(text).replace(/\./g, '').replace(/,/g, '.');
 
     const currencyMatch = cleaned.match(/(USD|EUR|GBP|CHF|CAD|AUD|JPY|SEK|NOK|DKK|PLN)/i);
-    const symbolMatch = cleaned.match(/[€$£]/);
-    const rangeMatch = cleaned.match(/(\d{2,7}(?:\.\d+)?)\s*(?:-|–|—|to)\s*(\d{2,7}(?:\.\d+)?)/i);
+    const symbolMatch = cleaned.match(/[�$�]/);
+    const rangeMatch = cleaned.match(/(\d{2,7}(?:\.\d+)?)\s*(?:-|�|�|to)\s*(\d{2,7}(?:\.\d+)?)/i);
 
     let salaryCurrency = null;
     if (currencyMatch) {
         salaryCurrency = currencyMatch[1].toUpperCase();
     } else if (symbolMatch) {
-        if (symbolMatch[0] === '€') salaryCurrency = 'EUR';
+        if (symbolMatch[0] === '�') salaryCurrency = 'EUR';
         if (symbolMatch[0] === '$') salaryCurrency = 'USD';
-        if (symbolMatch[0] === '£') salaryCurrency = 'GBP';
+        if (symbolMatch[0] === '�') salaryCurrency = 'GBP';
     }
 
     let salaryInterval = null;
@@ -65,7 +65,7 @@ export const greenhouseConfig = {
     baseUrl: "https://boards-api.greenhouse.io/v1/boards",
 
     companyBoardTokens: [
-        // ✅ WORKING TOKENS (verified)
+        // ? WORKING TOKENS (verified)
         'airbnb',
         'stripe',
         'figma',
@@ -149,7 +149,7 @@ export const greenhouseConfig = {
                 if (!response.ok) {
                     failCount++;
                     // Only log if you want to see failures (comment out to reduce noise)
-                    // console.log(`[Greenhouse] ❌ ${boardToken}: ${response.status}`);
+                    // console.log(`[Greenhouse] ? ${boardToken}: ${response.status}`);
                     continue;
                 }
 
@@ -171,7 +171,7 @@ export const greenhouseConfig = {
                     }));
 
                 if (germanyJobs.length > 0) {
-                    console.log(`[Greenhouse] ✅ ${boardToken}: ${germanyJobs.length} jobs in Germany (${data.jobs.length} total)`);
+                    console.log(`[Greenhouse] ? ${boardToken}: ${germanyJobs.length} jobs in Germany (${data.jobs.length} total)`);
                     this._allJobsQueue.push(...germanyJobs);
                     successCount++;
                 }
@@ -181,12 +181,12 @@ export const greenhouseConfig = {
 
             } catch (error) {
                 failCount++;
-                console.error(`[Greenhouse] ❌ ${boardToken}: ${error.message}`);
+                console.error(`[Greenhouse] ? ${boardToken}: ${error.message}`);
             }
         }
 
-        console.log(`[Greenhouse] ✅ Summary: ${successCount} companies with Germany jobs, ${failCount} failed/empty`);
-        console.log(`[Greenhouse] 📊 Total jobs found: ${this._allJobsQueue.length}`);
+        console.log(`[Greenhouse] ? Summary: ${successCount} companies with Germany jobs, ${failCount} failed/empty`);
+        console.log(`[Greenhouse] ?? Total jobs found: ${this._allJobsQueue.length}`);
         this._initialized = true;
     },
 
@@ -358,7 +358,7 @@ export const greenhouseConfig = {
         return 'greenhouse';
     },
 
-    // Check if location is in Germany — delegates to shared isGermanyString() helper
+    // Check if location is in Germany � delegates to shared isGermanyString() helper
     isGermanyLocation(location) {
         return isGermanyString(location);
     }

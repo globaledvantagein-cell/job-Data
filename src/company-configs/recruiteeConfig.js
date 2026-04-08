@@ -1,12 +1,12 @@
-﻿import fetch from 'node-fetch';
+import fetch from 'node-fetch';
 import { StripHtml } from '../utils.js';
-import { GERMAN_CITIES } from '../core/locationPrefilters.js';
+import { GERMAN_CITIES } from '../core/Locationprefilters.js';
 import { normalizeArray } from '../core/jobExtractor.js';
 
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// --- Helpers ------------------------------------------------------------------
 
-// NOTE: normalizeWorkplaceType here takes a JOB OBJECT (not a string) — Recruitee
+// NOTE: normalizeWorkplaceType here takes a JOB OBJECT (not a string) � Recruitee
 // uses boolean flags (job.remote, job.hybrid, job.on_site), not a string field.
 // This is intentionally different from the shared string-based normalizeWorkplaceType.
 
@@ -111,33 +111,33 @@ function hasGermanyLocation(job) {
     return false;
 }
 
-// ─── Company subdomain list ───────────────────────────────────────────────────
+// --- Company subdomain list ---------------------------------------------------
 //
 // Recruitee Careers Site API:  GET https://{subdomain}.recruitee.com/api/offers/
-// No auth key needed — completely free public API.
+// No auth key needed � completely free public API.
 //
 // To find a company's subdomain:
 //   1. Visit their careers page
 //   2. If it redirects to {something}.recruitee.com, the subdomain is {something}
-//   3. Or check job listing URLs — they contain the subdomain
+//   3. Or check job listing URLs � they contain the subdomain
 //
 // Add new companies here as you discover them.
 
 const companySubdomains = [
-    // ── Auto-discovered 2026-04-02 ──
-    'limehome',                    // limehome — 11 DE / 14 total
-    // 'sharpist',                    // Sharpist GmbH — 6 DE / 6 total
-    // 'masterplan',                  // Masterplan — 4 DE / 4 total
-    // 'ginmon',                      // Ginmon GmbH — 3 DE / 3 total
-    // 'rebuy',                       // rebuy — 3 DE / 3 total
-    // 'channable',                   // Channable — 3 DE / 15 total
-    // 'companisto',                  // Companisto GmbH — 2 DE / 2 total
-    // 'effectory',                   // Effectory — 2 DE / 8 total
-    // 'personio',                    // FD Sandbox — 1 DE / 1 total
-    // 'jobs',                        // Tellent — 1 DE / 7 total
+    // -- Auto-discovered 2026-04-02 --
+    'limehome',                    // limehome � 11 DE / 14 total
+    // 'sharpist',                    // Sharpist GmbH � 6 DE / 6 total
+    // 'masterplan',                  // Masterplan � 4 DE / 4 total
+    // 'ginmon',                      // Ginmon GmbH � 3 DE / 3 total
+    // 'rebuy',                       // rebuy � 3 DE / 3 total
+    // 'channable',                   // Channable � 3 DE / 15 total
+    // 'companisto',                  // Companisto GmbH � 2 DE / 2 total
+    // 'effectory',                   // Effectory � 2 DE / 8 total
+    // 'personio',                    // FD Sandbox � 1 DE / 1 total
+    // 'jobs',                        // Tellent � 1 DE / 7 total
 ];
 
-// ─── Config export ─────────────────────────────────────────────────────────────
+// --- Config export -------------------------------------------------------------
 
 export const recruiteeConfig = {
     siteName: 'Recruitee Jobs',
@@ -146,7 +146,7 @@ export const recruiteeConfig = {
     _initialized: false,
     needsDescriptionScraping: false, // List endpoint returns full description + requirements
 
-    // ── Pre-fetch: hit every company subdomain, filter to Germany ──────────────
+    // -- Pre-fetch: hit every company subdomain, filter to Germany --------------
     async initialize() {
         if (this._initialized) return;
 
@@ -197,7 +197,7 @@ export const recruiteeConfig = {
                     }));
 
                 if (germanyJobs.length > 0) {
-                    console.log(`[Recruitee] ✅ ${subdomain}: ${germanyJobs.length} Germany jobs (${allOffers.length} total)`);
+                    console.log(`[Recruitee] ? ${subdomain}: ${germanyJobs.length} Germany jobs (${allOffers.length} total)`);
                     this._allJobsQueue.push(...germanyJobs);
                     germanyJobsTotal += germanyJobs.length;
                     successCount++;
@@ -210,17 +210,17 @@ export const recruiteeConfig = {
                 failCount++;
                 // Only log non-abort errors
                 if (error.name !== 'AbortError') {
-                    console.error(`[Recruitee] ❌ ${subdomain}: ${error.message}`);
+                    console.error(`[Recruitee] ? ${subdomain}: ${error.message}`);
                 }
             }
         }
 
-        console.log(`[Recruitee] ✅ Summary: ${successCount} companies with Germany jobs, ${failCount} failed/empty`);
-        console.log(`[Recruitee] 📊 Total Germany jobs queued: ${germanyJobsTotal}`);
+        console.log(`[Recruitee] ? Summary: ${successCount} companies with Germany jobs, ${failCount} failed/empty`);
+        console.log(`[Recruitee] ?? Total Germany jobs queued: ${germanyJobsTotal}`);
         this._initialized = true;
     },
 
-    // ── Called by network.js (fetchJobsPage detects this method) ───────────────
+    // -- Called by network.js (fetchJobsPage detects this method) ---------------
     async fetchPage(offset, limit) {
         if (!this._initialized) await this.initialize();
         const jobs = this._allJobsQueue.slice(offset, offset + limit);
@@ -235,7 +235,7 @@ export const recruiteeConfig = {
         return data.total || 0;
     },
 
-    // ─── Field extractors (used by processor.js) ──────────────────────────────
+    // --- Field extractors (used by processor.js) ------------------------------
 
     extractJobID(job) {
         // slug is human-readable and unique per company; id is numeric and globally unique
@@ -337,7 +337,7 @@ export const recruiteeConfig = {
     },
 
     extractTeam(job) {
-        // Recruitee doesn't have a separate team field — department covers it
+        // Recruitee doesn't have a separate team field � department covers it
         return null;
     },
 

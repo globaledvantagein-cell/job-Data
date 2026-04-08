@@ -1,10 +1,10 @@
-﻿import fetch from 'node-fetch';
+import fetch from 'node-fetch';
 import { StripHtml } from '../utils.js';
-import { GERMAN_CITIES, isGermanyString, normalizeWorkplaceType, normalizeEmploymentType } from '../core/locationPrefilters.js';
+import { GERMAN_CITIES, isGermanyString, normalizeWorkplaceType, normalizeEmploymentType } from '../core/Locationprefilters.js';
 import { normalizeArray } from '../core/jobExtractor.js';
 
 
-// ─── Germany location matching ─────────────────────────────────────────────────
+// --- Germany location matching -------------------------------------------------
 
 function hasGermanyLocation(job) {
     // Check locationsText first (most companies populate this)
@@ -12,7 +12,7 @@ function hasGermanyLocation(job) {
     if (locationsText && isGermanyString(locationsText)) return true;
 
     // Fallback: check bulletFields (some companies like Europcar store country/city here)
-    // bulletFields format: ['Germany', 'Hamburg', 'JR108514'] — country in [0], city in [1]
+    // bulletFields format: ['Germany', 'Hamburg', 'JR108514'] � country in [0], city in [1]
     if (typeof job === 'object' && Array.isArray(job.bulletFields)) {
         const bfText = job.bulletFields.map(b => String(b)).join(' ');
         if (isGermanyString(bfText)) return true;
@@ -21,12 +21,12 @@ function hasGermanyLocation(job) {
     return false;
 }
 
-// ─── Company list ─────────────────────────────────────────────────────────────
+// --- Company list -------------------------------------------------------------
 //
 // Format: { company, instance, site, name }
 // URL:    https://{company}.{instance}.myworkdayjobs.com/wday/cxs/{company}/{site}/jobs
 //
-// To find a company's Workday slug, visit their careers page — if it's hosted on
+// To find a company's Workday slug, visit their careers page � if it's hosted on
 // Workday it will redirect to a myworkdayjobs.com URL. The instance (wd1/wd3/wd5)
 // and site path are visible in the URL.
 //
@@ -34,7 +34,7 @@ function hasGermanyLocation(job) {
 
 const companyBoards = [
 
-    // ── Original verified companies ──
+    // -- Original verified companies --
     { company: 'leidos', instance: 'wd5', site: 'External', name: 'Leidos' },
     { company: 'cadence', instance: 'wd1', site: 'External_Careers', name: 'Cadence' },
     { company: 'redhat', instance: 'wd5', site: 'Jobs', name: 'Red Hat' },
@@ -56,7 +56,7 @@ const companyBoards = [
     { company: 'micron', instance: 'wd1', site: 'External', name: 'Micron' },
     { company: 'shell', instance: 'wd3', site: 'ShellCareers', name: 'Shell' },
 
-    // ── New from dorking ──
+    // -- New from dorking --
     { company: 'mufgub', instance: 'wd3', site: 'MUFG-Careers', name: 'MUFG' },
     { company: 'gsk', instance: 'wd5', site: 'GSKCareers', name: 'GSK' },
     { company: 'illumina', instance: 'wd1', site: 'illumina-careers', name: 'Illumina' },
@@ -69,7 +69,7 @@ const companyBoards = [
     { company: 'bdx', instance: 'wd1', site: 'EXTERNAL_CAREER_SITE_GERMANY', name: 'BD (Becton Dickinson)' },
     { company: 'alcon', instance: 'wd5', site: 'careers_alcon', name: 'Alcon' },
     { company: 'sandvik', instance: 'wd3', site: 'walter-jobs', name: 'Walter (Sandvik)' },
-    { company: 'condenast', instance: 'wd5', site: 'CondeCareers', name: 'Condé Nast' },
+    { company: 'condenast', instance: 'wd5', site: 'CondeCareers', name: 'Cond� Nast' },
     { company: 'freseniusglobal', instance: 'wd3', site: 'FK_Careers', name: 'Fresenius Kabi' },
     { company: 'solenis', instance: 'wd1', site: 'Solenis', name: 'Solenis' },
     { company: 'athora', instance: 'wd3', site: 'athora-careers', name: 'Athora' },
@@ -81,7 +81,7 @@ const companyBoards = [
     { company: 'covestro', instance: 'wd3', site: 'cov_external', name: 'Covestro' },
     { company: 'galileo', instance: 'wd3', site: 'global_education_germany_career_site', name: 'Galileo Global Education' },
     { company: 'insulet', instance: 'wd5', site: 'insuletcareers', name: 'Insulet (Omnipod)' },
-    { company: 'ossur', instance: 'wd3', site: 'ossurcareersglobal', name: 'Össur' },
+    { company: 'ossur', instance: 'wd3', site: 'ossurcareersglobal', name: '�ssur' },
     { company: 'rentschler', instance: 'wd3', site: 'Rentschler_Career', name: 'Rentschler Biopharma' },
     { company: 'raymondjames', instance: 'wd1', site: 'RaymondJamesCareers', name: 'Raymond James' },
     { company: 'brenntag', instance: 'wd3', site: 'brenntag_jobs', name: 'Brenntag' },
@@ -107,11 +107,11 @@ const companyBoards = [
     { company: 'cw', instance: 'wd1', site: 'External', name: 'Curtiss-Wright' },
     { company: 'livanova', instance: 'wd5', site: 'Search', name: 'LivaNova' },
     { company: 'relx', instance: 'wd3', site: 'ReedExhibitions', name: 'RELX (Reed Exhibitions)' },
-    { company: 'zuehlke', instance: 'wd3', site: 'Zuhlke-Careers', name: 'Zühlke' },
+    { company: 'zuehlke', instance: 'wd3', site: 'Zuhlke-Careers', name: 'Z�hlke' },
 
 ];
 
-// ─── Config export ─────────────────────────────────────────────────────────────
+// --- Config export -------------------------------------------------------------
 
 export const workdayConfig = {
     siteName: 'Workday Jobs',
@@ -121,7 +121,7 @@ export const workdayConfig = {
     _initialized: false,
     needsDescriptionScraping: true,
 
-    // ── Pre-fetch phase: runs once per scrape session ──────────────────────────
+    // -- Pre-fetch phase: runs once per scrape session --------------------------
     // Paginates every company board, filters to Germany-only jobs, and
     // buffers them in _allJobsQueue for scrapeSite to drain one-by-one.
     async initialize() {
@@ -157,7 +157,7 @@ export const workdayConfig = {
             const limit = 20;
 
             try {
-                // ── First page ──────────────────────────────────────────────
+                // -- First page ----------------------------------------------
                 const controller = new AbortController();
                 const timeout = setTimeout(() => controller.abort(), 30000);
 
@@ -174,7 +174,7 @@ export const workdayConfig = {
 
                 if (!firstRes.ok) {
                     failCount++;
-                    console.log(`[Workday] ❌ ${company} (${name}): HTTP ${firstRes.status} — skipping`);
+                    console.log(`[Workday] ? ${company} (${name}): HTTP ${firstRes.status} � skipping`);
                     continue;
                 }
 
@@ -197,7 +197,7 @@ export const workdayConfig = {
                 allJobs.push(...firstPageJobs);
                 offset += limit;
 
-                // ── Subsequent pages ────────────────────────────────────────
+                // -- Subsequent pages ----------------------------------------
                 while (offset < total) {
                     await new Promise(r => setTimeout(r, 200)); // polite delay between pages
 
@@ -229,11 +229,11 @@ export const workdayConfig = {
                     offset += limit;
                 }
 
-                // ── Filter to Germany-only ──────────────────────────────────
+                // -- Filter to Germany-only ----------------------------------
                 const germanyJobs = allJobs.filter(j => hasGermanyLocation(j));
 
                 if (germanyJobs.length > 0) {
-                    console.log(`[Workday] ✅ ${company} (${name}): ${germanyJobs.length} Germany jobs (${total} total)`);
+                    console.log(`[Workday] ? ${company} (${name}): ${germanyJobs.length} Germany jobs (${total} total)`);
                     this._allJobsQueue.push(...germanyJobs);
                     germanyJobsTotal += germanyJobs.length;
                     successCount++;
@@ -246,16 +246,16 @@ export const workdayConfig = {
 
             } catch (err) {
                 failCount++;
-                console.log(`[Workday] ❌ ${company} (${name}): ${err?.message || err}`);
+                console.log(`[Workday] ? ${company} (${name}): ${err?.message || err}`);
             }
         }
 
-        console.log(`[Workday] ✅ Summary: ${successCount} companies with Germany jobs, ${failCount} failed, ${emptyCount} empty`);
-        console.log(`[Workday] 📊 Total Germany jobs queued: ${germanyJobsTotal}`);
+        console.log(`[Workday] ? Summary: ${successCount} companies with Germany jobs, ${failCount} failed, ${emptyCount} empty`);
+        console.log(`[Workday] ?? Total Germany jobs queued: ${germanyJobsTotal}`);
         this._initialized = true;
     },
 
-    // ── Called by network.js (fetchJobsPage detects this method) ──────────────
+    // -- Called by network.js (fetchJobsPage detects this method) --------------
     async fetchPage(offset, limit) {
         if (!this._initialized) await this.initialize();
         const jobs = this._allJobsQueue.slice(offset, offset + limit);
@@ -270,7 +270,7 @@ export const workdayConfig = {
         return data.total || 0;
     },
 
-    // ── Field extractors (used by processor.js) ───────────────────────────────
+    // -- Field extractors (used by processor.js) -------------------------------
 
     extractJobID(job) {
         // externalPath is always unique: /job/Hamburg/Revenue-Analyst_JR108514
@@ -317,7 +317,7 @@ export const workdayConfig = {
     },
 
     extractDepartment(job) {
-        // Not available in list payload — filled by getDetails if present
+        // Not available in list payload � filled by getDetails if present
         return null;
     },
 
@@ -342,7 +342,7 @@ export const workdayConfig = {
         return null; // filled by getDetails
     },
 
-    // ── Detail fetch: called by processor.js when needsDescriptionScraping=true ─
+    // -- Detail fetch: called by processor.js when needsDescriptionScraping=true -
 
     async getDetails(rawJob, sessionHeaders) {
         const { _company, _instance, _site, externalPath, _companyName } = rawJob;
@@ -372,18 +372,18 @@ export const workdayConfig = {
             const info = data.jobPostingInfo || {};
             const hiringOrg = data.hiringOrganization || {};
 
-            // ── Workplace type ─────────────────────────────────────────────
+            // -- Workplace type ---------------------------------------------
             const workplaceRaw = info.remoteType || info.workplaceType || info.locationType || null;
             const workplaceType = normalizeWorkplaceType(workplaceRaw);
 
-            // ── Employment type ─────────────────────────────────────────────
+            // -- Employment type ---------------------------------------------
             const employmentRaw = info.timeType || info.jobType || null;
             const employmentType = normalizeEmploymentType(employmentRaw);
 
-            // ── Department ─────────────────────────────────────────────────
+            // -- Department -------------------------------------------------
             const department = info.jobFunctionSummary || info.jobFamily || hiringOrg.industry || null;
 
-            // ── Plain-text description (strip any HTML Workday sometimes includes) ──
+            // -- Plain-text description (strip any HTML Workday sometimes includes) --
             const descriptionHtml = info.jobDescription || '';
             const descriptionPlain = StripHtml(descriptionHtml);
 
