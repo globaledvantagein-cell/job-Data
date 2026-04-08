@@ -1,21 +1,21 @@
 // config.js
-import { greenhouseConfig } from './CompanyConfig/greenhouseConfig.js';
-import { ashbyConfig } from './CompanyConfig/ashbyConfig.js';
-import { leverConfig } from './CompanyConfig/leverConfig.js';
-import { workdayConfig } from './CompanyConfig/Workdayconfig.js';
-import { workableConfig } from './CompanyConfig/Workableconfig.js';
-import { recruiteeConfig } from './CompanyConfig/Recruiteeconfig.js';
+import { greenhouseConfig } from './company-configs/greenhouseConfig.js';
+import { ashbyConfig } from './company-configs/ashbyConfig.js';
+import { leverConfig } from './company-configs/leverConfig.js';
+import { workdayConfig } from './company-configs/workdayConfig.js';
+import { workableConfig } from './company-configs/workableConfig.js';
+import { recruiteeConfig } from './company-configs/recruiteeConfig.js';
 
 export const SITES_CONFIG = [
 
 
 
   // --------------------------------------
-  greenhouseConfig,
-  ashbyConfig,
-  leverConfig ,
-  workdayConfig,
-  workableConfig,
+  // greenhouseConfig,
+  // ashbyConfig,
+  // leverConfig ,
+  // workdayConfig,
+  // workableConfig,
   recruiteeConfig,
 
 
@@ -23,6 +23,6 @@ export const SITES_CONFIG = [
 
 
 
-  
 
-  ];
+
+];

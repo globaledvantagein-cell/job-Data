@@ -2,10 +2,10 @@ import 'dotenv/config'; // Make sure to load environment variables first
 import express from 'express';
 import cors from 'cors';
 import cron from 'node-cron';
-import { client, connectToDb } from './Db/databaseManager.js';
-import { runScraper } from './tasks/runScraper.js';
-import { runValidator } from './tasks/runValidator.js';
-import { runMatcher } from './tasks/runMatcher.js';
+import { client, connectToDb } from './db/index.js';
+import { runScraper } from './cron/runScraper.js';
+import { runValidator } from './cron/runValidator.js';
+import { runMatcher } from './cron/runMatcher.js';
 import { jobsApiRouter } from './api/jobs.routes.js';
 import { usersApiRouter } from './api/users.routes.js';
 import { authRouter } from './api/auth.routes.js';
@@ -64,7 +64,7 @@ app.listen(PORT, async () => {
         // ✅ UPDATED: This block is now UNCOMMENTED.
         // This will run the scraper ONCE every time the server starts.
         console.log('--- Running initial scrape on start... ---');
-        // runScraper();
+        runScraper();
         // runMatcher();
 
 

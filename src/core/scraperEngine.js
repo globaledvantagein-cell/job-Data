@@ -1,7 +1,7 @@
 import { initializeSession, fetchJobsPage } from './network.js';
 import { shouldContinuePaging } from './pagination.js';
-import { processJob } from './processor.js';
-import { saveJobs } from "../Db/databaseManager.js";
+import { processJob } from './processJob.js';
+import { saveJobs } from '../db/index.js';
 import { sleep } from '../utils.js';
 
 export async function scrapeSite(siteConfig, existingIDsMap, crossEntityKeys) {

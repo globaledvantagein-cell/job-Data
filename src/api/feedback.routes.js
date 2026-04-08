@@ -6,7 +6,7 @@ import {
     updateFeedbackStatus,
     deleteFeedback,
     getFeedbackStats
-} from '../Db/databaseManager.js';
+} from '../db/index.js';
 import { createFeedback } from '../models/feedbackModel.js';
 import { verifyToken, verifyAdmin } from '../middleware/authMiddleware.js';
 

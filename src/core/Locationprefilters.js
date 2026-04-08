@@ -53,7 +53,7 @@ export const AMBIGUOUS_LOCATIONS = [
 export function universalLocationPreFilter(job, options = {}) {
     const locationFields = options.locationFields || ['location', 'Location', 'city', 'office'];
     let locationText = '';
-    
+
     for (const field of locationFields) {
         if (job[field]) {
             locationText = String(job[field]).toLowerCase();
@@ -72,12 +72,12 @@ export function universalLocationPreFilter(job, options = {}) {
             }
         }
     }
-    
+
     if (!locationText || locationText.trim() === '') {
         console.log(`[Pre-Filter] ❌ Rejected - No location specified`);
         return false; // ✅ STRICT: Reject if no location
     }
-    
+
     // ✅ STRICT MODE FOR PRODUCTION: Reject ambiguous locations
     // We only want jobs with explicit German city names
     const isAmbiguous = AMBIGUOUS_LOCATIONS.some(term => locationText.includes(term));
@@ -85,21 +85,21 @@ export function universalLocationPreFilter(job, options = {}) {
         console.log(`[Pre-Filter] ❌ Rejected - Ambiguous location: ${locationText}`);
         return false; // ✅ Reject "headquarter", "remote", "office" etc.
     }
-    
+
     // Accept if contains ANY German city
     const hasGermanCity = GERMAN_CITIES.some(city => locationText.includes(city));
     if (hasGermanCity) {
         console.log(`[Pre-Filter] ✅ Accepted - German location found: ${locationText}`);
         return true;
     }
-    
+
     // Reject if contains non-German cities
     const hasNonGermanCity = NON_GERMAN_CITIES.some(city => locationText.includes(city));
     if (hasNonGermanCity && !hasGermanCity) {
         console.log(`[Pre-Filter] ❌ Rejected - No German location: ${locationText}`);
         return false;
     }
-    
+
     // If location exists but unclear, reject to be safe
     console.log(`[Pre-Filter] ❌ Rejected - Unclear location: ${locationText}`);
     return false; // ✅ STRICT: When in doubt, reject
@@ -107,4 +107,52 @@ export function universalLocationPreFilter(job, options = {}) {
 
 export function createLocationPreFilter(options = {}) {
     return (job) => universalLocationPreFilter(job, options);
+}
+
+// ─── Shared helpers used by all ATS company configs ───────────────────────────
+// Single source of truth — import from here instead of redeclaring locally.
+
+/**
+ * Returns true if the given text string refers to Germany.
+ * Checks for 'germany', 'deutschland', '\bde\b', or any city in GERMAN_CITIES.
+ */
+export function isGermanyString(text) {
+    if (!text) return false;
+    const t = String(text).toLowerCase();
+    if (t.includes('germany') || t.includes('deutschland')) return true;
+    if (/\bde\b/.test(t)) return true;
+    return GERMAN_CITIES.some(city => t.includes(city));
+}
+
+
+/** Normalises a workplace-type string → 'Remote' | 'Hybrid' | 'Onsite' | 'Unspecified' */
+export function normalizeWorkplaceType(value) {
+    if (!value) return 'Unspecified';
+    const lower = String(value).toLowerCase();
+    if (lower.includes('remote')) return 'Remote';
+    if (lower.includes('hybrid')) return 'Hybrid';
+    if (lower.includes('onsite') || lower.includes('on-site') || lower.includes('on_site') || lower.includes('office')) return 'Onsite';
+    return 'Unspecified';
+}
+
+/** Normalises an employment-type string → 'FullTime' | 'PartTime' | 'Contract' | 'Intern' | 'Temporary' | null */
+export function normalizeEmploymentType(value) {
+    if (!value) return null;
+    const lower = String(value).toLowerCase();
+    if (lower.includes('full')) return 'FullTime';
+    if (lower.includes('part')) return 'PartTime';
+    if (lower.includes('intern')) return 'Intern';
+    if (lower.includes('temp')) return 'Temporary';
+    if (lower.includes('contract') || lower.includes('freelance')) return 'Contract';
+    return null;
+}
+
+/** Normalises a country string → 2-letter ISO code or null */
+export function normalizeCountry(value) {
+    if (!value) return null;
+    const cleaned = String(value).trim();
+    const lower = cleaned.toLowerCase();
+    if (lower === 'germany' || lower === 'deutschland') return 'DE';
+    if (cleaned.length === 2) return cleaned.toUpperCase();
+    return cleaned;
 }

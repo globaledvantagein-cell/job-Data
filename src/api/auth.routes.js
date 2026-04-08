@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
-import { registerUser, loginUser, getUserProfile } from '../Db/databaseManager.js';
+import { registerUser, loginUser, getUserProfile } from '../db/index.js';
 import { verifyToken } from '../middleware/authMiddleware.js';
 
 export const authRouter = Router();
@@ -20,31 +20,31 @@ authRouter.post('/talent-pool', [
 
     try {
         const { email, name, domain, location } = req.body;
-        
+
         // Register user with NO password and isWaitlist=true
         // The registerUser function needs to handle the lack of password gracefully 
         // (ensure your registerUser implementation allows password to be null/undefined for waitlist)
-        const user = await registerUser({ 
-            email, 
-            name, 
-            domain, 
-            location, 
-            role: 'user', 
+        const user = await registerUser({
+            email,
+            name,
+            domain,
+            location,
+            role: 'user',
             isWaitlist: true,
             password: null // Explicitly null
         });
 
         // SUCCESS: Do NOT return a token. Just a success message.
-        res.status(201).json({ 
-            success: true, 
-            message: "Successfully joined the talent pool" 
+        res.status(201).json({
+            success: true,
+            message: "Successfully joined the talent pool"
         });
 
     } catch (error) {
         // If user already exists, we can still say "Success" to prevent privacy leakage,
         // or return a specific error if you prefer.
         if (error.message.includes('already exists')) {
-             return res.status(200).json({ success: true, message: "You are already on the list!" });
+            return res.status(200).json({ success: true, message: "You are already on the list!" });
         }
         res.status(400).json({ error: error.message });
     }
@@ -54,7 +54,7 @@ authRouter.post('/talent-pool', [
 authRouter.post('/admin/signup', [
     body('email').isEmail(),
     body('password').isLength({ min: 6 }),
-    body('adminSecret').exists() 
+    body('adminSecret').exists()
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
@@ -80,9 +80,9 @@ authRouter.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
         const user = await loginUser(email, password);
-        
+
         const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
-        
+
         res.status(200).json({ token, user });
     } catch (error) {
         res.status(400).json({ error: error.message });

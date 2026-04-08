@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { addSubscriber } from '../Db/databaseManager.js';
+import { addSubscriber } from '../db/index.js';
 
 export const usersApiRouter = Router();
 
@@ -13,7 +13,7 @@ usersApiRouter.post('/subscribe', async (req, res) => {
         }
 
         await addSubscriber({ email, categories, frequency });
-        
+
         console.log(`[Newsletter] New subscriber: ${email}`);
         res.status(200).json({ message: "Successfully subscribed!" });
     } catch (error) {

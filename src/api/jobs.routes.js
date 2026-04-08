@@ -1,26 +1,3 @@
-// ...existing code...
-// Place after existing helper functions, before routes
-const TECHNICAL_KEYWORDS = [
-    'engineering', 'software', 'data', 'ai', 'machine learning', 'devops',
-    'infrastructure', 'platform', 'backend', 'frontend', 'fullstack',
-    'full-stack', 'full stack', 'mobile', 'ios', 'android', 'web',
-    'cloud', 'security', 'cybersecurity', 'infosec', 'it', 'sre',
-    'reliability', 'qa', 'quality assurance', 'test', 'automation',
-    'architect', 'systems', 'network', 'database', 'analytics',
-    'bi', 'intelligence', 'research', 'science', 'ml', 'deep learning',
-    'computer vision', 'nlp', 'robotics', 'firmware', 'embedded',
-    'hardware', 'electronic', 'technical', 'technology', 'development',
-    'developer', 'programmer', 'implementation', 'integration',
-    'solutions engineer', 'technical account', 'support engineer',
-    'professional services', 'devrel', 'developer relations',
-    'site reliability', 'devsecops', 'secops', 'mlops', 'dataops',
-    'release', 'build', 'ci/cd', 'pipeline',
-];
-
-function deriveDomain(department, jobTitle) {
-    const combined = `${department || ''} ${jobTitle || ''}`.toLowerCase();
-    return TECHNICAL_KEYWORDS.some(kw => combined.includes(kw)) ? 'Technical' : 'Non-Technical';
-}
 import { Router } from 'express';
 import { ObjectId } from 'mongodb';
 import {
@@ -42,9 +19,10 @@ import {
     cleanAllDescriptions,
     deleteJobsByCompany,
     connectToDb
-} from '../Db/databaseManager.js';
+} from '../db/index.js';
 
-import { analyzeJobWithGroq } from '../grokAnalyzer.js';
+import { analyzeJobWithGroq } from '../gemini/index.js';
+import { deriveDomain, deriveExperienceLevelFromTitle, deriveIsEntryLevelFromTitle } from '../core/jobExtractor.js';
 // ✅ FIXED: Import the correct middleware names
 import { verifyToken, verifyAdmin } from '../middleware/authMiddleware.js';
 
@@ -52,21 +30,10 @@ export const jobsApiRouter = Router();
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-function deriveExperienceFromTitle(title = '') {
-    const lower = String(title).toLowerCase();
-
-    if (/\b(staff|distinguished)\b/.test(lower)) return 'Staff';
-    if (/\b(lead|principal|tech lead)\b/.test(lower)) return 'Lead';
-    if (/\b(senior|sr\.?)\b/.test(lower)) return 'Senior';
-    if (/\b(junior|jr\.?|entry|associate|graduate)\b/.test(lower)) return 'Entry';
-    if (/\b(mid[- ]?level|intermediate)\b/.test(lower)) return 'Mid';
-
-    return 'Mid';
-}
-
-function isEntryLevelTitle(title = '') {
-    return /\b(junior|jr\.?|entry|associate|graduate)\b/.test(String(title).toLowerCase());
-}
+// Re-use the canonical implementation from core/jobExtractor.js via imports above.
+// Route-specific aliases for backward compatibility:
+const deriveExperienceFromTitle = deriveExperienceLevelFromTitle;
+const isEntryLevelTitle = deriveIsEntryLevelFromTitle;
 
 function deriveWorkplaceType(workplaceType, location = '', description = '') {
     const current = String(workplaceType || '').trim();
@@ -357,11 +324,11 @@ jobsApiRouter.post('/:id/analyze', async (req, res) => {
         }
 
         const db = await connectToDb();
-        
+
         await db.collection('jobs').updateOne(
             { _id: new ObjectId(id) },
-            { 
-                $set: { 
+            {
+                $set: {
                     EnglishSpeaking: aiResult.english_speaking,
                     GermanRequired: aiResult.german_required,
                     Domain: deriveDomain(job.Department, job.JobTitle),
@@ -370,13 +337,13 @@ jobsApiRouter.post('/:id/analyze', async (req, res) => {
                     Status: newStatus,
                     RejectionReason: rejectionReason,
                     updatedAt: new Date()
-                } 
+                }
             }
         );
 
-        res.status(200).json({ 
-            message: "Job re-analyzed", 
-            newStatus, 
+        res.status(200).json({
+            message: "Job re-analyzed",
+            newStatus,
             english: aiResult.english_speaking,
             german: aiResult.german_required
         });
@@ -401,7 +368,7 @@ jobsApiRouter.delete('/company', async (req, res) => {
 jobsApiRouter.post('/', async (req, res) => {
     try {
         const jobData = req.body;
-        const newJob = await addCuratedJob(jobData); 
+        const newJob = await addCuratedJob(jobData);
         res.status(201).json(newJob);
     } catch (error) {
         if (error.message.includes('duplicate URL')) return res.status(409).json({ error: error.message });
@@ -426,14 +393,14 @@ jobsApiRouter.get('/test-logs', verifyToken, verifyAdmin, async (req, res) => {
     try {
         const db = await connectToDb();
         console.log('[API] DB connected');
-        
+
         // ✅ FIXED: Lowercase 'j' to match your databaseManager.js
         const logs = await db.collection('jobTestLogs')
             .find({})
             .sort({ scrapedAt: -1 })
             .limit(500)
             .toArray();
-        
+
         console.log('[API] Found logs:', logs.length);
         res.status(200).json(logs);
     } catch (error) {
