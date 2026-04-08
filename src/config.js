@@ -11,11 +11,11 @@ export const SITES_CONFIG = [
 
 
   // --------------------------------------
-  // greenhouseConfig,
-  // ashbyConfig,
-  // leverConfig ,
-  // workdayConfig,
-  // workableConfig,
+  greenhouseConfig,
+  ashbyConfig,
+  leverConfig ,
+  workdayConfig,
+  workableConfig,
   recruiteeConfig,
 
 
