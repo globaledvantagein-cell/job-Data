@@ -12,7 +12,7 @@ function hasGermanyLocation(job) {
     if (locationsText && isGermanyString(locationsText)) return true;
 
     // Fallback: check bulletFields (some companies like Europcar store country/city here)
-    // bulletFields format: ['Germany', 'Hamburg', 'JR108514'] — country in [0], city in [1]
+    // bulletFields format: ['Germany', 'Hamburg', 'JR108514'] ï¿½ country in [0], city in [1]
     if (typeof job === 'object' && Array.isArray(job.bulletFields)) {
         const bfText = job.bulletFields.map(b => String(b)).join(' ');
         if (isGermanyString(bfText)) return true;
@@ -26,7 +26,7 @@ function hasGermanyLocation(job) {
 // Format: { company, instance, site, name }
 // URL:    https://{company}.{instance}.myworkdayjobs.com/wday/cxs/{company}/{site}/jobs
 //
-// To find a company's Workday slug, visit their careers page — if it's hosted on
+// To find a company's Workday slug, visit their careers page ï¿½ if it's hosted on
 // Workday it will redirect to a myworkdayjobs.com URL. The instance (wd1/wd3/wd5)
 // and site path are visible in the URL.
 //
@@ -69,7 +69,7 @@ const companyBoards = [
     { company: 'bdx', instance: 'wd1', site: 'EXTERNAL_CAREER_SITE_GERMANY', name: 'BD (Becton Dickinson)' },
     { company: 'alcon', instance: 'wd5', site: 'careers_alcon', name: 'Alcon' },
     { company: 'sandvik', instance: 'wd3', site: 'walter-jobs', name: 'Walter (Sandvik)' },
-    { company: 'condenast', instance: 'wd5', site: 'CondeCareers', name: 'Condé Nast' },
+    { company: 'condenast', instance: 'wd5', site: 'CondeCareers', name: 'Condï¿½ Nast' },
     { company: 'freseniusglobal', instance: 'wd3', site: 'FK_Careers', name: 'Fresenius Kabi' },
     { company: 'solenis', instance: 'wd1', site: 'Solenis', name: 'Solenis' },
     { company: 'athora', instance: 'wd3', site: 'athora-careers', name: 'Athora' },
@@ -81,7 +81,7 @@ const companyBoards = [
     { company: 'covestro', instance: 'wd3', site: 'cov_external', name: 'Covestro' },
     { company: 'galileo', instance: 'wd3', site: 'global_education_germany_career_site', name: 'Galileo Global Education' },
     { company: 'insulet', instance: 'wd5', site: 'insuletcareers', name: 'Insulet (Omnipod)' },
-    { company: 'ossur', instance: 'wd3', site: 'ossurcareersglobal', name: 'Össur' },
+    { company: 'ossur', instance: 'wd3', site: 'ossurcareersglobal', name: 'ï¿½ssur' },
     { company: 'rentschler', instance: 'wd3', site: 'Rentschler_Career', name: 'Rentschler Biopharma' },
     { company: 'raymondjames', instance: 'wd1', site: 'RaymondJamesCareers', name: 'Raymond James' },
     { company: 'brenntag', instance: 'wd3', site: 'brenntag_jobs', name: 'Brenntag' },
@@ -107,7 +107,7 @@ const companyBoards = [
     { company: 'cw', instance: 'wd1', site: 'External', name: 'Curtiss-Wright' },
     { company: 'livanova', instance: 'wd5', site: 'Search', name: 'LivaNova' },
     { company: 'relx', instance: 'wd3', site: 'ReedExhibitions', name: 'RELX (Reed Exhibitions)' },
-    { company: 'zuehlke', instance: 'wd3', site: 'Zuhlke-Careers', name: 'Zühlke' },
+    { company: 'zuehlke', instance: 'wd3', site: 'Zuhlke-Careers', name: 'Zï¿½hlke' },
 
 ];
 
@@ -174,7 +174,7 @@ export const workdayConfig = {
 
                 if (!firstRes.ok) {
                     failCount++;
-                    console.log(`[Workday] ? ${company} (${name}): HTTP ${firstRes.status} — skipping`);
+                    console.log(`[Workday] ? ${company} (${name}): HTTP ${firstRes.status} ï¿½ skipping`);
                     continue;
                 }
 
@@ -317,7 +317,7 @@ export const workdayConfig = {
     },
 
     extractDepartment(job) {
-        // Not available in list payload — filled by getDetails if present
+        // Not available in list payload ï¿½ filled by getDetails if present
         return null;
     },
 
@@ -396,7 +396,7 @@ export const workdayConfig = {
                 EmploymentType: employmentType,
                 WorkplaceType: workplaceType,
                 Department: department || null,
-                Company: hiringOrg.name || _companyName,
+                Company: _companyName || hiringOrg.name,
             };
         } catch (err) {
             return null;
