@@ -7,7 +7,7 @@ import { createJobModel } from '../models/jobModel.js';
 import { createJobTestLog } from '../models/jobTestLogModel.js';
 import { saveJobTestLog, findTestLogByFingerprint } from '../db/index.js';
 import { Analytics } from '../models/analyticsModel.js';
-import { BANNED_ROLES, generateJobFingerprint, generateCrossEntityKey, normalizeCompanyName } from '../utils.js';
+import { BANNED_ROLES, generateJobFingerprint, generateCrossEntityKey, normalizeCompanyName,GERMAN_CITIES_CHECK } from '../utils.js';
 import { detectGermanRequiredFromTitle } from '../filters/germanTitleFilter.js';
 import { detectNonEnglishDescription } from '../filters/nonEnglishFilter.js';
 import { detectCitizenshipRequirement } from '../filters/citizenshipFilter.js';
@@ -21,6 +21,7 @@ import {
     normalizeArray,
     isSpamOrIrrelevant,
 } from './jobExtractor.js';
+
 
 async function scrapeJobDetailsFromPage(mappedJob, siteConfig) {
     console.log(`[${siteConfig.siteName}] Visiting job page: ${mappedJob.ApplicationURL}`);
@@ -51,6 +52,53 @@ async function scrapeJobDetailsFromPage(mappedJob, siteConfig) {
     return mappedJob;
 }
 
+
+function normalizeStoredLocation(mappedJob) {
+    const allLocs = [
+        mappedJob.Location || '',
+        ...(mappedJob.AllLocations || [])
+    ];
+
+    const germanyLocs = allLocs.filter(loc => {
+        const lower = String(loc).toLowerCase();
+        if (lower.includes('germany') || lower.includes('deutschland')) return true;
+        return GERMAN_CITIES_CHECK.some(city => lower.includes(city));
+    });
+
+    for (const loc of germanyLocs) {
+        const cleaned = loc.replace(/\s*[-–—]\s*(Office|Hybrid|Remote|On-?site|Onsite)\s*$/i, '');
+        const parts = cleaned.split(',').map(p => p.trim()).filter(Boolean);
+
+        for (const part of parts) {
+            const lower = part.toLowerCase();
+            if (lower === 'germany' || lower === 'deutschland') continue;
+            if (GERMAN_CITIES_CHECK.some(city => lower.includes(city))) {
+                const cityName = part.split(' ')
+                    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                    .join(' ');
+                return `${cityName}, Germany`;
+            }
+        }
+    }
+
+    const hasRemoteGermany = germanyLocs.some(loc => loc.toLowerCase().includes('remote'));
+    if (hasRemoteGermany || mappedJob.IsRemote) return 'Remote, Germany';
+
+    if (germanyLocs.length > 0) return 'Germany';
+
+    if (mappedJob.Location) {
+        const parts = mappedJob.Location.split(',').map(p => p.trim()).filter(Boolean);
+        const unique = [];
+        for (const part of parts) {
+            if (!unique.some(u => u.toLowerCase() === part.toLowerCase())) {
+                unique.push(part);
+            }
+        }
+        return unique.join(', ');
+    }
+
+    return 'Germany';
+}
 
 export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders, allRawJobs, crossEntityKeys) {
     // 1. Config Pre-Filter
@@ -167,6 +215,13 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
         }
     }
 
+    // ✅ 5a. LOCATION RE-CHECK — reject if getDetails changed location to non-Germany
+const locationToCheck = `${mappedJob.Location || ''} ${(mappedJob.AllLocations || []).join(' ')}`.toLowerCase();
+const isStillGermany = /germany|deutschland/.test(locationToCheck) || GERMAN_CITIES_CHECK.some(city => locationToCheck.includes(city));
+if (!isStillGermany) {
+    console.log(`🌍 [Location Reject] "${mappedJob.JobTitle}" at "${mappedJob.Company}" — location "${mappedJob.Location}" is not Germany — skipping`);
+    return null;
+}
     if (!mappedJob.Description) return null;
 
     // ✅ 5b. TITLE-BASED GERMAN CHECK — Skip AI entirely if title says it all
@@ -346,6 +401,6 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
     mappedJob.Status = "pending_review";
 
     normalizeSalaryValues(mappedJob);
-
+    mappedJob.Location = normalizeStoredLocation(mappedJob);
     return createJobModel(mappedJob, siteConfig.siteName);
 }

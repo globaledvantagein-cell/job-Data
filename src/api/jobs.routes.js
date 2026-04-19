@@ -486,3 +486,40 @@ jobsApiRouter.post('/admin/backfill-experience', verifyToken, verifyAdmin, async
         res.status(500).json({ error: error.message });
     }
 });
+
+
+
+jobsApiRouter.patch('/admin/update/:id', verifyToken, verifyAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({ error: 'Invalid ID' });
+        }
+
+        const allowedFields = ['Location', 'Company', 'JobTitle', 'WorkplaceType'];
+        const updates = {};
+
+        for (const field of allowedFields) {
+            if (req.body[field] !== undefined) {
+                updates[field] = req.body[field];
+            }
+        }
+
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({ error: 'No valid fields to update' });
+        }
+
+        updates.updatedAt = new Date();
+
+        const db = await connectToDb();
+        await db.collection('jobs').updateOne(
+            { _id: new ObjectId(id) },
+            { $set: updates }
+        );
+
+        const updated = await db.collection('jobs').findOne({ _id: new ObjectId(id) });
+        res.status(200).json(updated);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
