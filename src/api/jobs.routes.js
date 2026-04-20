@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { ObjectId } from 'mongodb';
 import {
     getJobsPaginated,
+    getCompanyNames,
     addCuratedJob,
     deleteJobById,
     getPublicBaitJobs,
@@ -109,13 +110,38 @@ jobsApiRouter.get('/public-bait', async (req, res) => {
 
 jobsApiRouter.get('/', async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 50;
-        const company = req.query.company || null;
-        const data = await getJobsPaginated(page, limit, company);
+        const page  = parseInt(req.query.page)  || 1;
+        const limit = Math.min(parseInt(req.query.limit) || 30, 100); // hard-cap at 100
+
+        // `company` can arrive as a single string OR as an array
+        // (?company=Stripe&company=Shopify → Express gives us an array automatically)
+        let company = req.query.company;
+        if (!company)                        company = [];
+        else if (typeof company === 'string') company = company ? [company] : [];
+        // else already an array from Express query parsing
+
+        const filters = {
+            company,
+            search: req.query.search  || '',
+            date:   req.query.date    || 'All',
+            sort:   req.query.sort    || 'newest',
+        };
+
+        const data = await getJobsPaginated(page, limit, filters);
         res.status(200).json(data);
     } catch (error) {
         res.status(500).json({ error: "Failed to fetch jobs" });
+    }
+});
+
+// Returns all active company names — used to populate the filter dropdown.
+// Must be defined before any /:id route so Express doesn't swallow it.
+jobsApiRouter.get('/company-names', async (req, res) => {
+    try {
+        const names = await getCompanyNames();
+        res.status(200).json(names);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch company names" });
     }
 });
 

@@ -13,6 +13,7 @@ export {
     getAllJobs,
     getPublicBaitJobs,
     getJobsPaginated,
+    getCompanyNames,
     getRejectedJobs,
     getJobsForReview,
     reviewJobDecision,

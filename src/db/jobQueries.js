@@ -266,38 +266,93 @@ export async function getPublicBaitJobs() {
     return jobs.map(job => ({ ...job, applyClicks: job.applyClicks || 0 }));
 }
 
-export async function getJobsPaginated(page = 1, limit = 50, companyFilter = null) {
+export async function getJobsPaginated(page = 1, limit = 30, filters = {}) {
     const db = await connectToDb();
     const jobsCollection = db.collection('jobs');
     const skip = (page - 1) * limit;
 
+    // ── Base query ────────────────────────────────────────────────────────────
     const query = {
         Status: { $in: ['active'] },
         GermanRequired: false
     };
 
-    if (companyFilter) {
-        query.Company = { $regex: companyFilter, $options: 'i' };
+    // ── Company filter (multi-select array) ───────────────────────────────────
+    if (filters.company && filters.company.length > 0) {
+        query.Company = { $in: filters.company };
     }
 
-    const totalJobs = await jobsCollection.countDocuments(query);
-    const jobs = await jobsCollection.find(query)
-        .sort({ PostedDate: -1, createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .toArray();
+    // ── Additional $and conditions (search + date) ────────────────────────────
+    const conditions = [];
 
-    const companies = await jobsCollection.distinct('Company', {
-        Status: 'active',
-        GermanRequired: false
-    });
+    // Full-text search across title, company, location
+    if (filters.search && filters.search.trim()) {
+        const escaped = filters.search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(escaped, 'i');
+        conditions.push({
+            $or: [
+                { JobTitle: regex },
+                { Company: regex },
+                { Location: regex }
+            ]
+        });
+    }
+
+    // Date range filter — falls back to scrapedAt when PostedDate is null
+    if (filters.date && filters.date !== 'All') {
+        const msPerDay = 24 * 60 * 60 * 1000;
+        const daysMap = { 'Today': 1, 'This Week': 7, 'This Month': 30 };
+        const days = daysMap[filters.date];
+        if (days) {
+            const cutoff = new Date(Date.now() - days * msPerDay);
+            conditions.push({
+                $or: [
+                    { PostedDate: { $gte: cutoff } },
+                    { PostedDate: null,              scrapedAt: { $gte: cutoff } },
+                    { PostedDate: { $exists: false }, scrapedAt: { $gte: cutoff } }
+                ]
+            });
+        }
+    }
+
+    if (conditions.length > 0) {
+        query.$and = conditions;
+    }
+
+    // ── Sort ──────────────────────────────────────────────────────────────────
+    const sortOrder = filters.sort === 'company'
+        ? { Company: 1, PostedDate: -1 }
+        : { PostedDate: -1, createdAt: -1 };
+
+    // ── Run count + find in parallel ──────────────────────────────────────────
+    const [totalJobs, jobs] = await Promise.all([
+        jobsCollection.countDocuments(query),
+        jobsCollection.find(query)
+            .sort(sortOrder)
+            .skip(skip)
+            .limit(limit)
+            .toArray()
+    ]);
 
     const normalizedJobs = jobs.map(job => ({
         ...job,
         applyClicks: job.applyClicks || 0
     }));
 
-    return { jobs: normalizedJobs, totalJobs, companies };
+    return { jobs: normalizedJobs, totalJobs };
+}
+
+/**
+ * Returns all distinct active company names, sorted alphabetically.
+ * Used to populate the company filter dropdown on the frontend.
+ */
+export async function getCompanyNames() {
+    const db = await connectToDb();
+    const names = await db.collection('jobs').distinct('Company', {
+        Status: 'active',
+        GermanRequired: false
+    });
+    return names.filter(Boolean).sort((a, b) => a.localeCompare(b));
 }
 
 export async function getRejectedJobs() {
