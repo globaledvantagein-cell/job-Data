@@ -1,12 +1,12 @@
 import fetch from 'node-fetch';
-import { StripHtml } from '../utils.js';
+import { StripHtml, SanitizeHtml } from '../utils.js';
 import { GERMAN_CITIES } from '../core/Locationprefilters.js';
 import { normalizeArray } from '../core/jobExtractor.js';
 
 
 // --- Helpers ------------------------------------------------------------------
 
-// NOTE: normalizeWorkplaceType here takes a JOB OBJECT (not a string) — Recruitee
+// NOTE: normalizeWorkplaceType here takes a JOB OBJECT (not a string) ï¿½ Recruitee
 // uses boolean flags (job.remote, job.hybrid, job.on_site), not a string field.
 // This is intentionally different from the shared string-based normalizeWorkplaceType.
 
@@ -114,27 +114,27 @@ function hasGermanyLocation(job) {
 // --- Company subdomain list ---------------------------------------------------
 //
 // Recruitee Careers Site API:  GET https://{subdomain}.recruitee.com/api/offers/
-// No auth key needed — completely free public API.
+// No auth key needed ï¿½ completely free public API.
 //
 // To find a company's subdomain:
 //   1. Visit their careers page
 //   2. If it redirects to {something}.recruitee.com, the subdomain is {something}
-//   3. Or check job listing URLs — they contain the subdomain
+//   3. Or check job listing URLs ï¿½ they contain the subdomain
 //
 // Add new companies here as you discover them.
 
 const companySubdomains = [
     // -- Auto-discovered 2026-04-02 --
-    'limehome',                    // limehome — 11 DE / 14 total
-    // 'sharpist',                    // Sharpist GmbH — 6 DE / 6 total
-    // 'masterplan',                  // Masterplan — 4 DE / 4 total
-    // 'ginmon',                      // Ginmon GmbH — 3 DE / 3 total
-    // 'rebuy',                       // rebuy — 3 DE / 3 total
-    // 'channable',                   // Channable — 3 DE / 15 total
-    // 'companisto',                  // Companisto GmbH — 2 DE / 2 total
-    // 'effectory',                   // Effectory — 2 DE / 8 total
-    // 'personio',                    // FD Sandbox — 1 DE / 1 total
-    // 'jobs',                        // Tellent — 1 DE / 7 total
+    'limehome',                    // limehome ï¿½ 11 DE / 14 total
+    // 'sharpist',                    // Sharpist GmbH ï¿½ 6 DE / 6 total
+    // 'masterplan',                  // Masterplan ï¿½ 4 DE / 4 total
+    // 'ginmon',                      // Ginmon GmbH ï¿½ 3 DE / 3 total
+    // 'rebuy',                       // rebuy ï¿½ 3 DE / 3 total
+    // 'channable',                   // Channable ï¿½ 3 DE / 15 total
+    // 'companisto',                  // Companisto GmbH ï¿½ 2 DE / 2 total
+    // 'effectory',                   // Effectory ï¿½ 2 DE / 8 total
+    // 'personio',                    // FD Sandbox ï¿½ 1 DE / 1 total
+    // 'jobs',                        // Tellent ï¿½ 1 DE / 7 total
 ];
 
 // --- Config export -------------------------------------------------------------
@@ -318,6 +318,14 @@ export const recruiteeConfig = {
         return StripHtml(parts.join('\n'));
     },
 
+    extractDescriptionHtml(job) {
+        const parts = [
+            job.description || '',
+            job.requirements || '',
+        ].filter(Boolean);
+        return SanitizeHtml(parts.join(''));
+    },
+
     extractURL(job) {
         // careers_url is the public listing page
         return job.careers_url || null;
@@ -337,7 +345,7 @@ export const recruiteeConfig = {
     },
 
     extractTeam(job) {
-        // Recruitee doesn't have a separate team field — department covers it
+        // Recruitee doesn't have a separate team field ï¿½ department covers it
         return null;
     },
 

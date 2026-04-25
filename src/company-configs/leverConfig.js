@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import { StripHtml } from '../utils.js';
+import { StripHtml, SanitizeHtml } from '../utils.js';
 import { isGermanyString, normalizeWorkplaceType, normalizeEmploymentType } from '../core/Locationprefilters.js';
 import { normalizeArray } from '../core/jobExtractor.js';
 
@@ -19,7 +19,7 @@ const companySiteNames = [
 ];
 
 /**
- * Check if job has Germany location — uses shared GERMAN_CITIES + isGermanyString()
+ * Check if job has Germany location ï¿½ uses shared GERMAN_CITIES + isGermanyString()
  */
 function hasGermanyLocation(job) {
   try {
@@ -42,7 +42,7 @@ function hasGermanyLocation(job) {
       }
     }
 
-    // 4. Remote — only if explicitly mentions Germany
+    // 4. Remote ï¿½ only if explicitly mentions Germany
     if (job.workplaceType === 'remote') {
       const desc = (job.descriptionPlain || '').toLowerCase();
       if (desc.includes('remote in germany') || desc.includes('remote - germany') || desc.includes('germany remote')) return true;
@@ -125,23 +125,29 @@ const leverConfig = {
       // Lever detail API returns a single job object.
       // description = intro HTML, lists = array of {text, content} sections, additional = closing HTML
       const parts = [];
+      const htmlParts = [];
 
       if (data.description) {
         parts.push(StripHtml(data.description));
+        htmlParts.push(SanitizeHtml(data.description));
       }
 
       if (Array.isArray(data.lists)) {
         for (const section of data.lists) {
           if (section.text) parts.push(`\n${section.text}:`);
           if (section.content) parts.push(StripHtml(section.content));
+          if (section.text) htmlParts.push(`<h4>${section.text}</h4>`);
+          if (section.content) htmlParts.push(SanitizeHtml(section.content));
         }
       }
 
       if (data.additional) {
         parts.push(StripHtml(data.additional));
+        htmlParts.push(SanitizeHtml(data.additional));
       }
 
       const fullDescription = parts.join('\n').replace(/\s{3,}/g, '\n\n').trim();
+      const fullDescriptionHtml = htmlParts.join('\n').trim();
 
       if (!fullDescription || fullDescription.length < 50) {
         console.warn(`[Lever] Detail API returned empty/short description for: ${rawJob.text}`);
@@ -149,7 +155,7 @@ const leverConfig = {
       }
 
       console.log(`[Lever] ? Got full description (${fullDescription.length} chars) for: ${String(rawJob.text || '').substring(0, 50)}`);
-      return { Description: fullDescription };
+      return { Description: fullDescription, DescriptionHtml: fullDescriptionHtml || null };
 
     } catch (error) {
       console.error(`[Lever] getDetails error for "${rawJob.text}": ${error.message}`);
@@ -286,7 +292,7 @@ const leverConfig = {
 
   /**
    * Extract description from the list API response.
-   * Note: This will typically be a short intro only — getDetails() fetches the full version.
+   * Note: This will typically be a short intro only ï¿½ getDetails() fetches the full version.
    */
   extractDescription: (job) => {
     // descriptionPlain is sometimes available on the list endpoint

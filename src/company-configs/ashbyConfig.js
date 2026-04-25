@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import { StripHtml } from '../utils.js';
+import { StripHtml, SanitizeHtml } from '../utils.js';
 import { isGermanyString, normalizeWorkplaceType, normalizeCountry, normalizeEmploymentType } from '../core/Locationprefilters.js';
 import { normalizeArray } from '../core/jobExtractor.js';
 
@@ -127,7 +127,7 @@ export const ashbyConfig = {
         this._initialized = true;
     },
 
-    // Check if job has Germany location — delegates to shared isGermanyString() + per-ATS field mapping
+    // Check if job has Germany location ï¿½ delegates to shared isGermanyString() + per-ATS field mapping
     hasGermanyLocation(job) {
         // Check primary location
         if (job.location && isGermanyString(job.location)) return true;
@@ -149,7 +149,7 @@ export const ashbyConfig = {
             }
         }
 
-        // Remote jobs — only if explicitly Germany+Remote
+        // Remote jobs ï¿½ only if explicitly Germany+Remote
         if (job.isRemote && job.location) {
             const l = job.location.toLowerCase();
             if ((l.includes('germany') || l.includes('deutschland')) && l.includes('remote')) return true;
@@ -223,7 +223,7 @@ export const ashbyConfig = {
         return locations.length > 0 ? locations.join(', ') : 'Germany';
     },
 
-    // Helper to check if a location string is Germany-related — delegates to shared helper
+    // Helper to check if a location string is Germany-related ï¿½ delegates to shared helper
     isGermanyString(locationStr) {
         return isGermanyString(locationStr);
     },
@@ -232,6 +232,10 @@ export const ashbyConfig = {
     extractDescription(job) {
         // Prefer plain text, fallback to HTML
         return StripHtml(job.descriptionPlain || job.descriptionHtml || '');
+    },
+
+    extractDescriptionHtml(job) {
+        return SanitizeHtml(job.descriptionHtml || '');
     },
 
     // Extract URL

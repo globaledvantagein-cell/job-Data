@@ -5,6 +5,7 @@ const jobSchemaDefinition = {
     ApplicationURL: { type: String, required: true },
     DirectApplyURL: { type: String, default: null },
     Description: { type: String, default: "" },
+    DescriptionHtml: { type: String, default: null },
     Location: { type: String, default: "N/A" },
     Company: { type: String, default: "N/A" },
     ATSPlatform: { type: String, default: "N/A" },

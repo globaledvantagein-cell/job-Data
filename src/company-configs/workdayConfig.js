@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import { StripHtml } from '../utils.js';
+import { StripHtml, SanitizeHtml } from '../utils.js';
 import { GERMAN_CITIES, isGermanyString, normalizeWorkplaceType, normalizeEmploymentType } from '../core/Locationprefilters.js';
 import { normalizeArray } from '../core/jobExtractor.js';
 
@@ -389,6 +389,7 @@ export const workdayConfig = {
 
             return {
                 Description: descriptionPlain || null,
+                DescriptionHtml: SanitizeHtml(descriptionHtml) || null,
                 ApplicationURL: info.externalUrl || `${baseUrl}/${_company}/${_site}/job${externalPath}`,
                 DirectApplyURL: info.externalUrl || null,
                 PostedDate: info.startDate ? new Date(info.startDate) : null,

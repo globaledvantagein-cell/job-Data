@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import { StripHtml } from '../utils.js';
+import { StripHtml, SanitizeHtml } from '../utils.js';
 import { GERMAN_CITIES, isGermanyString, normalizeWorkplaceType, normalizeEmploymentType } from '../core/Locationprefilters.js';
 import { normalizeArray } from '../core/jobExtractor.js';
 
@@ -34,16 +34,16 @@ function parseSalaryFromText(text) {
     const cleaned = StripHtml(text).replace(/\./g, '').replace(/,/g, '.');
 
     const currencyMatch = cleaned.match(/(USD|EUR|GBP|CHF|CAD|AUD|JPY|SEK|NOK|DKK|PLN)/i);
-    const symbolMatch = cleaned.match(/[€$£]/);
-    const rangeMatch = cleaned.match(/(\d{2,7}(?:\.\d+)?)\s*(?:-|–|—|to)\s*(\d{2,7}(?:\.\d+)?)/i);
+    const symbolMatch = cleaned.match(/[ï¿½$ï¿½]/);
+    const rangeMatch = cleaned.match(/(\d{2,7}(?:\.\d+)?)\s*(?:-|ï¿½|ï¿½|to)\s*(\d{2,7}(?:\.\d+)?)/i);
 
     let salaryCurrency = null;
     if (currencyMatch) {
         salaryCurrency = currencyMatch[1].toUpperCase();
     } else if (symbolMatch) {
-        if (symbolMatch[0] === '€') salaryCurrency = 'EUR';
+        if (symbolMatch[0] === 'ï¿½') salaryCurrency = 'EUR';
         if (symbolMatch[0] === '$') salaryCurrency = 'USD';
-        if (symbolMatch[0] === '£') salaryCurrency = 'GBP';
+        if (symbolMatch[0] === 'ï¿½') salaryCurrency = 'GBP';
     }
 
     let salaryInterval = null;
@@ -171,7 +171,7 @@ export const greenhouseConfig = {
                     }));
 
                 if (germanyJobs.length > 0) {
-                    console.log(`[Greenhouse] ? ${boardToken}: ${germanyJobs.length} jobs in Germany (${data.jobs.length} total)`);
+                    console.log(`[Greenhouse] âœ… ${boardToken}: ${germanyJobs.length} jobs in Germany (${data.jobs.length} total)`);
                     this._allJobsQueue.push(...germanyJobs);
                     successCount++;
                 }
@@ -247,6 +247,10 @@ export const greenhouseConfig = {
     // Extract description
     extractDescription(job) {
         return StripHtml(job.content || '');
+    },
+
+    extractDescriptionHtml(job) {
+        return SanitizeHtml(job.content || '');
     },
 
     // Extract URL
@@ -358,7 +362,7 @@ export const greenhouseConfig = {
         return 'greenhouse';
     },
 
-    // Check if location is in Germany — delegates to shared isGermanyString() helper
+    // Check if location is in Germany ï¿½ delegates to shared isGermanyString() helper
     isGermanyLocation(location) {
         return isGermanyString(location);
     }

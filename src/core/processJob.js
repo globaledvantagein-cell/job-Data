@@ -7,7 +7,7 @@ import { createJobModel } from '../models/jobModel.js';
 import { createJobTestLog } from '../models/jobTestLogModel.js';
 import { saveJobTestLog, findTestLogByFingerprint } from '../db/index.js';
 import { Analytics } from '../models/analyticsModel.js';
-import { BANNED_ROLES, generateJobFingerprint, generateCrossEntityKey, normalizeCompanyName,GERMAN_CITIES_CHECK } from '../utils.js';
+import { BANNED_ROLES, generateJobFingerprint, generateCrossEntityKey, normalizeCompanyName, GERMAN_CITIES_CHECK, SanitizeHtml } from '../utils.js';
 import { detectGermanRequiredFromTitle } from '../filters/germanTitleFilter.js';
 import { detectNonEnglishDescription } from '../filters/nonEnglishFilter.js';
 import { detectCitizenshipRequirement } from '../filters/citizenshipFilter.js';
@@ -42,6 +42,7 @@ async function scrapeJobDetailsFromPage(mappedJob, siteConfig) {
             const descriptionElement = document.querySelector(siteConfig.descriptionSelector);
             if (descriptionElement) {
                 mappedJob.Description = descriptionElement.textContent.replace(/\s+/g, ' ').trim();
+                mappedJob.DescriptionHtml = SanitizeHtml(descriptionElement.innerHTML);
             }
         }
     } catch (error) {
@@ -119,6 +120,7 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
             Company: siteConfig.extractCompany(rawJob),
             Location: siteConfig.extractLocation(rawJob),
             Description: siteConfig.extractDescription(rawJob),
+            DescriptionHtml: siteConfig.extractDescriptionHtml ? siteConfig.extractDescriptionHtml(rawJob) : null,
             ApplicationURL: siteConfig.extractURL(rawJob),
             PostedDate: siteConfig.extractPostedDate ? siteConfig.extractPostedDate(rawJob) : new Date().toISOString(),
             DirectApplyURL: siteConfig.extractDirectApplyURL ? siteConfig.extractDirectApplyURL(rawJob) : null,
