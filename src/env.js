@@ -3,11 +3,6 @@ dotenv.config();
 
 
 // Gemini API Keys — round-robin rotation
-// Set these in your .env file:
-//   GEMINI_API_KEY_1=AIzaSy...
-//   GEMINI_API_KEY_2=AIzaSy...
-//   GEMINI_API_KEY_3=AIzaSy...
-
 export const GEMINI_API_KEYS = [
     process.env.GEMINI_API_KEY_1 || process.env.GEMINI_API_KEY || null,
     process.env.GEMINI_API_KEY_2 || null,
@@ -26,3 +21,27 @@ export const SES_CONFIG = {
     },
     fromEmail: process.env.SES_FROM_EMAIL || '"Job Scraper Bot" <noreply@englishjobsgermany.com>',
 };
+
+
+// ── Signup Gate ───────────────────────────────────────────────────────────
+// FREE_VIEW_LIMIT: distinct full-job views before gating. Default 20.
+// NEW_VISITOR_RATE_LIMIT_PER_HOUR: anti-bypass rate limit. Default 20.
+// VISITOR_IP_SALT: REQUIRED random string for hashing IPs.
+//   Generate: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+// FRONTEND_ORIGIN: needed for CORS with credentials.
+export const FREE_VIEW_LIMIT = Number(process.env.FREE_VIEW_LIMIT) || 20;
+export const NEW_VISITOR_RATE_LIMIT_PER_HOUR = Number(process.env.NEW_VISITOR_RATE_LIMIT_PER_HOUR) || 20;
+export const VISITOR_IP_SALT = process.env.VISITOR_IP_SALT;
+export const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
+
+// ── Google OAuth ──────────────────────────────────────────────────────────
+// Web Client ID from Google Cloud Console. Same value as VITE_GOOGLE_CLIENT_ID.
+// ID-token flow is used, so no client secret is needed.
+export const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+
+if (!VISITOR_IP_SALT) {
+    console.warn('[env] ⚠️  VISITOR_IP_SALT not set — IP hashing will be insecure.');
+}
+if (!GOOGLE_CLIENT_ID) {
+    console.warn('[env] ⚠️  GOOGLE_CLIENT_ID not set — Google login will not work.');
+}

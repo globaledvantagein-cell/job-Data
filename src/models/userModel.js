@@ -1,25 +1,35 @@
 /**
- * This file defines the schema for a 'User' and provides a class
- * to create and validate user documents.
+ * Schema for a 'User'.
+ *
+ * Note: password is optional now. Google-only users don't have passwords.
+ * Existing password-based admin accounts in the DB still work via the
+ * /api/auth/login emergency backdoor.
  */
 import bcrypt from 'bcryptjs';
 
 const userSchemaDefinition = {
     email: { type: String, required: true, trim: true },
-    password: { type: String, required: false }, // ✅ CHANGED: Not required for waitlist
+    password: { type: String, required: false }, // null for Google + waitlist users
     name: { type: String, default: "User", trim: true },
     role: { type: String, default: "user" },
-    
-    // Talent Pool / Waitlist Data
-    location: { type: String, default: "" }, // ✅ ADDED
-    domain: { type: String, default: "" },   // ✅ ADDED (Tech/Non-Tech)
-    isWaitlist: { type: Boolean, default: false }, // ✅ ADDED
-    
+
+    // Google OAuth
+    googleId: { type: String, default: null },
+    avatarUrl: { type: String, default: null },
+
+    // Legal — when did the user agree to Terms? Server-side audit trail.
+    acceptedTermsAt: { type: Date, default: null },
+
+    // Talent Pool / Weekly Alerts (separate flow from auth)
+    location: { type: String, default: "" },
+    domain: { type: String, default: "" },   // Tech / Non-Tech
+    isWaitlist: { type: Boolean, default: false },
+
     // Preferences
     desiredRoles: { type: Array, default: [] },
     desiredDomains: { type: Array, default: [] },
-    emailFrequency: { type: String, default: "Weekly" }, 
-    subscriptionTier: { type: String, default: "free" }, 
+    emailFrequency: { type: String, default: "Weekly" },
+    subscriptionTier: { type: String, default: "free" },
     isSubscribed: { type: Boolean, default: true },
 
     // System
@@ -40,17 +50,10 @@ class User {
             const schemaField = userSchemaDefinition[key];
             let value = data[key];
 
-            // VALIDATION LOGIC
-            // If required AND missing AND not a waitlist user, throw error
             if (schemaField.required && (!value)) {
-                 // If it's the password field, we allow it to be empty IF 'isWaitlist' is true
-                 if (key === 'password' && data.isWaitlist === true) {
-                     value = null; // Allow null for waitlist
-                 } else {
-                     // For normal users/admins, password is required
-                    // In a real Mongoose model, this would be handled by the schema. 
-                    // Here we are lenient to allow the controller to handle validation errors.
-                 }
+                if (key === 'password' && (data.isWaitlist === true || data.googleId)) {
+                    value = null;
+                }
             }
 
             if (value === undefined || value === null) {
@@ -73,9 +76,6 @@ class User {
     }
 }
 
-/**
- * Factory function to create a validated User object.
- */
 export function createUserModel(formData) {
     return new User(formData);
 }

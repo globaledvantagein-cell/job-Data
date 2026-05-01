@@ -38,6 +38,7 @@ export {
     getSubscribedUsers,
     findMatchingJobs,
     updateUserAfterEmail,
+    findOrCreateGoogleUser,
 } from './userQueries.js';
 
 // ── Feedback Queries ──
@@ -48,3 +49,12 @@ export {
     deleteFeedback,
     getFeedbackStats,
 } from './feedbackQueries.js';
+
+// ── Visitor Queries (signup gate) ──
+export {
+    hashIp,
+    resolveVisitor,
+    shouldGate,
+    recordJobView,
+    linkVisitorToUser,
+} from './visitorQueries.js';
