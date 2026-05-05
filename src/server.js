@@ -19,21 +19,21 @@ import { FRONTEND_ORIGIN } from './env.js';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Trust proxy so x-forwarded-for resolves to real client IP behind any
-// reverse proxy (Render, Fly, Railway, Vercel, nginx, etc.). Required for
-// the visitor IP-hash component of the gate.
+// Trust proxy so x-forwarded-for resolves to the real client IP behind
+// any reverse proxy (Render, Fly, Railway, nginx). REQUIRED for the
+// visitor IP-hash component of the gate.
 app.set('trust proxy', 1);
 
 // --- Middleware ---
 // CORS must allow credentials so the vid cookie + Authorization header
-// flow correctly from the frontend. Set FRONTEND_ORIGIN in .env.
+// flow correctly between frontend and backend. Set FRONTEND_ORIGIN in .env.
 app.use(cors({
     origin: FRONTEND_ORIGIN,
     credentials: true,
 }));
 app.use(express.json());
 app.use(cookieParser());
-app.use(attachVisitor); // lazy req.resolveVisitor() on every request
+app.use(attachVisitor); // adds lazy req.resolveVisitor() to every request
 
 // --- API Routes ---
 app.use('/api/auth', authRouter);
@@ -42,7 +42,7 @@ app.use('/api/users', usersApiRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/feedback', feedbackRouter);
 
-// --- Health Check Endpoint ---
+// --- Health Check ---
 app.get('/', (req, res) => {
     res.send('Job Scraper Backend is running and healthy.');
 });

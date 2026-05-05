@@ -50,11 +50,10 @@ export {
     getFeedbackStats,
 } from './feedbackQueries.js';
 
-// ── Visitor Queries (signup gate) ──
+// ── Visitor / Gate helpers (live in middleware/visitorMiddleware.js) ──
 export {
-    hashIp,
-    resolveVisitor,
     shouldGate,
     recordJobView,
     linkVisitorToUser,
-} from './visitorQueries.js';
+    attachVisitor,
+} from '../middleware/visitorMiddleware.js';

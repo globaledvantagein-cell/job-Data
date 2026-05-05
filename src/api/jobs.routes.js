@@ -30,10 +30,9 @@ import { verifyToken, verifyAdmin, softVerifyToken } from '../middleware/authMid
 
 export const jobsApiRouter = Router();
 
-// ── Field-stripping helper ────────────────────────────────────────────────
-// The list endpoint must NOT return description, apply URLs, or full salary
-// details — those are gated. We only ship enough to render a card: title,
-// company, location, dept, posted date, badges, click count.
+// ─── Field-stripping helper ──────────────────────────────────────────────
+// The list endpoint must NOT return description, apply URLs, or salary —
+// those are gated. We only ship enough to render a card.
 function toTeaser(job) {
     if (!job) return null;
     return {
@@ -56,23 +55,38 @@ function toTeaser(job) {
         applyClicks: job.applyClicks || 0,
         ATSPlatform: job.ATSPlatform,
         sourceSite: job.sourceSite,
-        // Deliberately omitted: Description, DescriptionHtml,
-        // ApplicationURL, DirectApplyURL, SalaryMin, SalaryMax,
-        // SalaryCurrency, SalaryInterval
+        AllLocations: job.AllLocations,
+        Country: job.Country,
+        IsRemote: job.IsRemote,
+        GermanRequired: job.GermanRequired,
+        // Deliberately omitted: Description, DescriptionHtml, ApplicationURL,
+        // DirectApplyURL, SalaryMin, SalaryMax, SalaryCurrency, SalaryInterval
     };
 }
 
-// ── Tiny re-used helpers from original ────────────────────────────────────
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Re-use the canonical implementation from core/jobExtractor.js via imports above.
+// Route-specific aliases for backward compatibility:
 const deriveExperienceFromTitle = deriveExperienceLevelFromTitle;
 const isEntryLevelTitle = deriveIsEntryLevelFromTitle;
 
 function deriveWorkplaceType(workplaceType, location = '', description = '') {
     const current = String(workplaceType || '').trim();
-    if (current && current.toLowerCase() !== 'unspecified') return current;
+    if (current && current.toLowerCase() !== 'unspecified') {
+        return current;
+    }
 
     const haystack = `${String(location).toLowerCase()} ${String(description).toLowerCase().slice(0, 500)}`;
-    if (haystack.includes('remote') || haystack.includes('fully remote') || haystack.includes('work from home')) return 'Remote';
-    if (haystack.includes('hybrid')) return 'Hybrid';
+
+    if (haystack.includes('remote') || haystack.includes('fully remote') || haystack.includes('work from home')) {
+        return 'Remote';
+    }
+
+    if (haystack.includes('hybrid')) {
+        return 'Hybrid';
+    }
+
     return 'Unspecified';
 }
 
@@ -86,6 +100,7 @@ async function backfillExperienceForCollection(collection) {
     }).toArray();
 
     let updated = 0;
+
     for (const document of documents) {
         const title = document.JobTitle || '';
         const experienceLevel = deriveExperienceFromTitle(title);
@@ -94,10 +109,18 @@ async function backfillExperienceForCollection(collection) {
 
         await collection.updateOne(
             { _id: document._id },
-            { $set: { ExperienceLevel: experienceLevel, isEntryLevel, WorkplaceType: workplaceType } }
+            {
+                $set: {
+                    ExperienceLevel: experienceLevel,
+                    isEntryLevel,
+                    WorkplaceType: workplaceType
+                }
+            }
         );
+
         updated += 1;
     }
+
     return { total: documents.length, updated };
 }
 
@@ -107,29 +130,30 @@ function isManuallyReviewed(job) {
     return job?.Status === 'active' || job?.Status === 'rejected';
 }
 
-// ─────────────────────────────────────────────────────────────────────────
+// ---------------------------------------------------------
 // PUBLIC ROUTES
-// ─────────────────────────────────────────────────────────────────────────
+// ---------------------------------------------------------
 
 jobsApiRouter.get('/public-bait', async (req, res) => {
     try {
         const jobs = await getPublicBaitJobs();
-        // public-bait already projects safe fields; pass through to teaser anyway
         res.status(200).json(jobs.map(toTeaser));
     } catch (error) {
         res.status(500).json({ error: "Failed to load bait jobs" });
     }
 });
 
-// LIST endpoint — returns teasers only. No description/apply URL/salary.
 jobsApiRouter.get('/', async (req, res) => {
     try {
         const page  = parseInt(req.query.page)  || 1;
-        const limit = Math.min(parseInt(req.query.limit) || 30, 100);
+        const limit = Math.min(parseInt(req.query.limit) || 30, 100); // hard-cap at 100
 
+        // `company` can arrive as a single string OR as an array
+        // (?company=Stripe&company=Shopify → Express gives us an array automatically)
         let company = req.query.company;
         if (!company)                        company = [];
         else if (typeof company === 'string') company = company ? [company] : [];
+        // else already an array from Express query parsing
 
         const filters = {
             company,
@@ -148,34 +172,16 @@ jobsApiRouter.get('/', async (req, res) => {
     }
 });
 
-jobsApiRouter.get('/company-names', async (req, res) => {
-    try {
-        const names = await getCompanyNames();
-        res.status(200).json(names);
-    } catch (error) {
-        res.status(500).json({ error: "Failed to fetch company names" });
-    }
-});
-
-jobsApiRouter.get('/directory', async (req, res) => {
-    try {
-        const directory = await getCompanyDirectoryStats();
-        res.status(200).json(directory);
-    } catch (error) {
-        res.status(500).json({ error: "Failed to load directory" });
-    }
-});
-
 // ─────────────────────────────────────────────────────────────────────────
 // GATED FULL-DETAIL ENDPOINT
 // ─────────────────────────────────────────────────────────────────────────
 // Returns the full job (description, apply URL, salary) IF:
 //   - the user is authenticated, OR
 //   - the visitor is under the free view limit.
-// Otherwise returns { gated: true, teaser: { ... } } with no sensitive data.
+// Otherwise returns { gated: true, teaser: {...} } with no sensitive data.
 //
 // IMPORTANT: We never include the limit number, remaining count, or any
-// hint of how the gate works. The response is binary: gated or not.
+// hint of how the gate works. Response is binary: gated or not.
 jobsApiRouter.get('/:id/full', softVerifyToken, async (req, res) => {
     try {
         const { id } = req.params;
@@ -213,9 +219,29 @@ jobsApiRouter.get('/:id/full', softVerifyToken, async (req, res) => {
     }
 });
 
-// ─────────────────────────────────────────────────────────────────────────
-// ADMIN ROUTES (unchanged from original)
-// ─────────────────────────────────────────────────────────────────────────
+// Returns all active company names — used to populate the filter dropdown.
+// Must be defined before any /:id route so Express doesn't swallow it.
+jobsApiRouter.get('/company-names', async (req, res) => {
+    try {
+        const names = await getCompanyNames();
+        res.status(200).json(names);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch company names" });
+    }
+});
+
+jobsApiRouter.get('/directory', async (req, res) => {
+    try {
+        const directory = await getCompanyDirectoryStats();
+        res.status(200).json(directory);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to load directory" });
+    }
+});
+
+// ---------------------------------------------------------
+// ADMIN ROUTES
+// ---------------------------------------------------------
 
 jobsApiRouter.get('/admin/review', async (req, res) => {
     try {
@@ -249,9 +275,6 @@ jobsApiRouter.get('/rejected', async (req, res) => {
     }
 });
 
-// ─────────────────────────────────────────────────────────────────────────
-// APPLY-CLICK — now requires auth. Highest-value action, always gated.
-// ─────────────────────────────────────────────────────────────────────────
 jobsApiRouter.post('/:id/apply-click', verifyToken, async (req, res) => {
     try {
         const { id } = req.params;
@@ -261,8 +284,8 @@ jobsApiRouter.post('/:id/apply-click', verifyToken, async (req, res) => {
             return res.status(400).json({ error: 'Invalid job ID' });
         }
 
-        // Also fetch the job to return its real ApplicationURL — the list
-        // endpoint never sent it, so the frontend will need it now.
+        // Fetch the job so we can return its real ApplicationURL — the
+        // list endpoint never sent it, so the frontend needs it now.
         const job = await findJobById(id);
         if (!job) return res.status(404).json({ error: 'Job not found' });
         if (job.Status !== 'active' || job.GermanRequired === true) {
@@ -284,6 +307,11 @@ jobsApiRouter.post('/admin/reanalyze-all', verifyToken, verifyAdmin, async (req,
     try {
         const db = await connectToDb();
 
+        // ── Target: ONLY jobs the AI said "OK" to but admin hasn't reviewed yet ──
+        // Status:        pending_review   (AI accepted, sitting in review queue)
+        // GermanRequired: false           (AI said no German needed — we're double-checking this)
+        // reviewedAt:     null/missing    (admin has NOT manually approved or rejected)
+        // sourceSite:     not Curated     (skip manually added jobs)
         const jobs = await db.collection('jobs').find({
             Status: 'pending_review',
             GermanRequired: false,
@@ -294,8 +322,8 @@ jobsApiRouter.post('/admin/reanalyze-all', verifyToken, verifyAdmin, async (req,
         const summary = {
             total: jobs.length,
             reanalyzed: 0,
-            movedToRejected: 0,
-            stillAccepted: 0,
+            movedToRejected: 0,   // AI now says German IS required — was a false accept
+            stillAccepted: 0,     // AI confirmed — no German needed, no change
             failed: 0,
         };
 
@@ -304,16 +332,31 @@ jobsApiRouter.post('/admin/reanalyze-all', verifyToken, verifyAdmin, async (req,
         for (const job of jobs) {
             try {
                 const aiResult = await analyzeJobWithGroq(job.JobTitle, job.Description);
-                if (!aiResult) { summary.failed += 1; continue; }
+
+                if (!aiResult) {
+                    summary.failed += 1;
+                    continue;
+                }
 
                 if (aiResult.german_required === true) {
+                    // AI caught a mistake — this job actually requires German
                     const domain = deriveDomain(job.Department, job.JobTitle);
                     const subDomain = job.Department || 'Other';
-                    await updateJobAfterReanalysis(job._id, aiResult, 'rejected', 'German language required', domain, subDomain);
+                    await updateJobAfterReanalysis(
+                        job._id,
+                        aiResult,
+                        'rejected',
+                        'German language required',
+                        domain,
+                        subDomain
+                    );
                     summary.movedToRejected += 1;
+                    console.log(`[Reanalyze All] ❌ Caught false accept: "${job.JobTitle}" → rejected`);
                 } else {
+                    // AI confirmed — still no German required, leave it alone
                     summary.stillAccepted += 1;
                 }
+
                 summary.reanalyzed += 1;
             } catch (error) {
                 console.error(`[Reanalyze All] Failed for job ${job?._id}:`, error.message);
@@ -321,6 +364,7 @@ jobsApiRouter.post('/admin/reanalyze-all', verifyToken, verifyAdmin, async (req,
             }
         }
 
+        console.log(`[Reanalyze All] Done. Rejected ${summary.movedToRejected} false accepts out of ${summary.total} checked.`);
         res.status(200).json(summary);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -331,7 +375,10 @@ jobsApiRouter.post('/admin/reanalyze/:id', verifyToken, verifyAdmin, async (req,
     try {
         const { id } = req.params;
         const job = await findJobByIdOrJobID(id);
-        if (!job) return res.status(404).json({ error: 'Job not found' });
+
+        if (!job) {
+            return res.status(404).json({ error: 'Job not found' });
+        }
 
         if (isManuallyReviewed(job)) {
             return res.status(200).json({
@@ -343,7 +390,10 @@ jobsApiRouter.post('/admin/reanalyze/:id', verifyToken, verifyAdmin, async (req,
 
         const oldGermanRequired = Boolean(job.GermanRequired);
         const aiResult = await analyzeJobWithGroq(job.JobTitle, job.Description);
-        if (!aiResult) return res.status(500).json({ error: 'AI analysis failed' });
+
+        if (!aiResult) {
+            return res.status(500).json({ error: 'AI analysis failed' });
+        }
 
         let nextStatus = job.Status || 'pending_review';
         let rejectionReason = job.RejectionReason || null;
@@ -360,7 +410,10 @@ jobsApiRouter.post('/admin/reanalyze/:id', verifyToken, verifyAdmin, async (req,
         const subDomain = job.Department || 'Other';
         const updatedJob = await updateJobAfterReanalysis(job._id, aiResult, nextStatus, rejectionReason, domain, subDomain);
 
-        res.status(200).json({ skipped: false, job: updatedJob });
+        res.status(200).json({
+            skipped: false,
+            job: updatedJob
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -379,14 +432,18 @@ jobsApiRouter.post('/:id/analyze', async (req, res) => {
         let rejectionReason = null;
 
         if (aiResult.location_classification !== "Germany") {
-            newStatus = "rejected"; rejectionReason = "Location not Germany";
+            newStatus = "rejected";
+            rejectionReason = "Location not Germany";
         } else if (aiResult.english_speaking !== true) {
-            newStatus = "rejected"; rejectionReason = "Not English-speaking";
+            newStatus = "rejected";
+            rejectionReason = "Not English-speaking";
         } else if (aiResult.german_required === true) {
-            newStatus = "rejected"; rejectionReason = "German Language Required";
+            newStatus = "rejected";
+            rejectionReason = "German Language Required";
         }
 
         const db = await connectToDb();
+
         await db.collection('jobs').updateOne(
             { _id: new ObjectId(id) },
             {
@@ -449,13 +506,24 @@ jobsApiRouter.delete('/:id', async (req, res) => {
     }
 });
 
+// ✅ TEST LOGS ROUTE - With correct auth middleware and collection name
 jobsApiRouter.get('/test-logs', verifyToken, verifyAdmin, async (req, res) => {
+    console.log('[API] test-logs route hit');
     try {
         const db = await connectToDb();
+        console.log('[API] DB connected');
+
+        // ✅ FIXED: Lowercase 'j' to match your databaseManager.js
         const logs = await db.collection('jobTestLogs')
-            .find({}).sort({ scrapedAt: -1 }).limit(500).toArray();
+            .find({})
+            .sort({ scrapedAt: -1 })
+            .limit(500)
+            .toArray();
+
+        console.log('[API] Found logs:', logs.length);
         res.status(200).json(logs);
     } catch (error) {
+        console.error('[API] Error fetching test logs:', error);
         res.status(500).json({ error: 'Failed to fetch test logs', details: error.message });
     }
 });
@@ -463,7 +531,10 @@ jobsApiRouter.get('/test-logs', verifyToken, verifyAdmin, async (req, res) => {
 jobsApiRouter.patch('/admin/restore/:id', verifyToken, verifyAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        if (!ObjectId.isValid(id)) return res.status(400).json({ error: 'Invalid ID' });
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({ error: 'Invalid ID' });
+        }
+
         await restoreRejectedJobToQueue(id);
         res.status(200).json({ message: 'Job restored to pending review queue' });
     } catch (error) {
@@ -484,6 +555,7 @@ jobsApiRouter.post('/admin/fix-salaries', verifyToken, verifyAdmin, async (req, 
     try {
         const db = await connectToDb();
         const jobsCollection = db.collection('jobs');
+
         const jobs = await jobsCollection.find({
             $or: [
                 { SalaryMin: { $gt: 0, $lt: 1000 } },
@@ -492,15 +564,24 @@ jobsApiRouter.post('/admin/fix-salaries', verifyToken, verifyAdmin, async (req, 
         }).toArray();
 
         let fixed = 0;
+
         for (const job of jobs) {
             const update = {};
-            if (job.SalaryMin && job.SalaryMin > 0 && job.SalaryMin < 1000) update.SalaryMin = job.SalaryMin * 1000;
-            if (job.SalaryMax && job.SalaryMax > 0 && job.SalaryMax < 1000) update.SalaryMax = job.SalaryMax * 1000;
+
+            if (job.SalaryMin && job.SalaryMin > 0 && job.SalaryMin < 1000) {
+                update.SalaryMin = job.SalaryMin * 1000;
+            }
+
+            if (job.SalaryMax && job.SalaryMax > 0 && job.SalaryMax < 1000) {
+                update.SalaryMax = job.SalaryMax * 1000;
+            }
+
             if (Object.keys(update).length > 0) {
                 await jobsCollection.updateOne({ _id: job._id }, { $set: update });
                 fixed += 1;
             }
         }
+
         res.status(200).json({ total: jobs.length, fixed });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -512,6 +593,7 @@ jobsApiRouter.post('/admin/backfill-experience', verifyToken, verifyAdmin, async
         const db = await connectToDb();
         const jobsSummary = await backfillExperienceForCollection(db.collection('jobs'));
         const logsSummary = await backfillExperienceForCollection(db.collection('jobTestLogs'));
+
         res.status(200).json({
             total: jobsSummary.total,
             updated: jobsSummary.updated,
@@ -524,15 +606,22 @@ jobsApiRouter.post('/admin/backfill-experience', verifyToken, verifyAdmin, async
     }
 });
 
+
+
 jobsApiRouter.patch('/admin/update/:id', verifyToken, verifyAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        if (!ObjectId.isValid(id)) return res.status(400).json({ error: 'Invalid ID' });
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({ error: 'Invalid ID' });
+        }
 
         const allowedFields = ['Location', 'Company', 'JobTitle', 'WorkplaceType'];
         const updates = {};
+
         for (const field of allowedFields) {
-            if (req.body[field] !== undefined) updates[field] = req.body[field];
+            if (req.body[field] !== undefined) {
+                updates[field] = req.body[field];
+            }
         }
 
         if (Object.keys(updates).length === 0) {
@@ -542,7 +631,10 @@ jobsApiRouter.patch('/admin/update/:id', verifyToken, verifyAdmin, async (req, r
         updates.updatedAt = new Date();
 
         const db = await connectToDb();
-        await db.collection('jobs').updateOne({ _id: new ObjectId(id) }, { $set: updates });
+        await db.collection('jobs').updateOne(
+            { _id: new ObjectId(id) },
+            { $set: updates }
+        );
 
         const updated = await db.collection('jobs').findOne({ _id: new ObjectId(id) });
         res.status(200).json(updated);
