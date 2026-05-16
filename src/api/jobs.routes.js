@@ -3,6 +3,7 @@ import { ObjectId } from 'mongodb';
 import {
     getJobsPaginated,
     getCompanyNames,
+    getCategoryCounts,
     addCuratedJob,
     deleteJobById,
     getPublicBaitJobs,
@@ -25,7 +26,7 @@ import {
 } from '../db/index.js';
 
 import { analyzeJobWithGroq } from '../gemini/index.js';
-import { deriveDomain, deriveExperienceLevelFromTitle, deriveIsEntryLevelFromTitle } from '../core/jobExtractor.js';
+import { deriveDomain, deriveExperienceLevelFromTitle, deriveIsEntryLevelFromTitle, categorizeJob } from '../core/jobExtractor.js';
 import { verifyToken, verifyAdmin, softVerifyToken } from '../middleware/authMiddleware.js';
 
 export const jobsApiRouter = Router();
@@ -44,6 +45,7 @@ function toTeaser(job) {
         Department: job.Department,
         Domain: job.Domain,
         SubDomain: job.SubDomain,
+        Category: job.Category,
         WorkplaceType: job.WorkplaceType,
         EmploymentType: job.EmploymentType,
         ExperienceLevel: job.ExperienceLevel,
@@ -155,8 +157,15 @@ jobsApiRouter.get('/', async (req, res) => {
         else if (typeof company === 'string') company = company ? [company] : [];
         // else already an array from Express query parsing
 
+        // Same handling for category — multi-value param:
+        // ?category=software&category=data
+        let category = req.query.category;
+        if (!category)                        category = [];
+        else if (typeof category === 'string') category = category ? [category] : [];
+
         const filters = {
             company,
+            category,
             search: req.query.search  || '',
             date:   req.query.date    || 'All',
             sort:   req.query.sort    || 'newest',
@@ -227,6 +236,18 @@ jobsApiRouter.get('/company-names', async (req, res) => {
         res.status(200).json(names);
     } catch (error) {
         res.status(500).json({ error: "Failed to fetch company names" });
+    }
+});
+
+// Returns per-category job counts — used to populate the category dropdown.
+// e.g. { software: 533, data: 92, product_tech: 53, ... }
+// Like /company-names: must be defined before /:id routes.
+jobsApiRouter.get('/category-counts', async (req, res) => {
+    try {
+        const counts = await getCategoryCounts();
+        res.status(200).json(counts);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch category counts" });
     }
 });
 
@@ -444,14 +465,26 @@ jobsApiRouter.post('/:id/analyze', async (req, res) => {
 
         const db = await connectToDb();
 
+        // Build the partial job object the classifier needs to see
+        const newDomain = deriveDomain(job.Department, job.JobTitle);
+        const newSubDomain = job.Department || 'Other';
+        const newCategory = categorizeJob({
+            JobTitle: job.JobTitle,
+            Department: job.Department,
+            SubDomain: newSubDomain,
+            Domain: newDomain,
+            Tags: job.Tags,
+        });
+
         await db.collection('jobs').updateOne(
             { _id: new ObjectId(id) },
             {
                 $set: {
                     EnglishSpeaking: aiResult.english_speaking,
                     GermanRequired: aiResult.german_required,
-                    Domain: deriveDomain(job.Department, job.JobTitle),
-                    SubDomain: job.Department || 'Other',
+                    Domain: newDomain,
+                    SubDomain: newSubDomain,
+                    Category: newCategory,
                     ConfidenceScore: aiResult.confidence,
                     Status: newStatus,
                     RejectionReason: rejectionReason,

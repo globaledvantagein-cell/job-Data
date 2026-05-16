@@ -3,6 +3,7 @@ import { connectToDb } from './connection.js';
 import { SITES_CONFIG } from '../config.js';
 import { createJobModel } from '../models/jobModel.js';
 import { StripHtml } from '../utils.js';
+import { categorizeJob, ALL_CATEGORIES } from '../core/categorize.js';
 
 export async function loadAllExistingIDs() {
     const db = await connectToDb();
@@ -26,12 +27,17 @@ export async function saveJobs(jobs) {
 
     const operations = jobs.map(job => {
         const { createdAt, updatedAt, ...pureJobData } = job;
+        // ── Compute Category at write time (deterministic, no AI) ──────────
+        // This runs once per upsert. Filter queries then use indexed Category
+        // lookups instead of classifying every job on every API request.
+        const Category = categorizeJob(pureJobData);
         return {
             updateOne: {
                 filter: { JobID: job.JobID, sourceSite: job.sourceSite },
                 update: {
                     $set: {
                         ...pureJobData,
+                        Category,
                         updatedAt: new Date(),
                         scrapedAt: new Date()
                     },
@@ -282,6 +288,15 @@ export async function getJobsPaginated(page = 1, limit = 30, filters = {}) {
         query.Company = { $in: filters.company };
     }
 
+    // ── Category filter (multi-select array) ──────────────────────────────────
+    // Validates against the canonical list so we don't accept arbitrary input.
+    if (filters.category && filters.category.length > 0) {
+        const valid = filters.category.filter(c => ALL_CATEGORIES.includes(c));
+        if (valid.length > 0) {
+            query.Category = { $in: valid };
+        }
+    }
+
     // ── Additional $and conditions (search + date) ────────────────────────────
     const conditions = [];
 
@@ -353,6 +368,32 @@ export async function getCompanyNames() {
         GermanRequired: false
     });
     return names.filter(Boolean).sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Returns job counts per Category, e.g.:
+ *   { software: 533, data: 92, product_tech: 53, other_tech: 226, ... }
+ * Used to populate the category filter dropdown with counts.
+ * Only counts active, non-German-required jobs (same filter as the list endpoint).
+ */
+export async function getCategoryCounts() {
+    const db = await connectToDb();
+    const pipeline = [
+        { $match: { Status: 'active', GermanRequired: false } },
+        { $group: { _id: '$Category', count: { $sum: 1 } } },
+    ];
+    const results = await db.collection('jobs').aggregate(pipeline).toArray();
+
+    // Build a complete map including zero-count categories so the UI can
+    // render every option even when one has no jobs right now.
+    const counts = {};
+    for (const cat of ALL_CATEGORIES) counts[cat] = 0;
+    for (const row of results) {
+        if (row._id && counts.hasOwnProperty(row._id)) {
+            counts[row._id] = row.count;
+        }
+    }
+    return counts;
 }
 
 export async function getRejectedJobs() {

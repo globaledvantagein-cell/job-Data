@@ -1,5 +1,8 @@
 // ─── Domain Classification (derived from Department + Title, no AI needed) ──
 
+// Re-export categorizeJob + label maps so callers can import from one place.
+export { categorizeJob, CATEGORY_LABELS, CATEGORY_ORDER, ALL_CATEGORIES } from './categorize.js';
+
 export const TECHNICAL_KEYWORDS = [
     'engineering', 'software', 'data', 'ai', 'machine learning', 'devops',
     'infrastructure', 'platform', 'backend', 'frontend', 'fullstack',

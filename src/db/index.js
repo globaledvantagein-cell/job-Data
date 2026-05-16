@@ -14,6 +14,7 @@ export {
     getPublicBaitJobs,
     getJobsPaginated,
     getCompanyNames,
+    getCategoryCounts,
     getRejectedJobs,
     getJobsForReview,
     reviewJobDecision,
