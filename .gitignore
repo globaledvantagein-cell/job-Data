@@ -2,3 +2,5 @@
 package-lock.json
 .env
 deploy-backend.ps1
+boot-test.log
+.eslintrc.json
