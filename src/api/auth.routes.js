@@ -39,15 +39,17 @@ authRouter.post('/talent-pool', [
     body('name').notEmpty(),
     body('domain').notEmpty(),
     body('location').optional(),
+    body('desiredCategories').optional().isArray(),
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     try {
-        const { email, name, domain, location } = req.body;
+        const { email, name, domain, location, desiredCategories } = req.body;
 
         const user = await registerUser({
             email, name, domain, location,
+            desiredCategories: Array.isArray(desiredCategories) ? desiredCategories : [],
             role: 'user',
             isWaitlist: true,
             password: null,

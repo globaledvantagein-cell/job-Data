@@ -71,7 +71,7 @@ export async function addSubscriber(data) {
 }
 
 // Legacy registration — kept for the talent-pool flow + emergency admin path.
-export async function registerUser({ email, password, name, role = 'user', location, domain, isWaitlist }) {
+export async function registerUser({ email, password, name, role = 'user', location, domain, desiredCategories, isWaitlist }) {
     const db = await connectToDb();
     const usersCollection = db.collection('users');
 
@@ -93,6 +93,7 @@ export async function registerUser({ email, password, name, role = 'user', locat
         role,
         location,
         domain,
+        desiredCategories: Array.isArray(desiredCategories) ? desiredCategories : [],
         isWaitlist,
         createdAt: new Date(),
     });

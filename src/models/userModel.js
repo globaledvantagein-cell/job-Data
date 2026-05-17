@@ -28,6 +28,7 @@ const userSchemaDefinition = {
     // Preferences
     desiredRoles: { type: Array, default: [] },
     desiredDomains: { type: Array, default: [] },
+    desiredCategories: { type: Array, default: [] }, // e.g. ['software','data','product_tech']
     emailFrequency: { type: String, default: "Weekly" },
     subscriptionTier: { type: String, default: "free" },
     isSubscribed: { type: Boolean, default: true },
