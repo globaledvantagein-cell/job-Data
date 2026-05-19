@@ -8,9 +8,12 @@ import {
     getUserProfile,
     findOrCreateGoogleUser,
     linkVisitorToUser,
+    unsubscribeUser,
+    updateUserPreferences,
 } from '../db/index.js';
 import { verifyToken } from '../middleware/authMiddleware.js';
 import { GOOGLE_CLIENT_ID } from '../env.js';
+import { verifyUnsubscribeToken } from '../email/index.js';
 
 export const authRouter = Router();
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -37,7 +40,6 @@ async function finalizeLogin(req, user) {
 authRouter.post('/talent-pool', [
     body('email').isEmail(),
     body('name').notEmpty(),
-    body('domain').notEmpty(),
     body('location').optional(),
     body('desiredCategories').optional().isArray(),
 ], async (req, res) => {
@@ -45,10 +47,10 @@ authRouter.post('/talent-pool', [
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     try {
-        const { email, name, domain, location, desiredCategories } = req.body;
+        const { email, name, location, desiredCategories } = req.body;
 
         const user = await registerUser({
-            email, name, domain, location,
+            email, name, location,
             desiredCategories: Array.isArray(desiredCategories) ? desiredCategories : [],
             role: 'user',
             isWaitlist: true,
@@ -69,9 +71,6 @@ authRouter.post('/talent-pool', [
             message: 'Successfully joined the talent pool',
         });
     } catch (error) {
-        if (error.message.includes('already exists')) {
-            return res.status(200).json({ success: true, message: 'You are already on the list!' });
-        }
         res.status(400).json({ error: error.message });
     }
 });
@@ -139,3 +138,74 @@ authRouter.get('/me', verifyToken, async (req, res) => {
         res.status(500).json({ error: 'Server Error' });
     }
 });
+
+// ─── Update email preferences (Profile page) ──────────────────────────────
+// PATCH /api/auth/preferences
+// Body: { desiredCategories?: string[], isSubscribed?: boolean }
+authRouter.patch('/preferences', verifyToken, [
+    body('desiredCategories').optional().isArray(),
+    body('isSubscribed').optional().isBoolean(),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    try {
+        const { desiredCategories, isSubscribed } = req.body;
+        const updated = await updateUserPreferences(req.user.id, {
+            desiredCategories,
+            isSubscribed,
+        });
+        if (!updated) return res.status(404).json({ error: 'User not found' });
+        res.json(updated);
+    } catch (error) {
+        console.error('[Auth/preferences] Failed:', error.message);
+        res.status(500).json({ error: 'Server Error' });
+    }
+});
+
+// ─── Unsubscribe (one-click from email link) ─────────────────────────────
+// GET /api/auth/unsubscribe?token=xxx
+// No login required. Token is a signed JWT with { email, action: 'unsubscribe' }.
+// On success, redirects to the frontend homepage with ?unsubscribed=true so the
+// UI can show a toast. On failure, shows a minimal error page.
+
+authRouter.get('/unsubscribe', async (req, res) => {
+    const { token } = req.query;
+    const baseUrl = process.env.FRONTEND_ORIGIN || 'https://englishjobsgermany.com';
+
+    if (!token) {
+        return res.status(400).send(unsubscribePage('Missing token.'));
+    }
+
+    try {
+        const email = verifyUnsubscribeToken(token);
+        const ok = await unsubscribeUser(email);
+
+        if (!ok) {
+            return res.status(404).send(unsubscribePage('Email not found or already unsubscribed.'));
+        }
+
+        console.log(`[Unsubscribe] ${email} unsubscribed from weekly digest.`);
+        return res.redirect(`${baseUrl}/?unsubscribed=true`);
+
+    } catch (error) {
+        console.error('[Unsubscribe] Error:', error.message);
+        return res.status(400).send(unsubscribePage('Invalid or expired link. Please contact support@englishjobsgermany.com.'));
+    }
+});
+
+function unsubscribePage(message) {
+    return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unsubscribe — English Jobs Germany</title>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#0a0a0a;color:#e0e0e0;}
+.card{text-align:center;max-width:400px;padding:48px 32px;background:#151515;border:1px solid #2a2a2a;border-radius:16px;}
+h2{font-size:1.4rem;margin:0 0 12px;}
+p{color:#999;line-height:1.6;margin:0 0 24px;font-size:0.9rem;}
+a{color:#6C9CFF;text-decoration:none;font-weight:600;}</style></head>
+<body><div class="card">
+<h2>Oops</h2>
+<p>${message}</p>
+<a href="https://englishjobsgermany.com">Back to English Jobs Germany</a>
+</div></body></html>`;
+}

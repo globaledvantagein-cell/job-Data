@@ -3,81 +3,53 @@ import bcrypt from 'bcryptjs';
 import { connectToDb } from './connection.js';
 import { createUserModel } from '../models/userModel.js';
 
+// ─── Subscriber Queries (Weekly Digest) ──────────────────────────────────
+
+/**
+ * Get all users who should receive the weekly digest.
+ * Excludes waitlist-only entries (legacy) and unsubscribed users.
+ */
 export async function getSubscribedUsers() {
     const db = await connectToDb();
     return await db.collection('users').find({
         isSubscribed: true,
-        isWaitlist: { $ne: true },
     }).toArray();
 }
 
-export async function findMatchingJobs(user) {
-    const db = await connectToDb();
-    const jobsCollection = db.collection('jobs');
+// ─── User Registration / Subscription ────────────────────────────────────
 
-    const query = {
-        Status: 'active',
-        GermanRequired: false,
-        Department: { $in: user.desiredDomains },
-        JobID: { $nin: user.sentJobIds },
-    };
-
-    if (user.desiredRoles && user.desiredRoles.length > 0) {
-        query.$text = { $search: user.desiredRoles.join(' ') };
-    }
-
-    return await jobsCollection.find(query).sort({ scrapedAt: -1 }).limit(3).toArray();
-}
-
-export async function updateUserAfterEmail(userId, newSentJobIds) {
-    const db = await connectToDb();
-    await db.collection('users').updateOne(
-        { _id: userId },
-        {
-            $set: { lastEmailSent: new Date() },
-            $push: { sentJobIds: { $each: newSentJobIds } },
-        }
-    );
-}
-
-// Talent Pool / Weekly Alerts subscription. Separate from auth.
-export async function addSubscriber(data) {
-    const db = await connectToDb();
-    const newUser = createUserModel({
-        email: data.email,
-        desiredDomains: data.categories,
-        emailFrequency: data.frequency,
-        name: data.email.split('@')[0],
-        createdAt: new Date(),
-    });
-    await db.collection('users').updateOne(
-        { email: newUser.email },
-        {
-            $set: {
-                desiredDomains: newUser.desiredDomains,
-                emailFrequency: newUser.emailFrequency,
-                isSubscribed: true,
-                updatedAt: new Date(),
-            },
-            $setOnInsert: {
-                createdAt: new Date(),
-                subscriptionTier: 'free',
-                sentJobIds: [],
-            },
-        },
-        { upsert: true },
-    );
-    return { success: true, email: newUser.email };
-}
-
-// Legacy registration — kept for the talent-pool flow + emergency admin path.
-export async function registerUser({ email, password, name, role = 'user', location, domain, desiredCategories, isWaitlist }) {
+/**
+ * Used by /api/auth/talent-pool. Handles two cases:
+ *   1. New email → create user with subscription preferences.
+ *   2. Existing user (e.g. Google OAuth account) → update their preferences
+ *      and flip isSubscribed to true.
+ *
+ * Returns { id, email, role, name } in both cases.
+ */
+export async function registerUser({ email, password, name, role = 'user', location, desiredCategories, isWaitlist }) {
     const db = await connectToDb();
     const usersCollection = db.collection('users');
 
     const existingUser = await usersCollection.findOne({ email });
+
     if (existingUser) {
-        throw new Error('User already exists');
+        await usersCollection.updateOne(
+            { email },
+            {
+                $set: {
+                    location: location || existingUser.location,
+                    desiredCategories: Array.isArray(desiredCategories) ? desiredCategories : existingUser.desiredCategories || [],
+                    isSubscribed: true,
+                    updatedAt: new Date(),
+                },
+            },
+        );
+        return {
+            id: existingUser._id,
+            email: existingUser.email,
+            role: existingUser.role,
+            name: existingUser.name,
+        };
     }
 
     let hashedPassword = null;
@@ -92,9 +64,9 @@ export async function registerUser({ email, password, name, role = 'user', locat
         name,
         role,
         location,
-        domain,
         desiredCategories: Array.isArray(desiredCategories) ? desiredCategories : [],
         isWaitlist,
+        isSubscribed: true,
         createdAt: new Date(),
     });
 
@@ -108,8 +80,12 @@ export async function registerUser({ email, password, name, role = 'user', locat
     };
 }
 
-// Emergency password login (admins only). UI no longer exposes this, but
-// the route stays so you can recover access if Google OAuth breaks.
+// ─── Auth ────────────────────────────────────────────────────────────────
+
+/**
+ * Emergency password login (admins only). UI no longer exposes this, but
+ * the route stays so you can recover access if Google OAuth breaks.
+ */
 export async function loginUser(email, password) {
     const db = await connectToDb();
     const user = await db.collection('users').findOne({ email });
@@ -223,4 +199,62 @@ export async function findOrCreateGoogleUser(payload, { acceptedTerms = false } 
         name: newUser.name,
         avatarUrl,
     };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Weekly Digest helpers
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * Mark that we successfully sent the weekly digest to one or more users.
+ * Accepts a single email string or an array of emails.
+ */
+export async function updateLastEmailSent(emails) {
+    const db = await connectToDb();
+    const list = Array.isArray(emails) ? emails : [emails];
+    if (list.length === 0) return { modified: 0 };
+
+    const result = await db.collection('users').updateMany(
+        { email: { $in: list } },
+        { $set: { lastEmailSent: new Date(), updatedAt: new Date() } },
+    );
+    return { modified: result.modifiedCount };
+}
+
+/**
+ * Flip `isSubscribed` to false for a user. Used by the one-click
+ * unsubscribe endpoint. Returns true if a user was updated, false otherwise.
+ */
+export async function unsubscribeUser(email) {
+    const db = await connectToDb();
+    const result = await db.collection('users').updateOne(
+        { email },
+        { $set: { isSubscribed: false, updatedAt: new Date() } },
+    );
+    return result.modifiedCount > 0;
+}
+
+/**
+ * Update a logged-in user's email preferences from the Profile page.
+ * Accepts any combination of: desiredCategories, isSubscribed.
+ * Returns the updated user document (without password).
+ */
+export async function updateUserPreferences(userId, { desiredCategories, isSubscribed }) {
+    const db = await connectToDb();
+    const usersCollection = db.collection('users');
+
+    const set = { updatedAt: new Date() };
+    if (Array.isArray(desiredCategories)) {
+        set.desiredCategories = desiredCategories;
+    }
+    if (typeof isSubscribed === 'boolean') {
+        set.isSubscribed = isSubscribed;
+    }
+
+    await usersCollection.updateOne({ _id: new ObjectId(userId) }, { $set: set });
+
+    return await usersCollection.findOne(
+        { _id: new ObjectId(userId) },
+        { projection: { password: 0 } },
+    );
 }

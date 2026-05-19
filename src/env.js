@@ -14,12 +14,13 @@ export const MONGO_URI = process.env.MONGO_URI;
 
 // AWS SES config
 export const SES_CONFIG = {
-    region: process.env.AWS_SES_REGION || 'eu-west-1',
+    region: process.env.SES_REGION || 'eu-central-1',
     credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID,
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
     },
-    fromEmail: process.env.SES_FROM_EMAIL || '"Job Scraper Bot" <noreply@englishjobsgermany.com>',
+    fromEmail: process.env.SES_FROM_EMAIL || 'noreply@englishjobsgermany.com',
+    fromName: process.env.SES_FROM_NAME || 'English Jobs Germany',
 };
 
 

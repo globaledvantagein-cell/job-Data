@@ -28,6 +28,7 @@ export {
     restoreRejectedJobToQueue,
     deleteJobsByCompany,
     cleanAllDescriptions,
+    getDigestJobs,
 } from './jobQueries.js';
 
 // ── User Queries ──
@@ -35,11 +36,11 @@ export {
     registerUser,
     loginUser,
     getUserProfile,
-    addSubscriber,
     getSubscribedUsers,
-    findMatchingJobs,
-    updateUserAfterEmail,
     findOrCreateGoogleUser,
+    updateLastEmailSent,
+    unsubscribeUser,
+    updateUserPreferences,
 } from './userQueries.js';
 
 // ── Feedback Queries ──

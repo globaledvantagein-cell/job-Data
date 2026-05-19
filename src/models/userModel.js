@@ -1,7 +1,12 @@
 /**
  * Schema for a 'User'.
  *
- * Note: password is optional now. Google-only users don't have passwords.
+ * Two user types share this collection:
+ *   1. Google OAuth users (authenticated, can browse/apply).
+ *      Have googleId, no password. May also subscribe to weekly alerts.
+ *   2. Talent-pool subscribers (email alerts only, no auth).
+ *      Have isWaitlist: true, no password, no googleId.
+ *
  * Existing password-based admin accounts in the DB still work via the
  * /api/auth/login emergency backdoor.
  */
@@ -20,22 +25,21 @@ const userSchemaDefinition = {
     // Legal — when did the user agree to Terms? Server-side audit trail.
     acceptedTermsAt: { type: Date, default: null },
 
-    // Talent Pool / Weekly Alerts (separate flow from auth)
+    // Talent Pool / Weekly Alerts (subscription, separate from auth flow)
     location: { type: String, default: "" },
-    domain: { type: String, default: "" },   // Tech / Non-Tech
     isWaitlist: { type: Boolean, default: false },
 
-    // Preferences
-    desiredRoles: { type: Array, default: [] },
-    desiredDomains: { type: Array, default: [] },
-    desiredCategories: { type: Array, default: [] }, // e.g. ['software','data','product_tech']
+    // Subscription preferences — source of truth for the weekly digest filter.
+    // Values match the 6 category IDs from core/categorize.js:
+    //   software, data, product_tech, other_tech, product_nontech, other_nontech
+    desiredCategories: { type: Array, default: [] },
+
     emailFrequency: { type: String, default: "Weekly" },
     subscriptionTier: { type: String, default: "free" },
-    isSubscribed: { type: Boolean, default: true },
+    isSubscribed: { type: Boolean, default: false },
 
     // System
     lastEmailSent: { type: Date, default: null },
-    sentJobIds: { type: Array, default: [] },
     createdAt: { type: Date },
     updatedAt: { type: Date },
 };

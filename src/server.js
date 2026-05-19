@@ -6,9 +6,8 @@ import cron from 'node-cron';
 import { client, connectToDb } from './db/index.js';
 import { runScraper } from './cron/runScraper.js';
 import { runValidator } from './cron/runValidator.js';
-import { runMatcher } from './cron/runMatcher.js';
+import { runWeeklyDigest } from './cron/runWeeklyDigest.js';
 import { jobsApiRouter } from './api/jobs.routes.js';
-import { usersApiRouter } from './api/users.routes.js';
 import { authRouter } from './api/auth.routes.js';
 import { analyticsRouter } from './api/analytics.routes.js';
 import { feedbackRouter } from './api/feedback.routes.js';
@@ -38,7 +37,6 @@ app.use(attachVisitor); // adds lazy req.resolveVisitor() to every request
 // --- API Routes ---
 app.use('/api/auth', authRouter);
 app.use('/api/jobs', jobsApiRouter);
-app.use('/api/users', usersApiRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/feedback', feedbackRouter);
 
@@ -64,15 +62,15 @@ app.listen(PORT, async () => {
             runValidator();
         });
 
-        cron.schedule('0 8 */2 * *', () => {
-            console.log('--- Cron Job: Running Matcher ---');
-            runMatcher();
+        // Weekly digest — every Monday at 8:00 AM UTC (9:00 CET / 10:00 CEST)
+        cron.schedule('0 8 * * 1', () => {
+            console.log('--- Cron Job: Running Weekly Digest ---');
+            runWeeklyDigest().catch(err => console.error('[digest] Failed:', err));
         });
 
         console.log("✅ Cron tasks are scheduled.");
         console.log('--- Running initial scrape on start... ---');
         // runScraper();
-        // runMatcher();
 
     } catch (err) {
         console.error("Failed to start server or connect to DB", err);
