@@ -62,8 +62,9 @@ app.listen(PORT, async () => {
             runValidator();
         });
 
-        // Weekly digest — every Monday at 8:00 AM UTC (9:00 CET / 10:00 CEST)
-        cron.schedule('0 8 * * 1', () => {
+        // Weekly digest — daily at 8:00 AM UTC during testing.
+        // Change back to '0 8 * * 1' (Monday only) when ready for production.
+        cron.schedule('0 8 * * *', () => {
             console.log('--- Cron Job: Running Weekly Digest ---');
             runWeeklyDigest().catch(err => console.error('[digest] Failed:', err));
         });
