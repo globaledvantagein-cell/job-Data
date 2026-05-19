@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 import { StripHtml, SanitizeHtml } from '../utils.js';
-import { isGermanyString, normalizeEmploymentType } from '../core/Locationprefilters.js';
+import { isGermanyString, normalizeEmploymentType } from '../core/locationPrefilters.js';
 import { normalizeArray } from '../core/jobExtractor.js';
 
 // ─── SmartRecruiters experienceLevel → your taxonomy ──────────────────────

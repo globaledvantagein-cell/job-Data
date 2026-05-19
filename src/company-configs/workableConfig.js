@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 import { StripHtml, SanitizeHtml } from '../utils.js';
-import { normalizeWorkplaceType, normalizeEmploymentType } from '../core/Locationprefilters.js';
+import { normalizeWorkplaceType, normalizeEmploymentType } from '../core/locationPrefilters.js';
 import { normalizeArray } from '../core/jobExtractor.js';
 
 // Workable-specific: maps experience keywords to ExperienceLevel enum

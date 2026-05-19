@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 import { XMLParser } from 'fast-xml-parser';
 import { StripHtml, SanitizeHtml } from '../utils.js';
-import { isGermanyString, normalizeWorkplaceType, normalizeEmploymentType } from '../core/Locationprefilters.js';
+import { isGermanyString, normalizeWorkplaceType, normalizeEmploymentType } from '../core/locationPrefilters.js';
 import { normalizeArray } from '../core/jobExtractor.js';
 
 // ─── Seniority mapping (Personio → your ExperienceLevel taxonomy) ─────────

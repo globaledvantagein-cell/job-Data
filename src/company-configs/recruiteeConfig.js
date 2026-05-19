@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 import { StripHtml, SanitizeHtml } from '../utils.js';
-import { GERMAN_CITIES } from '../core/Locationprefilters.js';
+import { GERMAN_CITIES } from '../core/locationPrefilters.js';
 import { normalizeArray } from '../core/jobExtractor.js';
 
 
