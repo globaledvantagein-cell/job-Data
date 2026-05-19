@@ -9,6 +9,7 @@
  *   - Keep markup boring — marketing-heavy HTML lands in Promotions.
  */
 
+
 import { CATEGORY_LABELS } from '../../core/categorize.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────

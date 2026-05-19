@@ -1,240 +1,218 @@
 /**
- * Weekly digest runner.
+ * Weekly digest email template.
  *
- * One job, runs Monday 8am UTC. For every subscribed user, builds a
- * personalized digest from the past week's jobs in their chosen categories
- * and sends it via SES.
+ * Takes a user + their matching jobs (already filtered to their categories)
+ * and renders both an HTML and plain-text version. Returns:
+ *   { subject, html, text, unsubscribeUrl }
  *
- * Flow:
- *   1. Fetch all subscribed users (one DB query)
- *   2. Fetch all active jobs from last 7 days, grouped by category (one DB query)
- *   3. Per-user in-memory filter + render
- *   4. Bulk-send via SES with rate limiting
- *   5. Update lastEmailSent on successful recipients
- *   6. Log structured summary
+ * Design philosophy: looks like a plain personal email, not a marketing
+ * blast. Boring HTML lands in Primary inbox. We learned this the hard way.
  *
- * CLI flags (for testing):
- *   --dry-run               Don't send. Just log what would happen.
- *   --user=<email>          Send only to this single user.
- *   --days=<n>              Look-back window (default 7).
- *
- * Usage:
- *   node src/cron/runWeeklyDigest.js
- *   node src/cron/runWeeklyDigest.js --dry-run
- *   node src/cron/runWeeklyDigest.js --user=ashar050488@gmail.com
- *   node src/cron/runWeeklyDigest.js --user=ashar050488@gmail.com --dry-run
+ * Hard cap: 8 jobs per email (focused beats comprehensive). We pick the
+ * freshest jobs across the user's categories, distributing fairly.
  */
-import { getSubscribedUsers, updateLastEmailSent, getDigestJobs } from '../db/index.js';
-import { renderWeeklyDigest, sendBulkEmails } from '../email/index.js';
-import { client as mongoClient, connectToDb } from '../db/connection.js';
+import { buildUnsubscribeUrl } from '../unsubscribe.js';
+import {
+    escapeHtml,
+    renderJobCard,
+    renderCategoryHeading,
+    renderSummary,
+    renderHeaderBanner,
+    renderFooter,
+    formatEmploymentType,
+    formatPostedDate,
+    formatSalary,
+    formatLocation,
+    workplaceLabel,
+} from './components.js';
+import { CATEGORY_LABELS, CATEGORY_ORDER } from '../../core/categorize.js';
+
+const BASE_URL = process.env.FRONTEND_ORIGIN || 'https://englishjobsgermany.com';
+const MAX_JOBS_PER_EMAIL = 8;
 
 /**
- * Persist a digest run summary to MongoDB for observability.
- * Collection: digestRuns. One doc per run. TTL index recommended (90 days).
+ * Pick up to MAX_JOBS_PER_EMAIL jobs distributed fairly across the user's
+ * categories. Returns { picked: { cat: [jobs] }, total: N }.
+ *
+ * Strategy: round-robin through categories, taking the freshest unused
+ * job from each, until we hit the cap or run out.
  */
-async function logDigestRun(summary) {
-    try {
-        const db = await connectToDb();
-        await db.collection('digestRuns').insertOne({
-            ...summary,
-            ranAt: new Date(),
-        });
-    } catch (err) {
-        // Logging should never crash the digest
-        console.error('[digest] Warning: failed to write run log:', err.message);
-    }
-}
+function pickTopJobs(jobsByCategory, cap = MAX_JOBS_PER_EMAIL) {
+    const cats = Object.keys(jobsByCategory);
+    if (cats.length === 0) return { picked: {}, total: 0 };
 
-// ─── CLI flag parser ──────────────────────────────────────────────────────
-function parseArgs() {
-    const args = process.argv.slice(2);
-    const flags = { dryRun: false, user: null, days: 7 };
-    for (const a of args) {
-        if (a === '--dry-run') flags.dryRun = true;
-        else if (a.startsWith('--user=')) flags.user = a.slice('--user='.length);
-        else if (a.startsWith('--days=')) flags.days = Number(a.slice('--days='.length)) || 7;
+    // Working copies — assume jobs in each bucket are already sorted by PostedDate desc
+    const queues = {};
+    for (const c of cats) queues[c] = [...(jobsByCategory[c] || [])];
+
+    const picked = {};
+    for (const c of cats) picked[c] = [];
+
+    let total = 0;
+    while (total < cap) {
+        let progress = false;
+        for (const c of cats) {
+            if (queues[c].length === 0) continue;
+            picked[c].push(queues[c].shift());
+            total += 1;
+            progress = true;
+            if (total >= cap) break;
+        }
+        if (!progress) break; // all empty
     }
-    return flags;
+
+    // Drop empty cats so we don't render empty headings
+    for (const c of cats) if (picked[c].length === 0) delete picked[c];
+
+    return { picked, total };
 }
 
 /**
- * Build the per-user message list. Pure function — easy to unit test later.
+ * @param {Object} args
+ * @param {Object} args.user           - { email, name, desiredCategories }
+ * @param {Object} args.jobsByCategory - { software: [...], data: [...], ... }
+ * @param {number} args.totalJobs      - count across all their categories (pre-cap)
+ * @returns {{ subject, html, text, unsubscribeUrl }}
  */
-export function buildDigestMessages(users, jobsByCategory) {
-    const messages = [];
+export function renderWeeklyDigest({ user, jobsByCategory, totalJobs }) {
+    const firstName = capitalizeFirst((user.name || 'there').split(' ')[0]);
+    const unsubscribeUrl = buildUnsubscribeUrl(user.email, BASE_URL);
 
-    for (const user of users) {
-        const cats = Array.isArray(user.desiredCategories) ? user.desiredCategories : [];
-        if (cats.length === 0) continue;
+    // Apply the 8-job cap fairly across categories
+    const { picked, total: shownTotal } = pickTopJobs(jobsByCategory, MAX_JOBS_PER_EMAIL);
+    const categoryCount = Object.keys(picked).length;
 
-        const userJobs = {};
-        let total = 0;
-        for (const cat of cats) {
-            const jobs = jobsByCategory[cat] || [];
-            if (jobs.length > 0) {
-                userJobs[cat] = jobs;
-                total += jobs.length;
-            }
-        }
+    const subject = buildSubject({ shownTotal });
 
-        if (total === 0) continue;
+    const html = renderHtml({
+        firstName,
+        picked,
+        shownTotal,
+        categoryCount,
+        unsubscribeUrl,
+        totalAvailable: totalJobs,
+    });
+    const text = renderText({
+        firstName,
+        picked,
+        shownTotal,
+        categoryCount,
+        unsubscribeUrl,
+        totalAvailable: totalJobs,
+    });
 
-        const { subject, html, text, unsubscribeUrl } = renderWeeklyDigest({
-            user,
-            jobsByCategory: userJobs,
-            totalJobs: total,
-        });
-
-        messages.push({
-            msg: { to: user.email, subject, html, text, unsubscribeUrl, meta: { userId: user._id?.toString() } },
-            user,
-            totalJobs: total,
-        });
-    }
-
-    return messages;
+    return { subject, html, text, unsubscribeUrl };
 }
 
-export async function runWeeklyDigest(opts = {}) {
-    const startTime = Date.now();
-    const { dryRun = false, user: targetEmail = null, days = 7 } = opts;
+// ─── Subject line ──────────────────────────────────────────────────────────
 
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('Weekly Digest Run');
-    console.log(`  Mode:      ${dryRun ? 'DRY RUN (no emails sent)' : 'LIVE'}`);
-    console.log(`  Look-back: ${days} days`);
-    if (targetEmail) console.log(`  Target:    single user = ${targetEmail}`);
-    console.log('═══════════════════════════════════════════════════════\n');
-
-    // ── 1. Fetch subscribers ────────────────────────────────────────────
-    let users = await getSubscribedUsers();
-    if (targetEmail) {
-        users = users.filter(u => u.email === targetEmail);
-        if (users.length === 0) {
-            console.log(`[digest] No subscribed user found with email ${targetEmail}`);
-            console.log(`         (Is isSubscribed: true on their user doc?)`);
-            return { sent: 0, skipped: 0, failed: 0 };
-        }
-    }
-
-    // ENV-based whitelist: set DIGEST_WHITELIST=email1@x.com,email2@x.com
-    // in .env to restrict sends during testing. Remove the var to send to all.
-    const whitelist = process.env.DIGEST_WHITELIST;
-    if (whitelist && !targetEmail) {
-        const allowed = whitelist.split(',').map(e => e.trim().toLowerCase());
-        const before = users.length;
-        users = users.filter(u => allowed.includes(u.email.toLowerCase()));
-        console.log(`[digest] Whitelist active: ${allowed.join(', ')}`);
-        console.log(`[digest] Filtered ${before} → ${users.length} user(s)`);
-    }
-
-    console.log(`[digest] Loaded ${users.length} subscribed user(s)`);
-
-    // ── 2. Fetch jobs ───────────────────────────────────────────────────
-    const { byCategory: jobsByCategory, total: totalJobs } = await getDigestJobs(days);
-    const catSummary = Object.entries(jobsByCategory)
-        .map(([cat, arr]) => `${cat}=${arr.length}`)
-        .join(', ');
-    console.log(`[digest] Loaded ${totalJobs} active job(s) from last ${days} days`);
-    console.log(`[digest]   By category: ${catSummary || '(empty)'}\n`);
-
-    if (totalJobs === 0) {
-        console.log('[digest] No jobs to send. Exiting.');
-        const summary = { mode: dryRun ? 'dry-run' : 'live', subscribersLoaded: users.length, jobsAvailable: 0, sent: 0, skipped: users.length, failed: 0, duration: '0s', lookBackDays: days };
-        if (!dryRun) await logDigestRun(summary);
-        return summary;
-    }
-
-    // ── 3. Build per-user messages ──────────────────────────────────────
-    const messages = buildDigestMessages(users, jobsByCategory);
-    const skippedNoMatch = users.length - messages.length;
-    console.log(`[digest] Built ${messages.length} message(s); ${skippedNoMatch} user(s) skipped (no matching jobs)\n`);
-
-    if (messages.length === 0) {
-        console.log('[digest] Nothing to send. Exiting.');
-        const summary = { mode: dryRun ? 'dry-run' : 'live', subscribersLoaded: users.length, jobsAvailable: totalJobs, sent: 0, skipped: users.length, failed: 0, duration: '0s', lookBackDays: days };
-        if (!dryRun) await logDigestRun(summary);
-        return summary;
-    }
-
-    // ── 4. Send (or dry-run) ────────────────────────────────────────────
-    if (dryRun) {
-        console.log('[digest] DRY RUN — these messages WOULD be sent:\n');
-        for (const { msg, user, totalJobs: t } of messages) {
-            console.log(`  → ${user.email.padEnd(40)} | ${t} job(s) | "${msg.subject}"`);
-        }
-        console.log(`\n[digest] DRY RUN complete. No emails sent.\n`);
-        return { sent: 0, skipped: skippedNoMatch, failed: 0, dryRun: true };
-    }
-
-    console.log(`[digest] Sending ${messages.length} email(s) via SES...\n`);
-    const results = await sendBulkEmails(
-        messages.map(m => m.msg),
-        {
-            onProgress: (sent, total) => {
-                console.log(`  ...sent ${sent}/${total}`);
-            },
-        },
-    );
-
-    // ── 5. Tally + update lastEmailSent ─────────────────────────────────
-    const successful = results.filter(r => r.ok);
-    const failed = results.filter(r => !r.ok);
-
-    if (successful.length > 0) {
-        const successfulEmails = successful.map(r => r.to);
-        await updateLastEmailSent(successfulEmails);
-    }
-
-    // ── 6. Summary ──────────────────────────────────────────────────────
-    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-    console.log('\n═══════════════════════════════════════════════════════');
-    console.log('Summary');
-    console.log('═══════════════════════════════════════════════════════');
-    console.log(`  Subscribers loaded:        ${users.length}`);
-    console.log(`  Skipped (no matching job): ${skippedNoMatch}`);
-    console.log(`  Sent successfully:         ${successful.length}`);
-    console.log(`  Failed:                    ${failed.length}`);
-    console.log(`  Total time:                ${elapsed}s`);
-    console.log('═══════════════════════════════════════════════════════');
-
-    if (failed.length > 0) {
-        console.log('\nFailed sends:');
-        for (const f of failed) {
-            console.log(`  ${f.to}: ${f.error}`);
-        }
-    }
-
-    const summary = {
-        mode: 'live',
-        subscribersLoaded: users.length,
-        jobsAvailable: totalJobs,
-        sent: successful.length,
-        skipped: skippedNoMatch,
-        failed: failed.length,
-        failedEmails: failed.map(f => ({ email: f.to, error: f.error })),
-        duration: elapsed,
-        lookBackDays: days,
-    };
-    await logDigestRun(summary);
-
-    return summary;
+function buildSubject({ shownTotal }) {
+    if (shownTotal === 1) return `Your weekly job digest — 1 new role in Germany`;
+    return `Your weekly job digest — ${shownTotal} new roles in Germany`;
 }
 
-// ─── Allow running directly: `node src/cron/runWeeklyDigest.js` ──────────
-// On Windows, process.argv[1] uses backslashes but import.meta.url uses
-// forward slashes, so a simple === check fails. Normalize both.
-const thisFile = new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/i, '$1');
-const entryFile = process.argv[1]?.replace(/\\/g, '/');
-const isCli = thisFile === entryFile || thisFile === '/' + entryFile;
+function capitalizeFirst(s) {
+    if (!s) return s;
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
-if (isCli) {
-    const flags = parseArgs();
-    runWeeklyDigest(flags)
-        .then(() => mongoClient.close())
-        .then(() => process.exit(0))
-        .catch(err => {
-            console.error('[digest] Fatal error:', err);
-            mongoClient.close().finally(() => process.exit(1));
-        });
+// ─── HTML version ──────────────────────────────────────────────────────────
+
+function renderHtml({ firstName, picked, shownTotal, categoryCount, unsubscribeUrl, totalAvailable }) {
+    const categoryBlocks = CATEGORY_ORDER
+        .filter(cat => picked[cat]?.length > 0)
+        .map(cat => {
+            const cards = picked[cat].map(j => renderJobCard(j, BASE_URL)).join('');
+            return renderCategoryHeading(cat, picked[cat].length) + cards;
+        })
+        .join('');
+
+    const moreLine = totalAvailable > shownTotal
+        ? `<p style="font-size: 13px; color: #6b7280; line-height: 1.6; margin: 22px 0 0;">
+              Showing the top ${shownTotal} of ${totalAvailable} matching roles this week.
+              <a href="${BASE_URL}/jobs" style="color: #6C9CFF; text-decoration: none; font-weight: 600;">Browse them all →</a>
+           </p>`
+        : `<p style="font-size: 14px; line-height: 1.6; margin: 22px 0 0;">
+              <a href="${BASE_URL}/jobs" style="color: #6C9CFF; text-decoration: none; font-weight: 600;">View all open positions →</a>
+           </p>`;
+
+    return `
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #111827; max-width: 600px; margin: 0 auto; padding: 24px 20px;">
+
+    ${renderHeaderBanner()}
+
+    <p style="font-size: 17px; line-height: 1.5; margin: 0 0 8px; color: #111827; font-weight: 600; letter-spacing: -0.2px;">Hi ${escapeHtml(firstName)},</p>
+    <p style="font-size: 15px; line-height: 1.65; margin: 0 0 24px; color: #4b5563;">
+        ${shownTotal === 1
+            ? `here is a new English-speaking role in Germany that matches your preferences this week.`
+            : `here are this week's English-speaking roles in Germany matching your preferences.`}
+    </p>
+
+    ${renderSummary({ totalJobs: shownTotal, categoryCount })}
+
+    ${categoryBlocks}
+
+    ${moreLine}
+
+    ${renderFooter(unsubscribeUrl)}
+
+</div>`;
+}
+
+// ─── Plain text version ────────────────────────────────────────────────────
+
+function renderText({ firstName, picked, shownTotal, categoryCount, unsubscribeUrl, totalAvailable }) {
+    const lines = [];
+    lines.push(`English Jobs in Germany — Weekly Digest`);
+    lines.push('');
+    lines.push(`Hi ${firstName},`);
+    lines.push('');
+    lines.push(shownTotal === 1
+        ? `Here is a new English-speaking role in Germany that matches your preferences:`
+        : `Here are this week's English-speaking roles in Germany matching your preferences:`);
+    lines.push('');
+    lines.push(`${shownTotal} new ${shownTotal === 1 ? 'role' : 'roles'} across ${categoryCount} ${categoryCount === 1 ? 'category' : 'categories'} you follow`);
+    lines.push('');
+
+    for (const cat of CATEGORY_ORDER) {
+        const jobs = picked[cat];
+        if (!jobs?.length) continue;
+
+        const noun = jobs.length === 1 ? 'role' : 'roles';
+        lines.push(`${CATEGORY_LABELS[cat]} — ${jobs.length} ${noun}`);
+        lines.push('-'.repeat(40));
+
+        for (const job of jobs) {
+            lines.push(`* ${job.JobTitle}`);
+            const subline = [job.Company, formatLocation(job)].filter(Boolean).join(' — ');
+            lines.push(`  ${subline}`);
+
+            const wp = workplaceLabel(job);
+            const salary = formatSalary(job);
+            const meta = [
+                wp,
+                salary,
+                formatEmploymentType(job.EmploymentType),
+                formatPostedDate(job.PostedDate),
+            ].filter(Boolean).join(' · ');
+            if (meta) lines.push(`  ${meta}`);
+
+            lines.push(`  ${BASE_URL}/jobs?id=${encodeURIComponent(job._id?.toString?.() || job.JobID)}`);
+            lines.push('');
+        }
+    }
+
+    if (totalAvailable > shownTotal) {
+        lines.push(`Showing the top ${shownTotal} of ${totalAvailable} matching roles this week.`);
+        lines.push(`Browse all: ${BASE_URL}/jobs`);
+    } else {
+        lines.push(`View all open positions: ${BASE_URL}/jobs`);
+    }
+    lines.push('');
+    lines.push('---');
+    lines.push('You are receiving this because you subscribed to weekly job alerts on English Jobs in Germany.');
+    lines.push('Need help? Contact support@englishjobsgermany.com');
+    lines.push(`Unsubscribe: ${unsubscribeUrl}`);
+
+    return lines.join('\n');
 }

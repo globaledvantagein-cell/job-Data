@@ -116,6 +116,18 @@ export async function runWeeklyDigest(opts = {}) {
             return { sent: 0, skipped: 0, failed: 0 };
         }
     }
+
+    // ENV-based whitelist: set DIGEST_WHITELIST=email1@x.com,email2@x.com
+    // in .env to restrict sends during testing. Remove the var to send to all.
+    const whitelist = process.env.DIGEST_WHITELIST;
+    if (whitelist && !targetEmail) {
+        const allowed = whitelist.split(',').map(e => e.trim().toLowerCase());
+        const before = users.length;
+        users = users.filter(u => allowed.includes(u.email.toLowerCase()));
+        console.log(`[digest] Whitelist active: ${allowed.join(', ')}`);
+        console.log(`[digest] Filtered ${before} → ${users.length} user(s)`);
+    }
+
     console.log(`[digest] Loaded ${users.length} subscribed user(s)`);
 
     // ── 2. Fetch jobs ───────────────────────────────────────────────────
