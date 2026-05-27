@@ -5,7 +5,7 @@ import { GEMINI_API_KEYS } from '../env.js';
 // gemini-3.1-flash-lite: 500 RPD | 15 RPM | 250K TPM  ← stable, same limits as preview
 // gemini-2.5-flash-lite:  20 RPD | 10 RPM | 250K TPM  ← old (was our bottleneck)
 // gemini-2.5-flash:       20 RPD |  5 RPM | 250K TPM  ← fewer RPM too
-const MODEL_NAME = 'gemini-3.1-flash-lite-preview';
+const MODEL_NAME = 'gemini-3.1-flash-lite';
 
 // ─── Per-key state tracker ─────────────────────────────────────────────────────
 //
