@@ -13,7 +13,12 @@ import {
 } from '../db/index.js';
 import { verifyToken } from '../middleware/authMiddleware.js';
 import { GOOGLE_CLIENT_ID } from '../env.js';
-import { verifyUnsubscribeToken } from '../email/index.js';
+import {
+    verifyUnsubscribeToken,
+    sendEmail,
+    renderWelcomeEmail,
+    renderSubscriptionConfirmation,
+} from '../email/index.js';
 
 export const authRouter = Router();
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -33,6 +38,21 @@ async function finalizeLogin(req, user) {
         console.warn('[Auth] Failed to link visitor:', err.message);
     }
     return jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+}
+
+/**
+ * Fire-and-forget email send. Never crashes the auth flow.
+ */
+function sendEmailQuietly(emailData) {
+    sendEmail(emailData).then(result => {
+        if (result.ok) {
+            console.log(`[Email] ✅ Sent "${emailData.subject}" to ${emailData.to}`);
+        } else {
+            console.error(`[Email] ❌ Failed "${emailData.subject}" to ${emailData.to}: ${result.error}`);
+        }
+    }).catch(err => {
+        console.error(`[Email] ❌ Exception sending to ${emailData.to}:`, err.message);
+    });
 }
 
 // ─── Talent Pool / Weekly Alerts ──────────────────────────────────────────
@@ -66,6 +86,18 @@ authRouter.post('/talent-pool', [
             console.warn('[Auth] Failed to link visitor on talent-pool:', err.message);
         }
 
+        // ── Send subscription confirmation email ──────────────────────────
+        try {
+            const { subject, html, text } = renderSubscriptionConfirmation({
+                name: name || 'there',
+                email,
+                categories: Array.isArray(desiredCategories) ? desiredCategories : [],
+            });
+            sendEmailQuietly({ to: email, subject, html, text });
+        } catch (emailErr) {
+            console.error('[Auth] Failed to render subscription email:', emailErr.message);
+        }
+
         res.status(201).json({
             success: true,
             message: 'Successfully joined the talent pool',
@@ -93,17 +125,24 @@ authRouter.post('/login', async (req, res) => {
 //
 // Frontend sends:
 //   { credential: <ID token from @react-oauth/google>,
-//     acceptedTerms: <boolean — true if Terms checkbox was ticked> }
+//     acceptedTerms: <boolean — true if Terms checkbox was ticked>,
+//     subscribeToDigest?: <boolean — true if they want weekly emails>,
+//     desiredCategories?: <string[] — category IDs they selected> }
 //
 // First-time users MUST have acceptedTerms === true. Returning users
 // (already in DB) don't need to re-accept — we already have their consent.
+//
+// If subscribeToDigest is true and desiredCategories are provided, we
+// set isSubscribed + desiredCategories on the user doc and send a welcome
+// email that includes the digest confirmation. Otherwise we send a plain
+// welcome email.
 authRouter.post('/google', async (req, res) => {
     if (!googleClient) {
         return res.status(503).json({ error: 'Google login not configured on server' });
     }
 
     try {
-        const { credential, acceptedTerms } = req.body;
+        const { credential, acceptedTerms, subscribeToDigest, desiredCategories } = req.body;
         if (!credential) return res.status(400).json({ error: 'Missing credential' });
 
         const ticket = await googleClient.verifyIdToken({
@@ -117,6 +156,45 @@ authRouter.post('/google', async (req, res) => {
         });
         const token = await finalizeLogin(req, user);
 
+        // ── Handle optional digest subscription during signup ─────────────
+        const wantsDigest = Boolean(subscribeToDigest);
+        const cats = Array.isArray(desiredCategories) ? desiredCategories : [];
+
+        if (wantsDigest && cats.length > 0) {
+            try {
+                await updateUserPreferences(user.id, {
+                    desiredCategories: cats,
+                    isSubscribed: true,
+                });
+            } catch (prefErr) {
+                console.error('[Auth/Google] Failed to set digest preferences:', prefErr.message);
+            }
+        }
+
+        // ── Determine if this is a NEW user (first sign-in) ──────────────
+        // findOrCreateGoogleUser returns the user. If they were just created,
+        // acceptedTermsAt was just set NOW. For returning users, it was set
+        // earlier. We check if the user existed before by looking at the
+        // payload — if case 3 (brand new) was hit, acceptedTermsAt is fresh.
+        //
+        // Simpler approach: we check if the user doc was created in the last
+        // 10 seconds. This avoids modifying findOrCreateGoogleUser's return.
+        const isNewUser = await checkIfNewUser(user.id);
+
+        if (isNewUser) {
+            try {
+                const { subject, html, text } = renderWelcomeEmail({
+                    name: user.name || payload.name || 'there',
+                    email: user.email || payload.email,
+                    isSubscribed: wantsDigest && cats.length > 0,
+                    categories: cats,
+                });
+                sendEmailQuietly({ to: user.email || payload.email, subject, html, text });
+            } catch (emailErr) {
+                console.error('[Auth/Google] Failed to render welcome email:', emailErr.message);
+            }
+        }
+
         res.status(200).json({ token, user });
     } catch (error) {
         console.error('[Auth/Google] Failed:', error.message);
@@ -127,6 +205,21 @@ authRouter.post('/google', async (req, res) => {
         res.status(401).json({ error: 'Google sign-in failed' });
     }
 });
+
+/**
+ * Check if a user was created within the last 10 seconds (= new signup).
+ * This avoids modifying findOrCreateGoogleUser's return value.
+ */
+async function checkIfNewUser(userId) {
+    try {
+        const profile = await getUserProfile(userId);
+        if (!profile?.createdAt) return false;
+        const createdAt = new Date(profile.createdAt).getTime();
+        return (Date.now() - createdAt) < 10_000; // within 10 seconds
+    } catch {
+        return false;
+    }
+}
 
 // ─── Current user ─────────────────────────────────────────────────────────
 authRouter.get('/me', verifyToken, async (req, res) => {
