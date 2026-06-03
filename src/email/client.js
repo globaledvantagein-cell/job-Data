@@ -1,32 +1,28 @@
 /**
- * Shared SES v2 client (singleton).
+ * Shared Resend client (singleton).
  *
- * One instance is reused across all sends so the SDK can pool TCP/TLS
- * connections. Importing this file is cheap; the client is lazily
+ * One instance is reused across all sends.
+ * Importing this file is cheap; the client is lazily
  * created the first time you use it.
  */
-import { SESv2Client } from '@aws-sdk/client-sesv2';
-import { SES_CONFIG } from '../env.js';
+import { Resend } from 'resend';
+import { RESEND_API_KEY } from '../env.js';
 
 let _client = null;
 
-export function getSesClient() {
+export function getResendClient() {
     if (_client) return _client;
 
-    if (!SES_CONFIG.credentials.accessKeyId || !SES_CONFIG.credentials.secretAccessKey) {
+    if (!RESEND_API_KEY) {
         throw new Error(
-            '[email/client] AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY must be set in .env',
+            '[email/client] RESEND_API_KEY must be set in .env',
         );
     }
 
-    _client = new SESv2Client({
-        region: SES_CONFIG.region,
-        credentials: SES_CONFIG.credentials,
-    });
-
+    _client = new Resend(RESEND_API_KEY);
     return _client;
 }
 
-export const FROM_EMAIL = SES_CONFIG.fromEmail;
-export const FROM_NAME = SES_CONFIG.fromName;
+export const FROM_EMAIL = 'noreply@englishjobsgermany.com';
+export const FROM_NAME = 'English Jobs Germany';
 export const REPLY_TO = 'support@englishjobsgermany.com';

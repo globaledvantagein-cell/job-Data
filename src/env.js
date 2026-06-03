@@ -12,16 +12,8 @@ export const GEMINI_API_KEYS = [
 export const MONGO_URI = process.env.MONGO_URI;
 
 
-// AWS SES config
-export const SES_CONFIG = {
-    region: process.env.SES_REGION || 'eu-central-1',
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    },
-    fromEmail: process.env.SES_FROM_EMAIL || 'noreply@englishjobsgermany.com',
-    fromName: process.env.SES_FROM_NAME || 'English Jobs Germany',
-};
+// Resend email config
+export const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
 
 // ── Signup Gate ───────────────────────────────────────────────────────────

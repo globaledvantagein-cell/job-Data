@@ -1,20 +1,17 @@
 /**
- * Low-level SES send primitives.
+ * Low-level Resend send primitives.
  *
  * sendEmail()     — one recipient, one message. Always personalized.
  * sendBulkEmails() — many recipients, each with their own personalized
- *                    content. Respects SES rate limits (14/sec default).
+ *                    content. Respects rate limits (2/sec on free tier).
  *
- * We do NOT use SES's SendBulkEmail / templates feature because every
- * digest is personalized (different jobs per user). Instead we send N
- * individual messages in parallel batches with rate limiting.
+ * We send N individual messages in parallel batches with rate limiting
+ * because every digest is personalized (different jobs per user).
  */
-import { SendEmailCommand } from '@aws-sdk/client-sesv2';
-import { getSesClient, FROM_EMAIL, FROM_NAME, REPLY_TO } from './client.js';
+import { getResendClient, FROM_EMAIL, FROM_NAME, REPLY_TO } from './client.js';
 
-// SES sandbox limit is 1/sec. Production default is 14/sec. We default
-// conservatively so it works in both. Override via env if you bump quota.
-const SEND_RATE_PER_SECOND = Number(process.env.SES_SEND_RATE_PER_SECOND) || 10;
+// Resend free tier allows ~2 emails/sec. Override via env if you upgrade.
+const SEND_RATE_PER_SECOND = Number(process.env.RESEND_SEND_RATE_PER_SECOND) || 2;
 
 /**
  * Send a single email.
@@ -28,33 +25,30 @@ const SEND_RATE_PER_SECOND = Number(process.env.SES_SEND_RATE_PER_SECOND) || 10;
  * @returns {Promise<{ ok: boolean, messageId?: string, error?: string }>}
  */
 export async function sendEmail({ to, subject, html, text }) {
-    const client = getSesClient();
-
-    const command = new SendEmailCommand({
-        FromEmailAddress: `${FROM_NAME} <${FROM_EMAIL}>`,
-        ReplyToAddresses: [REPLY_TO],
-        Destination: { ToAddresses: [to] },
-        Content: {
-            Simple: {
-                Subject: { Data: subject, Charset: 'UTF-8' },
-                Body: {
-                    Html: { Data: html, Charset: 'UTF-8' },
-                    Text: { Data: text, Charset: 'UTF-8' },
-                },
-            },
-        },
-    });
+    const resend = getResendClient();
 
     try {
-        const response = await client.send(command);
-        return { ok: true, messageId: response.MessageId };
+        const { data, error } = await resend.emails.send({
+            from: `${FROM_NAME} <${FROM_EMAIL}>`,
+            to: [to],
+            replyTo: REPLY_TO,
+            subject,
+            html,
+            text,
+        });
+
+        if (error) {
+            return { ok: false, error: error.message };
+        }
+
+        return { ok: true, messageId: data.id };
     } catch (error) {
         return { ok: false, error: error.message };
     }
 }
 
 /**
- * Send many personalized emails, respecting SES's per-second rate limit.
+ * Send many personalized emails, respecting rate limits.
  *
  * Each message is an object compatible with sendEmail(). Results are
  * returned in input order. Failures are logged but don't stop the batch.

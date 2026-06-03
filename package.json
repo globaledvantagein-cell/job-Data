@@ -40,7 +40,8 @@
     "node-fetch": "^2.7.0",
     "nodemailer": "^7.0.6",
     "playwright": "^1.55.0",
-    "puppeteer": "^24.17.0"
+    "puppeteer": "^24.17.0",
+    "resend": "^6.12.4"
   },
   "devDependencies": {
     "eslint-plugin-import": "^2.32.0",
