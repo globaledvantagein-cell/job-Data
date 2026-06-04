@@ -18,6 +18,7 @@ import {
     sendEmail,
     renderWelcomeEmail,
     renderSubscriptionConfirmation,
+    renderUnsubscribeConfirmation,
 } from '../email/index.js';
 
 export const authRouter = Router();
@@ -172,16 +173,10 @@ authRouter.post('/google', async (req, res) => {
         }
 
         // ── Determine if this is a NEW user (first sign-in) ──────────────
-        // findOrCreateGoogleUser returns the user. If they were just created,
-        // acceptedTermsAt was just set NOW. For returning users, it was set
-        // earlier. We check if the user existed before by looking at the
-        // payload — if case 3 (brand new) was hit, acceptedTermsAt is fresh.
-        //
-        // Simpler approach: we check if the user doc was created in the last
-        // 10 seconds. This avoids modifying findOrCreateGoogleUser's return.
         const isNewUser = await checkIfNewUser(user.id);
 
         if (isNewUser) {
+            // Send welcome email
             try {
                 const { subject, html, text } = renderWelcomeEmail({
                     name: user.name || payload.name || 'there',
@@ -193,12 +188,25 @@ authRouter.post('/google', async (req, res) => {
             } catch (emailErr) {
                 console.error('[Auth/Google] Failed to render welcome email:', emailErr.message);
             }
+
+            // ── FIX 1: Send separate subscription confirmation if opted in ──
+            if (wantsDigest && cats.length > 0) {
+                try {
+                    const { subject, html, text } = renderSubscriptionConfirmation({
+                        name: user.name || payload.name || 'there',
+                        email: user.email || payload.email,
+                        categories: cats,
+                    });
+                    sendEmailQuietly({ to: user.email || payload.email, subject, html, text });
+                } catch (emailErr) {
+                    console.error('[Auth/Google] Failed to render subscription email:', emailErr.message);
+                }
+            }
         }
 
         res.status(200).json({ token, user });
     } catch (error) {
         console.error('[Auth/Google] Failed:', error.message);
-        // Surface the terms-rejection message so the frontend can show it
         if (error.message?.includes('accept the Terms')) {
             return res.status(400).json({ error: error.message });
         }
@@ -235,6 +243,8 @@ authRouter.get('/me', verifyToken, async (req, res) => {
 // ─── Update email preferences (Profile page) ──────────────────────────────
 // PATCH /api/auth/preferences
 // Body: { desiredCategories?: string[], isSubscribed?: boolean }
+//
+// FIX 2: Detects subscription state changes and sends confirmation emails.
 authRouter.patch('/preferences', verifyToken, [
     body('desiredCategories').optional().isArray(),
     body('isSubscribed').optional().isBoolean(),
@@ -244,11 +254,49 @@ authRouter.patch('/preferences', verifyToken, [
 
     try {
         const { desiredCategories, isSubscribed } = req.body;
+
+        // Get current state BEFORE updating, to detect subscription changes
+        const before = await getUserProfile(req.user.id);
+        if (!before) return res.status(404).json({ error: 'User not found' });
+
         const updated = await updateUserPreferences(req.user.id, {
             desiredCategories,
             isSubscribed,
         });
         if (!updated) return res.status(404).json({ error: 'User not found' });
+
+        // ── Send confirmation emails on subscription changes ─────────────
+        const wasSubscribed = Boolean(before.isSubscribed);
+        const nowSubscribed = typeof isSubscribed === 'boolean' ? isSubscribed : wasSubscribed;
+
+        if (!wasSubscribed && nowSubscribed) {
+            // Just subscribed → send subscription confirmation
+            try {
+                const cats = Array.isArray(desiredCategories)
+                    ? desiredCategories
+                    : (updated.desiredCategories || []);
+                const { subject, html, text } = renderSubscriptionConfirmation({
+                    name: updated.name || 'there',
+                    email: updated.email,
+                    categories: cats,
+                });
+                sendEmailQuietly({ to: updated.email, subject, html, text });
+            } catch (emailErr) {
+                console.error('[Auth/preferences] Failed to render subscription email:', emailErr.message);
+            }
+        } else if (wasSubscribed && !nowSubscribed) {
+            // Just unsubscribed → send unsubscribe confirmation
+            try {
+                const { subject, html, text } = renderUnsubscribeConfirmation({
+                    name: updated.name || 'there',
+                    email: updated.email,
+                });
+                sendEmailQuietly({ to: updated.email, subject, html, text });
+            } catch (emailErr) {
+                console.error('[Auth/preferences] Failed to render unsubscribe email:', emailErr.message);
+            }
+        }
+
         res.json(updated);
     } catch (error) {
         console.error('[Auth/preferences] Failed:', error.message);
@@ -261,6 +309,8 @@ authRouter.patch('/preferences', verifyToken, [
 // No login required. Token is a signed JWT with { email, action: 'unsubscribe' }.
 // On success, redirects to the frontend homepage with ?unsubscribed=true so the
 // UI can show a toast. On failure, shows a minimal error page.
+//
+// FIX 3: Sends unsubscribe confirmation email before redirecting.
 
 authRouter.get('/unsubscribe', async (req, res) => {
     const { token } = req.query;
@@ -279,6 +329,18 @@ authRouter.get('/unsubscribe', async (req, res) => {
         }
 
         console.log(`[Unsubscribe] ${email} unsubscribed from weekly digest.`);
+
+        // Send unsubscribe confirmation email (fire-and-forget)
+        try {
+            const { subject, html, text } = renderUnsubscribeConfirmation({
+                name: email.split('@')[0],
+                email,
+            });
+            sendEmailQuietly({ to: email, subject, html, text });
+        } catch (emailErr) {
+            console.error('[Unsubscribe] Failed to render confirmation email:', emailErr.message);
+        }
+
         return res.redirect(`${baseUrl}/?unsubscribed=true`);
 
     } catch (error) {
