@@ -13,6 +13,7 @@ import { analyticsRouter } from './api/analytics.routes.js';
 import { feedbackRouter } from './api/feedback.routes.js';
 import { attachVisitor } from './middleware/visitorMiddleware.js';
 import { FRONTEND_ORIGIN } from './env.js';
+import { initJobsCache } from './cache/index.js';
 
 // --- Setup ---
 const app = express();
@@ -49,6 +50,13 @@ app.get('/', (req, res) => {
 app.listen(PORT, async () => {
     try {
         await connectToDb();
+
+        // const { initJobsCache } = await import('./cache/index.js');
+        // await initJobsCache();
+
+
+        // const {initJobsCache}=await import('./cache/index.js');
+        await initJobsCache()
         console.log(`✅ API Server is running on http://localhost:${PORT}`);
         console.log("Setting up scheduled tasks...");
 

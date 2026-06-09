@@ -1,0 +1,91 @@
+import he from 'he';
+import crypto from 'crypto';
+import { JSDOM } from 'jsdom';
+
+export const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+export function StripHtml(html) {
+    if (!html) return "";
+    const stripped = he.decode(html).replace(/<[^>]+>/g, "");
+    const clean = he.decode(stripped).replace(/\s+/g, " ").trim();
+    return clean;
+}
+
+// Tags whose opening + closing tags are kept (all attributes stripped)
+const SANITIZE_KEEP = new Set([
+    'p', 'ul', 'ol', 'li',
+    'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    'strong', 'em', 'b', 'i', 'br',
+]);
+
+// Tags removed entirely (element + all children)
+const SANITIZE_REMOVE_TREE = new Set([
+    'script', 'style', 'svg', 'img', 'picture', 'video', 'audio',
+    'iframe', 'noscript', 'figure', 'figcaption', 'form', 'input',
+    'button', 'select', 'textarea',
+]);
+
+/**
+ * Strips unsafe / presentational HTML while keeping structural tags.
+ * Returns clean HTML suitable for frontend rendering via dangerouslySetInnerHTML.
+ *
+ * Keeps : <p> <ul> <ol> <li> <h1>–<h6> <strong> <em> <b> <i> <br>
+ * Removes entirely: <script> <style> <img> <svg> <iframe> and similar
+ * Unwraps (keeps children): everything else – <div> <span> <table> <a> etc.
+ * All attributes are stripped from kept tags.
+ *
+ * @param {string} html - Raw HTML string from an ATS API
+ * @returns {string} Sanitized HTML string
+ */
+export function SanitizeHtml(html) {
+    if (!html || typeof html !== 'string') return '';
+
+    const dom = new JSDOM(`<!DOCTYPE html><html><body>${html}</body></html>`);
+    const doc = dom.window.document;
+
+    // Remove whole subtrees first (faster than per-node checks)
+    SANITIZE_REMOVE_TREE.forEach(tag => {
+        doc.querySelectorAll(tag).forEach(el => el.remove());
+    });
+
+    // Recursively walk the body, keeping/stripping/unwrapping as needed.
+    // We snapshot childNodes with Array.from() before every iteration to avoid
+    // live-NodeList issues when nodes are moved or removed mid-walk.
+    function walk(node) {
+        if (node.nodeType === 3 /* TEXT_NODE */) return; // keep text as-is
+        if (node.nodeType !== 1 /* ELEMENT_NODE */) {
+            node.parentNode?.removeChild(node);
+            return;
+        }
+
+        const tag = node.tagName.toLowerCase();
+
+        if (SANITIZE_REMOVE_TREE.has(tag)) {
+            node.parentNode?.removeChild(node);
+            return;
+        }
+
+        // Walk children first (depth-first) before deciding what to do with this node
+        Array.from(node.childNodes).forEach(walk);
+
+        if (SANITIZE_KEEP.has(tag)) {
+            // Strip every attribute — no class, style, id, data-*, etc.
+            Array.from(node.attributes).forEach(attr => node.removeAttribute(attr.name));
+        } else {
+            // Unwrap: move children before this node, then remove the tag
+            const parent = node.parentNode;
+            if (parent) {
+                Array.from(node.childNodes).forEach(child => parent.insertBefore(child, node));
+                parent.removeChild(node);
+            }
+        }
+    }
+
+    Array.from(doc.body.childNodes).forEach(walk);
+
+    // Collapse runs of 3+ <br> tags that ATS systems sometimes produce
+    let result = doc.body.innerHTML;
+    result = result.replace(/(<br\s*\/?>\s*){3,}/gi, '<br>');
+
+    return result.trim();
+}

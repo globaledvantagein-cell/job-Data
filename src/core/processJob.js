@@ -1,161 +1,40 @@
-import fetch from 'node-fetch';
-import { JSDOM } from 'jsdom';
-import { AbortController } from 'abort-controller';
-
 import { analyzeJobWithGroq } from '../gemini/index.js';
 import { createJobModel } from '../models/jobModel.js';
 import { createJobTestLog } from '../models/jobTestLogModel.js';
 import { saveJobTestLog, findTestLogByFingerprint } from '../db/index.js';
 import { Analytics } from '../models/analyticsModel.js';
-import { BANNED_ROLES, generateJobFingerprint, generateCrossEntityKey, normalizeCompanyName, GERMAN_CITIES_CHECK, SanitizeHtml } from '../utils.js';
+import {
+    BANNED_ROLES,
+    generateJobFingerprint,
+    generateCrossEntityKey,
+    normalizeCompanyName,
+    GERMAN_CITIES_CHECK,
+} from '../utils.js';
 import { detectGermanRequiredFromTitle } from '../filters/germanTitleFilter.js';
 import { detectNonEnglishDescription } from '../filters/nonEnglishFilter.js';
 import { detectCitizenshipRequirement } from '../filters/citizenshipFilter.js';
 import { detectOtherLanguageRequired } from '../filters/otherLanguageFilter.js';
 import {
     deriveDomain,
-    deriveExperienceLevelFromTitle,
-    deriveIsEntryLevelFromTitle,
-    inferAtsPlatform,
     normalizeSalaryValues,
-    normalizeArray,
     isSpamOrIrrelevant,
 } from './jobExtractor.js';
-
-
-async function scrapeJobDetailsFromPage(mappedJob, siteConfig) {
-    console.log(`[${siteConfig.siteName}] Visiting job page: ${mappedJob.ApplicationURL}`);
-    const pageController = new AbortController();
-    const pageTimeoutId = setTimeout(() => pageController.abort(), 30000);
-    try {
-        const jobPageRes = await fetch(mappedJob.ApplicationURL, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-                'Accept': 'text/html,application/xhtml+xml',
-            },
-            signal: pageController.signal
-        });
-        const html = await jobPageRes.text();
-        const dom = new JSDOM(html);
-        const document = dom.window.document;
-        if (siteConfig.descriptionSelector) {
-            const descriptionElement = document.querySelector(siteConfig.descriptionSelector);
-            if (descriptionElement) {
-                mappedJob.Description = descriptionElement.textContent.replace(/\s+/g, ' ').trim();
-                mappedJob.DescriptionHtml = SanitizeHtml(descriptionElement.innerHTML);
-            }
-        }
-    } catch (error) {
-        console.error(`[Scrape Error] ${error.message}`);
-    } finally {
-        clearTimeout(pageTimeoutId);
-    }
-    return mappedJob;
-}
-
-
-function normalizeStoredLocation(mappedJob) {
-    const allLocs = [
-        mappedJob.Location || '',
-        ...(mappedJob.AllLocations || [])
-    ];
-
-    const germanyLocs = allLocs.filter(loc => {
-        const lower = String(loc).toLowerCase();
-        if (lower.includes('germany') || lower.includes('deutschland')) return true;
-        return GERMAN_CITIES_CHECK.some(city => lower.includes(city));
-    });
-
-    for (const loc of germanyLocs) {
-        const cleaned = loc.replace(/\s*[-–—]\s*(Office|Hybrid|Remote|On-?site|Onsite)\s*$/i, '');
-        const parts = cleaned.split(',').map(p => p.trim()).filter(Boolean);
-
-        for (const part of parts) {
-            const lower = part.toLowerCase();
-            if (lower === 'germany' || lower === 'deutschland') continue;
-            if (GERMAN_CITIES_CHECK.some(city => lower.includes(city))) {
-                const cityName = part.split(' ')
-                    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-                    .join(' ');
-                return `${cityName}, Germany`;
-            }
-        }
-    }
-
-    const hasRemoteGermany = germanyLocs.some(loc => loc.toLowerCase().includes('remote'));
-    if (hasRemoteGermany || mappedJob.IsRemote) return 'Remote, Germany';
-
-    if (germanyLocs.length > 0) return 'Germany';
-
-    if (mappedJob.Location) {
-        const parts = mappedJob.Location.split(',').map(p => p.trim()).filter(Boolean);
-        const unique = [];
-        for (const part of parts) {
-            if (!unique.some(u => u.toLowerCase() === part.toLowerCase())) {
-                unique.push(part);
-            }
-        }
-        return unique.join(', ');
-    }
-
-    return 'Germany';
-}
+import {
+    scrapeJobDetailsFromPage,
+    normalizeStoredLocation,
+} from './processJob/helpers.js';
+import { mapRawJob } from './processJob/mapRawJob.js';
+import { rejectPreAi } from './processJob/preAiFilters.js';
 
 export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders, allRawJobs, crossEntityKeys) {
     // 1. Config Pre-Filter
     if (siteConfig.preFilter && !siteConfig.preFilter(rawJob)) return null;
 
-    // Extract job data
-    let mappedJob;
-    if (siteConfig.extractJobID) {
-        const extractedTitle = siteConfig.extractJobTitle(rawJob);
-        const extractedExperience = siteConfig.extractExperienceLevel ? siteConfig.extractExperienceLevel(rawJob) : null;
-        const derivedExperience = extractedExperience || deriveExperienceLevelFromTitle(extractedTitle);
-        const extractedEntryLevel = siteConfig.extractIsEntryLevel ? siteConfig.extractIsEntryLevel(rawJob) : null;
-        const derivedEntryLevel = extractedEntryLevel ?? deriveIsEntryLevelFromTitle(extractedTitle);
-
-        mappedJob = {
-            JobID: siteConfig.extractJobID(rawJob),
-            JobTitle: extractedTitle,
-            Company: siteConfig.extractCompany(rawJob),
-            Location: siteConfig.extractLocation(rawJob),
-            Description: siteConfig.extractDescription(rawJob),
-            DescriptionHtml: siteConfig.extractDescriptionHtml ? siteConfig.extractDescriptionHtml(rawJob) : null,
-            ApplicationURL: siteConfig.extractURL(rawJob),
-            PostedDate: siteConfig.extractPostedDate ? siteConfig.extractPostedDate(rawJob) : new Date().toISOString(),
-            DirectApplyURL: siteConfig.extractDirectApplyURL ? siteConfig.extractDirectApplyURL(rawJob) : null,
-            ATSPlatform: siteConfig.extractATSPlatform ? siteConfig.extractATSPlatform(rawJob) : inferAtsPlatform(siteConfig),
-            SalaryCurrency: siteConfig.extractSalaryCurrency ? siteConfig.extractSalaryCurrency(rawJob) : null,
-            SalaryMin: siteConfig.extractSalaryMin ? siteConfig.extractSalaryMin(rawJob) : null,
-            SalaryMax: siteConfig.extractSalaryMax ? siteConfig.extractSalaryMax(rawJob) : null,
-            SalaryInterval: siteConfig.extractSalaryInterval ? siteConfig.extractSalaryInterval(rawJob) : null,
-            Department: siteConfig.extractDepartment ? siteConfig.extractDepartment(rawJob) : 'N/A',
-            Team: siteConfig.extractTeam ? siteConfig.extractTeam(rawJob) : null,
-            WorkplaceType: siteConfig.extractWorkplaceType ? siteConfig.extractWorkplaceType(rawJob) : 'Unspecified',
-            EmploymentType: siteConfig.extractEmploymentType ? siteConfig.extractEmploymentType(rawJob) : null,
-            IsRemote: siteConfig.extractIsRemote ? Boolean(siteConfig.extractIsRemote(rawJob)) : false,
-            Country: siteConfig.extractCountry ? siteConfig.extractCountry(rawJob) : null,
-            AllLocations: normalizeArray(siteConfig.extractAllLocations ? siteConfig.extractAllLocations(rawJob) : []),
-            Office: siteConfig.extractOffice ? siteConfig.extractOffice(rawJob) : null,
-            Tags: normalizeArray(siteConfig.extractTags ? siteConfig.extractTags(rawJob) : []),
-            isEntryLevel: Boolean(derivedEntryLevel),
-            ExperienceLevel: derivedExperience,
-        };
-    } else {
-        mappedJob = siteConfig.mapper(rawJob);
-        const derivedExperience = mappedJob.ExperienceLevel || deriveExperienceLevelFromTitle(mappedJob.JobTitle);
-        mappedJob.ExperienceLevel = derivedExperience;
-        mappedJob.isEntryLevel = mappedJob.isEntryLevel ?? deriveIsEntryLevelFromTitle(mappedJob.JobTitle);
-        mappedJob.AllLocations = normalizeArray(mappedJob.AllLocations);
-        mappedJob.Tags = normalizeArray(mappedJob.Tags);
-        mappedJob.ATSPlatform = mappedJob.ATSPlatform || inferAtsPlatform(siteConfig);
-    }
-
+    // Extract job data (uses extract* functions or legacy mapper())
+    let mappedJob = mapRawJob(rawJob, siteConfig);
 
     // 2. Duplicate Check
-    if (!mappedJob.JobID || existingIDs.has(mappedJob.JobID)) {
-        return null;
-    }
+    if (!mappedJob.JobID || existingIDs.has(mappedJob.JobID)) return null;
 
     // 2b. Cross-Entity Duplicate Check
     // Detects "Databricks GmbH" and "Databricks Inc." posting the same job
@@ -169,8 +48,8 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
         crossEntityKeys.set(crossKey, mappedJob.Company);
 
         // 2c. Same-Company City-Variant Dedup
-        // MongoDB posts "Solutions Architect" in Berlin, Munich, Hamburg, Frankfurt, Cologne, Stuttgart
-        // All 6 are identical jobs with different city. We keep the first, skip the rest.
+        // MongoDB posts "Solutions Architect" in 6 cities — all identical.
+        // We keep the first, skip the rest.
         const titleDedupKey = `TITLE_DEDUP|${normalizeCompanyName(mappedJob.Company)}|${mappedJob.JobTitle.toLowerCase().trim()}`;
         if (crossEntityKeys.has(titleDedupKey)) {
             const firstCity = crossEntityKeys.get(titleDedupKey);
@@ -194,20 +73,16 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
         if (!siteConfig.filterKeywords.some(kw => titleLower.includes(kw.toLowerCase()))) return null;
     }
 
-    // 5. Get Description
+    // 5. Get Description (visit the job page if needed)
     if ((siteConfig.needsDescriptionScraping && !mappedJob.Description)) {
         if (typeof siteConfig.getDetails === 'function') {
             try {
                 const details = await siteConfig.getDetails(rawJob, sessionHeaders);
-
                 if (details && details.skip) {
                     console.log(`[${siteConfig.siteName}] Job skipped by getDetails`);
                     return null;
                 }
-
-                if (details) {
-                    Object.assign(mappedJob, details);
-                }
+                if (details) Object.assign(mappedJob, details);
             } catch (error) {
                 console.error(`[${siteConfig.siteName}] getDetails error: ${error.message}`);
                 return null;
@@ -217,160 +92,105 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
         }
     }
 
-    // ✅ 5a. LOCATION RE-CHECK — reject if getDetails changed location to non-Germany
-const locationToCheck = `${mappedJob.Location || ''} ${(mappedJob.AllLocations || []).join(' ')}`.toLowerCase();
-const isStillGermany = /germany|deutschland/.test(locationToCheck) || GERMAN_CITIES_CHECK.some(city => locationToCheck.includes(city));
-if (!isStillGermany) {
-    console.log(`🌍 [Location Reject] "${mappedJob.JobTitle}" at "${mappedJob.Company}" — location "${mappedJob.Location}" is not Germany — skipping`);
-    return null;
-}
+    // 5a. LOCATION RE-CHECK — reject if getDetails changed location to non-Germany
+    const locationToCheck = `${mappedJob.Location || ''} ${(mappedJob.AllLocations || []).join(' ')}`.toLowerCase();
+    const isStillGermany = /germany|deutschland/.test(locationToCheck)
+        || GERMAN_CITIES_CHECK.some(city => locationToCheck.includes(city));
+    if (!isStillGermany) {
+        console.log(`🌍 [Location Reject] "${mappedJob.JobTitle}" at "${mappedJob.Company}" — location "${mappedJob.Location}" is not Germany — skipping`);
+        return null;
+    }
     if (!mappedJob.Description) return null;
 
-    // ✅ 5b. TITLE-BASED GERMAN CHECK — Skip AI entirely if title says it all
-    // "Enterprise BDR (German Speaking)" → reject instantly, zero AI cost
+    // 5b. TITLE-BASED GERMAN CHECK — skip AI entirely if title says it all
     const titleGermanMatch = detectGermanRequiredFromTitle(mappedJob.JobTitle);
     if (titleGermanMatch) {
-        console.log(`🏷️ [Title Reject] "${mappedJob.JobTitle}" — matched: "${titleGermanMatch.phrase}" — skipping AI`);
-
-        const fingerprint = generateJobFingerprint(mappedJob.JobTitle, mappedJob.Company, mappedJob.Description);
-        const testLogData = {
-            ...mappedJob,
-            GermanRequired: true,
-            Domain: deriveDomain(mappedJob.Department, mappedJob.JobTitle),
-            SubDomain: mappedJob.Department || 'Other',
-            ConfidenceScore: 1.0,
-            Evidence: { german_reason: `German required detected from job title: "${titleGermanMatch.phrase}"` },
-            FinalDecision: 'rejected',
-            RejectionReason: 'German language required (title)',
-            Status: 'rejected',
-            fingerprint: fingerprint,
-        };
-
-        const jobTestLog = createJobTestLog(testLogData, siteConfig.siteName);
-        await saveJobTestLog(jobTestLog);
-        console.log(`📝 [Test Log] Saved title-rejected job: ${mappedJob.JobTitle}`);
+        await rejectPreAi(mappedJob, siteConfig, {
+            germanRequired: true,
+            evidence: `German required detected from job title: "${titleGermanMatch.phrase}"`,
+            rejectionReason: 'German language required (title)',
+            logLabel: '🏷️ [Title Reject]',
+            logSuffix: `matched: "${titleGermanMatch.phrase}"`,
+        });
         return null;
     }
 
-    // ✅ 5c. PRE-AI NON-ENGLISH CHECK — Catch fully French/Spanish/etc. descriptions
-    // "Commercial(e) Terrain Indépendant" with French description → reject, skip AI
+    // 5c. PRE-AI NON-ENGLISH CHECK — fully French/Spanish/etc. descriptions
     const nonEnglishMatch = detectNonEnglishDescription(mappedJob.Description);
     if (nonEnglishMatch) {
-        console.log(`🌐 [Non-English Reject] "${mappedJob.JobTitle}" — ${nonEnglishMatch.ratio}% ${nonEnglishMatch.language} detected — skipping AI`);
-
-        const fingerprint = generateJobFingerprint(mappedJob.JobTitle, mappedJob.Company, mappedJob.Description);
-        const testLogData = {
-            ...mappedJob,
-            GermanRequired: false,
-            Domain: deriveDomain(mappedJob.Department, mappedJob.JobTitle),
-            SubDomain: mappedJob.Department || 'Other',
-            ConfidenceScore: 1.0,
-            Evidence: { german_reason: `Description is primarily in ${nonEnglishMatch.language} (${nonEnglishMatch.ratio}% marker density) — not an English-language job` },
-            FinalDecision: 'rejected',
-            RejectionReason: `Non-English description (${nonEnglishMatch.language})`,
-            Status: 'rejected',
-            fingerprint: fingerprint,
-        };
-
-        const jobTestLog = createJobTestLog(testLogData, siteConfig.siteName);
-        await saveJobTestLog(jobTestLog);
-        console.log(`📝 [Test Log] Saved non-English-rejected job: ${mappedJob.JobTitle}`);
+        await rejectPreAi(mappedJob, siteConfig, {
+            germanRequired: false,
+            evidence: `Description is primarily in ${nonEnglishMatch.language} (${nonEnglishMatch.ratio}% marker density) — not an English-language job`,
+            rejectionReason: `Non-English description (${nonEnglishMatch.language})`,
+            logLabel: '🌐 [Non-English Reject]',
+            logSuffix: `${nonEnglishMatch.ratio}% ${nonEnglishMatch.language} detected`,
+        });
         return null;
     }
 
-    // ✅ 5d. PRE-AI CITIZENSHIP CHECK — "German citizenship mandatory" ≠ language
-    // The AI correctly says german_required=false for these, but they still need rejection
+    // 5d. PRE-AI CITIZENSHIP CHECK — "German citizenship mandatory" ≠ language
     const citizenshipMatch = detectCitizenshipRequirement(mappedJob.Description);
     if (citizenshipMatch) {
-        console.log(`🛂 [Citizenship Reject] "${mappedJob.JobTitle}" — matched: "${citizenshipMatch.phrase}" — skipping AI`);
-
-        const fingerprint = generateJobFingerprint(mappedJob.JobTitle, mappedJob.Company, mappedJob.Description);
-        const testLogData = {
-            ...mappedJob,
-            GermanRequired: false,
-            Domain: deriveDomain(mappedJob.Department, mappedJob.JobTitle),
-            SubDomain: mappedJob.Department || 'Other',
-            ConfidenceScore: 1.0,
-            Evidence: { german_reason: `Citizenship/nationality requirement detected: "${citizenshipMatch.phrase}"` },
-            FinalDecision: 'rejected',
-            RejectionReason: 'Citizenship or nationality requirement',
-            Status: 'rejected',
-            fingerprint: fingerprint,
-        };
-
-        const jobTestLog = createJobTestLog(testLogData, siteConfig.siteName);
-        await saveJobTestLog(jobTestLog);
-        console.log(`📝 [Test Log] Saved citizenship-rejected job: ${mappedJob.JobTitle}`);
+        await rejectPreAi(mappedJob, siteConfig, {
+            germanRequired: false,
+            evidence: `Citizenship/nationality requirement detected: "${citizenshipMatch.phrase}"`,
+            rejectionReason: 'Citizenship or nationality requirement',
+            logLabel: '🛂 [Citizenship Reject]',
+            logSuffix: `matched: "${citizenshipMatch.phrase}"`,
+        });
         return null;
     }
 
-    // ✅ 5e. PRE-AI OTHER LANGUAGE CHECK — "Dutch C2 required" / "French native speaker"
-    // Not an English-language job even if based in Berlin
+    // 5e. PRE-AI OTHER LANGUAGE CHECK — "Dutch C2 required" / "French native speaker"
     const otherLangMatch = detectOtherLanguageRequired(mappedJob.Description);
     if (otherLangMatch) {
-        console.log(`🗣️ [Other Language Reject] "${mappedJob.JobTitle}" — ${otherLangMatch.language}: "${otherLangMatch.phrase}" — skipping AI`);
-
-        const fingerprint = generateJobFingerprint(mappedJob.JobTitle, mappedJob.Company, mappedJob.Description);
-        const testLogData = {
-            ...mappedJob,
-            GermanRequired: false,
-            Domain: deriveDomain(mappedJob.Department, mappedJob.JobTitle),
-            SubDomain: mappedJob.Department || 'Other',
-            ConfidenceScore: 1.0,
-            Evidence: { german_reason: `Non-English/German primary language required: ${otherLangMatch.language} — "${otherLangMatch.phrase}"` },
-            FinalDecision: 'rejected',
-            RejectionReason: `${otherLangMatch.language.charAt(0).toUpperCase() + otherLangMatch.language.slice(1)} language required`,
-            Status: 'rejected',
-            fingerprint: fingerprint,
-        };
-
-        const jobTestLog = createJobTestLog(testLogData, siteConfig.siteName);
-        await saveJobTestLog(jobTestLog);
-        console.log(`📝 [Test Log] Saved other-language-rejected job: ${mappedJob.JobTitle}`);
+        const langName = otherLangMatch.language.charAt(0).toUpperCase() + otherLangMatch.language.slice(1);
+        await rejectPreAi(mappedJob, siteConfig, {
+            germanRequired: false,
+            evidence: `Non-English/German primary language required: ${otherLangMatch.language} — "${otherLangMatch.phrase}"`,
+            rejectionReason: `${langName} language required`,
+            logLabel: '🗣️ [Other Language Reject]',
+            logSuffix: `${otherLangMatch.language}: "${otherLangMatch.phrase}"`,
+        });
         return null;
     }
 
-    // ✅ 6. FINGERPRINT CHECK — Reuse old AI result if we already analyzed this job
+    // 6. FINGERPRINT CHECK — reuse old AI result if we already analyzed this job
     const fingerprint = generateJobFingerprint(mappedJob.JobTitle, mappedJob.Company, mappedJob.Description);
     const cachedResult = await findTestLogByFingerprint(fingerprint);
 
     let aiResult;
-
     if (cachedResult) {
-        // We already analyzed this exact job before — reuse the cached classification
         console.log(`[Cache Hit] ♻️ Reusing AI result for: ${mappedJob.JobTitle.substring(0, 40)}...`);
         aiResult = {
             german_required: cachedResult.GermanRequired,
             domain: cachedResult.Domain,
             sub_domain: cachedResult.SubDomain,
             confidence: cachedResult.ConfidenceScore,
-            evidence: cachedResult.Evidence || { german_reason: "Cached result" }
+            evidence: cachedResult.Evidence || { german_reason: 'Cached result' }
         };
     } else {
-        // Genuinely new job — send to AI
         await Analytics.increment('jobsSentToAI');
         aiResult = await analyzeJobWithGroq(mappedJob.JobTitle, mappedJob.Description);
-
         if (!aiResult) {
             console.log(`[AI] Failed to analyze ${mappedJob.JobTitle}. Skipping.`);
             return null;
         }
     }
 
-    // ✅ 7. FILTERING LOGIC — AI only checks German requirement
-    // (Other language, non-English description, citizenship are already handled pre-AI in steps 5b-5e)
-    let finalDecision = "accepted";
+    // 7. FILTERING LOGIC — AI only checks German requirement
+    // (Other language, non-English description, citizenship handled pre-AI above)
+    let finalDecision = 'accepted';
     let rejectionReason = null;
-
     if (aiResult.german_required === true) {
-        finalDecision = "rejected";
-        rejectionReason = "German language required";
+        finalDecision = 'rejected';
+        rejectionReason = 'German language required';
         console.log(`❌ [Rejected - German Required] ${mappedJob.JobTitle}`);
     } else {
         console.log(`✅ [Valid Job] ${mappedJob.JobTitle} (Confidence: ${aiResult.confidence})`);
     }
 
-    // ✅ 8. SAVE TO TEST LOG (with fingerprint for future cache lookups)
+    // 8. SAVE TO TEST LOG (with fingerprint for future cache lookups)
     const testLogData = {
         ...mappedJob,
         GermanRequired: aiResult.german_required,
@@ -380,18 +200,16 @@ if (!isStillGermany) {
         Evidence: aiResult.evidence,
         FinalDecision: finalDecision,
         RejectionReason: rejectionReason,
-        Status: finalDecision === "accepted" ? "pending_review" : "rejected",
-        fingerprint: fingerprint
+        Status: finalDecision === 'accepted' ? 'pending_review' : 'rejected',
+        fingerprint,
     };
 
     const jobTestLog = createJobTestLog(testLogData, siteConfig.siteName);
     await saveJobTestLog(jobTestLog);
     console.log(`📝 [Test Log] Saved ${finalDecision} job: ${mappedJob.JobTitle}`);
 
-    // ✅ 9. RETURN NULL IF REJECTED
-    if (finalDecision === "rejected") {
-        return null;
-    }
+    // 9. RETURN NULL IF REJECTED
+    if (finalDecision === 'rejected') return null;
 
     await Analytics.increment('jobsPendingReview');
 
@@ -400,7 +218,7 @@ if (!isStillGermany) {
     mappedJob.Domain = deriveDomain(mappedJob.Department, mappedJob.JobTitle);
     mappedJob.SubDomain = mappedJob.Department || 'Other';
     mappedJob.ConfidenceScore = aiResult.confidence;
-    mappedJob.Status = "pending_review";
+    mappedJob.Status = 'pending_review';
 
     normalizeSalaryValues(mappedJob);
     mappedJob.Location = normalizeStoredLocation(mappedJob);

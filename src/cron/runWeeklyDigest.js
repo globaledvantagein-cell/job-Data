@@ -3,13 +3,13 @@
  *
  * One job, runs Monday 8am UTC. For every subscribed user, builds a
  * personalized digest from the past week's jobs in their chosen categories
- * and sends it via SES.
+ * and sends it.
  *
  * Flow:
  *   1. Fetch all subscribed users (one DB query)
  *   2. Fetch all active jobs from last 7 days, grouped by category (one DB query)
  *   3. Per-user in-memory filter + render
- *   4. Bulk-send via SES with rate limiting
+ *   4. Bulk-send with rate limiting
  *   5. Update lastEmailSent on successful recipients
  *   6. Log structured summary
  *
@@ -21,79 +21,19 @@
  * Usage:
  *   node src/cron/runWeeklyDigest.js
  *   node src/cron/runWeeklyDigest.js --dry-run
- *   node src/cron/runWeeklyDigest.js --user=ashar050488@gmail.com
- *   node src/cron/runWeeklyDigest.js --user=ashar050488@gmail.com --dry-run
+ *   node src/cron/runWeeklyDigest.js --user=someone@example.com --dry-run
  */
 import { getSubscribedUsers, updateLastEmailSent, getDigestJobs } from '../db/index.js';
-import { renderWeeklyDigest, sendBulkEmails } from '../email/index.js';
-import { client as mongoClient, connectToDb } from '../db/connection.js';
+import { sendBulkEmails } from '../email/index.js';
+import { client as mongoClient } from '../db/connection.js';
+import {
+    logDigestRun,
+    parseArgs,
+    buildDigestMessages,
+} from './weeklyDigest/helpers.js';
 
-/**
- * Persist a digest run summary to MongoDB for observability.
- * Collection: digestRuns. One doc per run. TTL index recommended (90 days).
- */
-async function logDigestRun(summary) {
-    try {
-        const db = await connectToDb();
-        await db.collection('digestRuns').insertOne({
-            ...summary,
-            ranAt: new Date(),
-        });
-    } catch (err) {
-        // Logging should never crash the digest
-        console.error('[digest] Warning: failed to write run log:', err.message);
-    }
-}
-
-// ─── CLI flag parser ──────────────────────────────────────────────────────
-function parseArgs() {
-    const args = process.argv.slice(2);
-    const flags = { dryRun: false, user: null, days: 7 };
-    for (const a of args) {
-        if (a === '--dry-run') flags.dryRun = true;
-        else if (a.startsWith('--user=')) flags.user = a.slice('--user='.length);
-        else if (a.startsWith('--days=')) flags.days = Number(a.slice('--days='.length)) || 7;
-    }
-    return flags;
-}
-
-/**
- * Build the per-user message list. Pure function — easy to unit test later.
- */
-export function buildDigestMessages(users, jobsByCategory) {
-    const messages = [];
-
-    for (const user of users) {
-        const cats = Array.isArray(user.desiredCategories) ? user.desiredCategories : [];
-        if (cats.length === 0) continue;
-
-        const userJobs = {};
-        let total = 0;
-        for (const cat of cats) {
-            const jobs = jobsByCategory[cat] || [];
-            if (jobs.length > 0) {
-                userJobs[cat] = jobs;
-                total += jobs.length;
-            }
-        }
-
-        if (total === 0) continue;
-
-        const { subject, html, text, unsubscribeUrl } = renderWeeklyDigest({
-            user,
-            jobsByCategory: userJobs,
-            totalJobs: total,
-        });
-
-        messages.push({
-            msg: { to: user.email, subject, html, text, unsubscribeUrl, meta: { userId: user._id?.toString() } },
-            user,
-            totalJobs: total,
-        });
-    }
-
-    return messages;
-}
+// Re-export so existing imports of buildDigestMessages from this file keep working.
+export { buildDigestMessages } from './weeklyDigest/helpers.js';
 
 export async function runWeeklyDigest(opts = {}) {
     const startTime = Date.now();
@@ -106,7 +46,7 @@ export async function runWeeklyDigest(opts = {}) {
     if (targetEmail) console.log(`  Target:    single user = ${targetEmail}`);
     console.log('═══════════════════════════════════════════════════════\n');
 
-    // ── 1. Fetch subscribers ────────────────────────────────────────────
+    // 1. Fetch subscribers
     let users = await getSubscribedUsers();
     if (targetEmail) {
         users = users.filter(u => u.email === targetEmail);
@@ -117,8 +57,7 @@ export async function runWeeklyDigest(opts = {}) {
         }
     }
 
-    // ENV-based whitelist: set DIGEST_WHITELIST=email1@x.com,email2@x.com
-    // in .env to restrict sends during testing. Remove the var to send to all.
+    // ENV-based whitelist: DIGEST_WHITELIST=email1,email2 limits sends during testing.
     const whitelist = process.env.DIGEST_WHITELIST;
     if (whitelist && !targetEmail) {
         const allowed = whitelist.split(',').map(e => e.trim().toLowerCase());
@@ -130,7 +69,7 @@ export async function runWeeklyDigest(opts = {}) {
 
     console.log(`[digest] Loaded ${users.length} subscribed user(s)`);
 
-    // ── 2. Fetch jobs ───────────────────────────────────────────────────
+    // 2. Fetch jobs
     const { byCategory: jobsByCategory, total: totalJobs } = await getDigestJobs(days);
     const catSummary = Object.entries(jobsByCategory)
         .map(([cat, arr]) => `${cat}=${arr.length}`)
@@ -140,24 +79,34 @@ export async function runWeeklyDigest(opts = {}) {
 
     if (totalJobs === 0) {
         console.log('[digest] No jobs to send. Exiting.');
-        const summary = { mode: dryRun ? 'dry-run' : 'live', subscribersLoaded: users.length, jobsAvailable: 0, sent: 0, skipped: users.length, failed: 0, duration: '0s', lookBackDays: days };
+        const summary = {
+            mode: dryRun ? 'dry-run' : 'live',
+            subscribersLoaded: users.length, jobsAvailable: 0,
+            sent: 0, skipped: users.length, failed: 0,
+            duration: '0s', lookBackDays: days,
+        };
         if (!dryRun) await logDigestRun(summary);
         return summary;
     }
 
-    // ── 3. Build per-user messages ──────────────────────────────────────
+    // 3. Build per-user messages
     const messages = buildDigestMessages(users, jobsByCategory);
     const skippedNoMatch = users.length - messages.length;
     console.log(`[digest] Built ${messages.length} message(s); ${skippedNoMatch} user(s) skipped (no matching jobs)\n`);
 
     if (messages.length === 0) {
         console.log('[digest] Nothing to send. Exiting.');
-        const summary = { mode: dryRun ? 'dry-run' : 'live', subscribersLoaded: users.length, jobsAvailable: totalJobs, sent: 0, skipped: users.length, failed: 0, duration: '0s', lookBackDays: days };
+        const summary = {
+            mode: dryRun ? 'dry-run' : 'live',
+            subscribersLoaded: users.length, jobsAvailable: totalJobs,
+            sent: 0, skipped: users.length, failed: 0,
+            duration: '0s', lookBackDays: days,
+        };
         if (!dryRun) await logDigestRun(summary);
         return summary;
     }
 
-    // ── 4. Send (or dry-run) ────────────────────────────────────────────
+    // 4. Send (or dry-run)
     if (dryRun) {
         console.log('[digest] DRY RUN — these messages WOULD be sent:\n');
         for (const { msg, user, totalJobs: t } of messages) {
@@ -167,17 +116,13 @@ export async function runWeeklyDigest(opts = {}) {
         return { sent: 0, skipped: skippedNoMatch, failed: 0, dryRun: true };
     }
 
-    console.log(`[digest] Sending ${messages.length} email(s) via SES...\n`);
+    console.log(`[digest] Sending ${messages.length} email(s)...\n`);
     const results = await sendBulkEmails(
         messages.map(m => m.msg),
-        {
-            onProgress: (sent, total) => {
-                console.log(`  ...sent ${sent}/${total}`);
-            },
-        },
+        { onProgress: (sent, total) => console.log(`  ...sent ${sent}/${total}`) },
     );
 
-    // ── 5. Tally + update lastEmailSent ─────────────────────────────────
+    // 5. Tally + update lastEmailSent
     const successful = results.filter(r => r.ok);
     const failed = results.filter(r => !r.ok);
 
@@ -186,7 +131,7 @@ export async function runWeeklyDigest(opts = {}) {
         await updateLastEmailSent(successfulEmails);
     }
 
-    // ── 6. Summary ──────────────────────────────────────────────────────
+    // 6. Summary
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
     console.log('\n═══════════════════════════════════════════════════════');
     console.log('Summary');
@@ -200,9 +145,7 @@ export async function runWeeklyDigest(opts = {}) {
 
     if (failed.length > 0) {
         console.log('\nFailed sends:');
-        for (const f of failed) {
-            console.log(`  ${f.to}: ${f.error}`);
-        }
+        for (const f of failed) console.log(`  ${f.to}: ${f.error}`);
     }
 
     const summary = {
