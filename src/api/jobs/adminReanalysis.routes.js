@@ -5,6 +5,7 @@ import {
     connectToDb,
     updateJobAfterReanalysis,
 } from '../../db/index.js';
+import { upsertJob } from '../../cache/index.js';
 import { analyzeJobWithGroq } from '../../gemini/index.js';
 import { deriveDomain } from '../../core/jobExtractor.js';
 import { categorizeJob } from '../../core/categorize.js';
@@ -12,16 +13,11 @@ import { verifyToken, verifyAdmin } from '../../middleware/authMiddleware.js';
 import { isManuallyReviewed } from './helpers.js';
 
 export function attachAdminReanalysisRoutes(router) {
+
     // Re-analyze ALL AI-accepted jobs in the pending review queue
     router.post('/admin/reanalyze-all', verifyToken, verifyAdmin, async (req, res) => {
         try {
             const db = await connectToDb();
-
-            // Target: ONLY jobs the AI said "OK" to but admin hasn't reviewed yet
-            // Status:        pending_review   (AI accepted, sitting in review queue)
-            // GermanRequired: false           (AI said no German needed — double-check this)
-            // reviewedAt:     null/missing    (admin has NOT manually approved or rejected)
-            // sourceSite:     not Curated     (skip manually added jobs)
             const jobs = await db.collection('jobs').find({
                 Status: 'pending_review',
                 GermanRequired: false,
@@ -29,42 +25,25 @@ export function attachAdminReanalysisRoutes(router) {
                 sourceSite: { $ne: 'Curated' }
             }).toArray();
 
-            const summary = {
-                total: jobs.length,
-                reanalyzed: 0,
-                movedToRejected: 0,   // AI now says German IS required — was a false accept
-                stillAccepted: 0,     // AI confirmed — no German needed, no change
-                failed: 0,
-            };
-
+            const summary = { total: jobs.length, reanalyzed: 0, movedToRejected: 0, stillAccepted: 0, failed: 0 };
             console.log(`[Reanalyze All] Checking ${jobs.length} AI-accepted pending_review jobs...`);
 
             for (const job of jobs) {
                 try {
                     const aiResult = await analyzeJobWithGroq(job.JobTitle, job.Description);
-                    if (!aiResult) {
-                        summary.failed += 1;
-                        continue;
-                    }
+                    if (!aiResult) { summary.failed += 1; continue; }
 
                     if (aiResult.german_required === true) {
-                        // AI caught a mistake — this job actually requires German
                         const domain = deriveDomain(job.Department, job.JobTitle);
                         const subDomain = job.Department || 'Other';
                         await updateJobAfterReanalysis(
-                            job._id,
-                            aiResult,
-                            'rejected',
-                            'German language required',
-                            domain,
-                            subDomain
+                            job._id, aiResult, 'rejected', 'German language required', domain, subDomain,
                         );
                         summary.movedToRejected += 1;
                         console.log(`[Reanalyze All] ❌ Caught false accept: "${job.JobTitle}" → rejected`);
                     } else {
                         summary.stillAccepted += 1;
                     }
-
                     summary.reanalyzed += 1;
                 } catch (error) {
                     console.error(`[Reanalyze All] Failed for job ${job?._id}:`, error.message);
@@ -79,7 +58,9 @@ export function attachAdminReanalysisRoutes(router) {
         }
     });
 
-    // Re-analyze a single job by id
+    // Re-analyze a single job by id.
+    // After updating the DB, sync the cache: upsertJob handles add/remove
+    // automatically based on the new Status field.
     router.post('/admin/reanalyze/:id', verifyToken, verifyAdmin, async (req, res) => {
         try {
             const { id } = req.params;
@@ -113,13 +94,18 @@ export function attachAdminReanalysisRoutes(router) {
             const subDomain = job.Department || 'Other';
             const updatedJob = await updateJobAfterReanalysis(job._id, aiResult, nextStatus, rejectionReason, domain, subDomain);
 
+            // ── Cache sync ─ upsertJob inspects Status and adds/removes accordingly
+            try { if (updatedJob) upsertJob(updatedJob); }
+            catch (cacheErr) { console.warn('[Cache] sync failed after reanalysis:', cacheErr.message); }
+
             res.status(200).json({ skipped: false, job: updatedJob });
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
     });
 
-    // Run AI on a job and update its fields (one-shot analyze, not the queue worker)
+    // One-shot analyze: runs AI on a job and updates its fields in MongoDB.
+    // Then we re-fetch and sync the cache.
     router.post('/:id/analyze', async (req, res) => {
         try {
             const { id } = req.params;
@@ -131,28 +117,20 @@ export function attachAdminReanalysisRoutes(router) {
 
             let newStatus = "pending_review";
             let rejectionReason = null;
-
             if (aiResult.location_classification !== "Germany") {
-                newStatus = "rejected";
-                rejectionReason = "Location not Germany";
+                newStatus = "rejected"; rejectionReason = "Location not Germany";
             } else if (aiResult.english_speaking !== true) {
-                newStatus = "rejected";
-                rejectionReason = "Not English-speaking";
+                newStatus = "rejected"; rejectionReason = "Not English-speaking";
             } else if (aiResult.german_required === true) {
-                newStatus = "rejected";
-                rejectionReason = "German Language Required";
+                newStatus = "rejected"; rejectionReason = "German Language Required";
             }
 
             const db = await connectToDb();
-
             const newDomain = deriveDomain(job.Department, job.JobTitle);
             const newSubDomain = job.Department || 'Other';
             const newCategory = categorizeJob({
-                JobTitle: job.JobTitle,
-                Department: job.Department,
-                SubDomain: newSubDomain,
-                Domain: newDomain,
-                Tags: job.Tags,
+                JobTitle: job.JobTitle, Department: job.Department,
+                SubDomain: newSubDomain, Domain: newDomain, Tags: job.Tags,
             });
 
             await db.collection('jobs').updateOne(
@@ -171,6 +149,12 @@ export function attachAdminReanalysisRoutes(router) {
                     }
                 }
             );
+
+            // ── Cache sync ─ re-fetch and upsert
+            try {
+                const updated = await findJobById(id);
+                if (updated) upsertJob(updated);
+            } catch (cacheErr) { console.warn('[Cache] sync failed after analyze:', cacheErr.message); }
 
             res.status(200).json({
                 message: "Job re-analyzed",

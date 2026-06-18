@@ -1,8 +1,17 @@
+// All public read endpoints — serve from RAM cache for instant responses.
+//
+// Flow per request:
+//   URL → req.query → filters object → cache helper → toTeaser map → JSON response
+//
+// No await on cache helpers — they're synchronous (instant from RAM).
 import {
-    getJobsPaginated,
-    getCompanyNames,
-    getCategoryCounts,
-    getPublicBaitJobs,
+    getJobsPaginatedFromCache,
+    getCompanyNamesFromCache,
+    getCategoryCountsFromCache,
+    getPublicBaitJobsFromCache,
+} from '../../cache/index.js';
+
+import {
     getCompanyDirectoryStats,
     findJobByIdOrJobID,
     shouldGate,
@@ -12,22 +21,25 @@ import { softVerifyToken } from '../../middleware/authMiddleware.js';
 import { toTeaser } from './helpers.js';
 
 export function attachPublicReadRoutes(router) {
-    router.get('/public-bait', async (req, res) => {
+
+    // ─── Homepage bait — 9 newest jobs for non-logged-in visitors ──────
+    router.get('/public-bait', (req, res) => {
         try {
-            const jobs = await getPublicBaitJobs();
+            const jobs = getPublicBaitJobsFromCache();
             res.status(200).json(jobs.map(toTeaser));
         } catch (error) {
             res.status(500).json({ error: "Failed to load bait jobs" });
         }
     });
 
-    router.get('/', async (req, res) => {
+    // ─── Main jobs list — filtered, sorted, paginated ─────────────────
+    router.get('/', (req, res) => {
         try {
             const page  = parseInt(req.query.page)  || 1;
-            const limit = Math.min(parseInt(req.query.limit) || 30, 100); // hard-cap at 100
+            const limit = Math.min(parseInt(req.query.limit) || 30, 100);
 
-            // `company` can arrive as a single string OR as an array
-            // (?company=Stripe&company=Shopify → Express gives us an array automatically)
+            // `company` can arrive as a single string OR an array
+            // (?company=Stripe&company=Shopify → Express gives us an array)
             let company = req.query.company;
             if (!company)                        company = [];
             else if (typeof company === 'string') company = company ? [company] : [];
@@ -44,7 +56,7 @@ export function attachPublicReadRoutes(router) {
                 sort:   req.query.sort    || 'newest',
             };
 
-            const data = await getJobsPaginated(page, limit, filters);
+            const data = getJobsPaginatedFromCache(page, limit, filters);
             res.status(200).json({
                 jobs: (data.jobs || []).map(toTeaser),
                 totalJobs: data.totalJobs,
@@ -54,14 +66,15 @@ export function attachPublicReadRoutes(router) {
         }
     });
 
-    // ─── GATED FULL-DETAIL ENDPOINT ─────────────────────────────────────────
+    // ─── GATED FULL-DETAIL ENDPOINT ───────────────────────────────────
     // Returns the full job (description, apply URL, salary) IF:
     //   - the user is authenticated, OR
     //   - the visitor is under the free view limit.
     // Otherwise returns { gated: true, teaser: {...} } with no sensitive data.
     //
-    // IMPORTANT: We never include the limit number, remaining count, or any
-    // hint of how the gate works. Response is binary: gated or not.
+    // Note: this still hits MongoDB via findJobByIdOrJobID because the route
+    // accepts BOTH ObjectId and JobID strings. The cache is keyed by JobID
+    // only, so an _id lookup would miss. Cheap to fall back here.
     router.get('/:id/full', softVerifyToken, async (req, res) => {
         try {
             const { id } = req.params;
@@ -89,7 +102,6 @@ export function attachPublicReadRoutes(router) {
                 });
             }
 
-            // Under limit → record the view (idempotent) and return full job
             await recordJobView(visitor._id, jobIdString);
             return res.status(200).json({ gated: false, job });
 
@@ -99,27 +111,30 @@ export function attachPublicReadRoutes(router) {
         }
     });
 
-    // Active company names — populates the filter dropdown.
-    router.get('/company-names', async (req, res) => {
+    // ─── Filter dropdown — distinct company names alphabetical ────────
+    router.get('/company-names', (req, res) => {
         try {
-            const names = await getCompanyNames();
+            const names = getCompanyNamesFromCache();
             res.status(200).json(names);
         } catch (error) {
             res.status(500).json({ error: "Failed to fetch company names" });
         }
     });
 
-    // Per-category job counts — populates the category dropdown.
-    // e.g. { software: 533, data: 92, product_tech: 53, ... }
-    router.get('/category-counts', async (req, res) => {
+    // ─── Filter dropdown — counts per category ────────────────────────
+    router.get('/category-counts', (req, res) => {
         try {
-            const counts = await getCategoryCounts();
+            const counts = getCategoryCountsFromCache();
             res.status(200).json(counts);
         } catch (error) {
             res.status(500).json({ error: "Failed to fetch category counts" });
         }
     });
 
+    // ─── Company directory (scraped + manual companies merged) ────────
+    // Still served from MongoDB. It aggregates across two collections
+    // (jobs + manual_companies), which the cache doesn't hold. Not worth
+    // caching since the directory page is low-traffic.
     router.get('/directory', async (req, res) => {
         try {
             const directory = await getCompanyDirectoryStats();
