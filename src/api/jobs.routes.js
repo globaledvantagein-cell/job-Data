@@ -7,6 +7,7 @@ import { attachAdminCuratedRoutes } from './jobs/adminCurated.routes.js';
 import { attachTestLogsRoute } from './jobs/testLogs.routes.js';
 import { attachAdminMaintenanceRoutes } from './jobs/adminMaintenance.routes.js';
 import { attachCacheDebugRoute } from './jobs/cacheDebug.routes.js';
+import { attachResumeMatchRoutes } from './admin/resumeMatch.routes.js';
 
 /**
  * The main jobs router. Each section lives in its own file under ./jobs/.
@@ -23,3 +24,4 @@ attachAdminCuratedRoutes(jobsApiRouter);   // POST /, DELETE /:id, DELETE /compa
 attachTestLogsRoute(jobsApiRouter);        // GET /test-logs
 attachAdminMaintenanceRoutes(jobsApiRouter);// clean-descriptions, fix-salaries, backfill-experience, update/:id
 attachCacheDebugRoute(jobsApiRouter);      // GET /_cache/stats
+attachResumeMatchRoutes(jobsApiRouter);    // POST /admin/resume-match

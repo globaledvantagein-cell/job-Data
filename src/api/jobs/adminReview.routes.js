@@ -8,6 +8,7 @@ import {
 } from '../../db/index.js';
 import { upsertJob, removeJob } from '../../cache/index.js';
 import { verifyToken, verifyAdmin } from '../../middleware/authMiddleware.js';
+import { extractAndStoreRequirements } from '../../gemma/index.js';
 
 export function attachAdminReviewRoutes(router) {
 
@@ -41,6 +42,13 @@ export function attachAdminReviewRoutes(router) {
                 if (decision === 'accept') {
                     const updated = await findJobByIdOrJobID(id);
                     if (updated) upsertJob(updated);
+
+                    // Background: extract structured requirements via Gemma 4 31B
+                    if (updated && !updated.parsedRequirements) {
+                        extractAndStoreRequirements(updated).catch(err =>
+                            console.warn('[Gemma] Background extraction error:', err.message)
+                        );
+                    }
                 } else if (decision === 'reject') {
                     // We don't know the JobID without a fetch. Easiest:
                     // fetch by _id, then remove the cache entry by JobID.
