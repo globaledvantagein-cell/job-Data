@@ -1,6 +1,6 @@
 /node_modules
 package-lock.json
 .env
-deploy-backend.ps1
+deploy.ps1
 boot-test.log
 .eslintrc.json

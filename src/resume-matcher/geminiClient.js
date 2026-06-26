@@ -65,7 +65,14 @@ async function requestOnce(apiKey, body) {
     }
 
     const data = await res.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    // Some models include thinking/reasoning parts before the actual content.
+    // Always grab the last non-thought part to get the real output.
+    const parts = data?.candidates?.[0]?.content?.parts || [];
+    const nonThoughtParts = parts.filter(p => !p.thought);
+    const textPart = nonThoughtParts.length > 0
+        ? nonThoughtParts[nonThoughtParts.length - 1]
+        : parts[parts.length - 1];
+    const text = textPart?.text;
 
     if (typeof text !== 'string') {
         const err = new Error('[ResumeMatch] Response missing candidates[0].content.parts[0].text');

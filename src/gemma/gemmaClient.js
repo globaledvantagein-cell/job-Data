@@ -52,7 +52,16 @@ async function requestOnce(apiKey, body) {
     }
 
     const data = await res.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    // Gemma 4 is a reasoning model — responses may include multiple parts:
+    //   parts[0] = { thought: true, text: "<thinking>..." }
+    //   parts[1] = { text: '{"required_skills":...}' }
+    // We need the last non-thought part.
+    const parts = data?.candidates?.[0]?.content?.parts || [];
+    const nonThoughtParts = parts.filter(p => !p.thought);
+    const textPart = nonThoughtParts.length > 0
+        ? nonThoughtParts[nonThoughtParts.length - 1]
+        : parts[parts.length - 1];
+    const text = textPart?.text;
 
     if (typeof text !== 'string') {
         const err = new Error('[Gemma] Response missing candidates[0].content.parts[0].text');
@@ -90,6 +99,10 @@ export async function callGemma(systemPrompt, userMessage, options = {}) {
         generationConfig: {
             temperature,
             responseMimeType: 'application/json',
+            // Disable thinking/reasoning — we don't need chain-of-thought
+            // for simple extraction, and it adds 20-30s of latency + puts
+            // <think> blocks into the response that break JSON parsing.
+            thinkingConfig: { thinkingBudget: 0 },
         },
     };
 
