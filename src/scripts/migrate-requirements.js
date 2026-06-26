@@ -23,10 +23,12 @@ import { extractRequirements } from '../gemma/extractRequirements.js';
 import { getKeyCount } from '../gemma/keyManager.js';
 
 // ── Tunables ────────────────────────────────────────────────────────────────
-// Gemma 4 31B allows 15 RPM = 1 request / 4s. We add a buffer to stay under it.
-const DELAY_BETWEEN_CALLS_MS = 4_500;
-const DRY_RUN_LIMIT = 3;
+// Calls take 25-40s each — natural pace is ~2 RPM, well under the 15 RPM limit.
+// No artificial delay needed.
+const DELAY_BETWEEN_CALLS_MS = 0;
+const DRY_RUN_LIMIT = 6;
 const PROGRESS_EVERY = 10;
+const CONCURRENCY = 6;  // number of parallel workers (1 per API key is safe)
 
 const QUERY = { Status: 'active', parsedRequirements: { $exists: false } };
 
@@ -142,18 +144,17 @@ async function main() {
         process.exit(0);
     }
 
-    // ── Process sequentially (respect 15 RPM — NO parallelism) ───────────────
-    for (let i = 0; i < jobsToProcess.length; i++) {
-        if (isShuttingDown) break;
+    // ── Process with parallel workers ─────────────────────────────────────────
+    let cursor = 0;
 
-        const job = jobsToProcess[i];
+    async function processJob(job, index) {
         const result = await extractRequirements(job);
 
         progress.processed++;
 
         if (result) {
             if (isDryRun) {
-                console.log(`\n[dry-run] Job ${i + 1}/${jobsToProcess.length} — ` +
+                console.log(`\n[dry-run] Job ${index + 1}/${jobsToProcess.length} — ` +
                     `${job.JobTitle} @ ${job.Company} (${job._id})`);
                 console.log(JSON.stringify(result, null, 2));
             } else {
@@ -170,17 +171,26 @@ async function main() {
             progress.failCount++;
         }
 
-        // Periodic progress (skip the noisy log during dry-run, which is tiny).
         if (!isDryRun && progress.processed % PROGRESS_EVERY === 0) {
             logProgress();
         }
+    }
 
-        // Rate-limit wait — skip after the very last job.
-        const isLastJob = i === jobsToProcess.length - 1;
-        if (!isLastJob && !isShuttingDown) {
-            await sleep(DELAY_BETWEEN_CALLS_MS);
+    // Each worker grabs the next job from the shared cursor.
+    // JS is single-threaded so cursor++ is safe — no race conditions.
+    async function worker() {
+        while (!isShuttingDown) {
+            const idx = cursor++;
+            if (idx >= jobsToProcess.length) break;
+            await processJob(jobsToProcess[idx], idx);
+            if (DELAY_BETWEEN_CALLS_MS > 0) await sleep(DELAY_BETWEEN_CALLS_MS);
         }
     }
+
+    const workerCount = Math.min(CONCURRENCY, jobsToProcess.length);
+    console.log(`[migrate-requirements] Workers: ${workerCount} parallel`);
+
+    await Promise.all(Array.from({ length: workerCount }, () => worker()));
 
     if (isDryRun) {
         console.log(`\n[dry-run] Processed ${progress.processed} job(s) — ` +

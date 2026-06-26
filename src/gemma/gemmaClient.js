@@ -8,7 +8,7 @@
 
 import { getNextKey } from './keyManager.js';
 
-const MODEL_NAME = 'gemma-4-31b-it';
+const MODEL_NAME = 'gemma-4-26b-a4b-it';
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 const DEFAULT_TEMPERATURE = 0.1;
@@ -46,7 +46,11 @@ async function requestOnce(apiKey, body) {
     });
 
     if (!res.ok) {
-        const err = new Error(`[Gemma] API responded ${res.status} ${res.statusText}`);
+        let errorBody = '';
+        try { errorBody = await res.text(); } catch { /* ignore */ }
+        const err = new Error(
+            `[Gemma] API responded ${res.status} ${res.statusText}${errorBody ? ': ' + errorBody.slice(0, 300) : ''}`
+        );
         err.status = res.status;
         throw err;
     }
@@ -99,10 +103,6 @@ export async function callGemma(systemPrompt, userMessage, options = {}) {
         generationConfig: {
             temperature,
             responseMimeType: 'application/json',
-            // Disable thinking/reasoning — we don't need chain-of-thought
-            // for simple extraction, and it adds 20-30s of latency + puts
-            // <think> blocks into the response that break JSON parsing.
-            thinkingConfig: { thinkingBudget: 0 },
         },
     };
 
