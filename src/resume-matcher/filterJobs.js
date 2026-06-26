@@ -24,6 +24,7 @@ const DOMAIN_TO_CATEGORIES = {
 
 const GERMAN_SUFFICIENT = ['fluent', 'native', 'professional'];
 const MIN_RESULTS_BEFORE_BROADENING = 20;
+const MAX_RESULTS = 200; // Cap — beyond this Pass A takes too long
 
 /**
  * Applies hard filters to the cached active jobs based on the parsed profile.
@@ -60,6 +61,16 @@ export function filterJobs(profile) {
         if (!isGermanSufficient) {
             filtered = filtered.filter(job => !job.GermanRequired);
         }
+    }
+
+    // 4. Cap at MAX_RESULTS — sort by PostedDate desc so newest jobs are scored first.
+    if (filtered.length > MAX_RESULTS) {
+        filtered.sort((a, b) => {
+            const da = a.PostedDate ? new Date(a.PostedDate).getTime() : 0;
+            const db = b.PostedDate ? new Date(b.PostedDate).getTime() : 0;
+            return db - da;
+        });
+        filtered = filtered.slice(0, MAX_RESULTS);
     }
 
     return filtered;

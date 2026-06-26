@@ -16,11 +16,11 @@ import {
     buildPassBUserMessage,
 } from './prompts.js';
 
-const PASS_A_BATCH_SIZE = 20;
+const PASS_A_BATCH_SIZE = 50;
 const PASS_B_BATCH_SIZE = 10;
 const PASS_A_TOP_N = 20;
 const PASS_B_TOP_N = 15;
-const DELAY_BETWEEN_BATCHES_MS = 1_000;
+const DELAY_BETWEEN_BATCHES_MS = 500;
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
