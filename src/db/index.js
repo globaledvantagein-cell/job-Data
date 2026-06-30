@@ -19,6 +19,8 @@ export {
     getJobsForReview,
     reviewJobDecision,
     trackApplyClick,
+    confirmApplied,
+    getAppliedJobIds,
     getCompanyDirectoryStats,
     findJobById,
     findJobByIdOrJobID,

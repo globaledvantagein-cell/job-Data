@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb';
-import { findJobById, trackApplyClick } from '../../db/index.js';
+import { findJobById, trackApplyClick, confirmApplied, getAppliedJobIds } from '../../db/index.js';
 import { verifyToken } from '../../middleware/authMiddleware.js';
 
 export function attachApplyClickRoute(router) {
@@ -26,6 +26,34 @@ export function attachApplyClickRoute(router) {
                 applicationUrl: job.ApplicationURL,
                 directApplyUrl: job.DirectApplyURL || null,
             });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // User confirms they actually applied (after returning from external ATS)
+    router.post('/:id/confirm-applied', verifyToken, async (req, res) => {
+        try {
+            const { id } = req.params;
+            const visitorId = `user_${req.user.id}`;
+
+            if (!ObjectId.isValid(id)) {
+                return res.status(400).json({ error: 'Invalid job ID' });
+            }
+
+            await confirmApplied(id, visitorId);
+            res.status(200).json({ success: true });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Get all job IDs the user has confirmed-applied to
+    router.get('/applied-ids', verifyToken, async (req, res) => {
+        try {
+            const visitorId = `user_${req.user.id}`;
+            const ids = await getAppliedJobIds(visitorId);
+            res.status(200).json({ ids });
         } catch (error) {
             res.status(500).json({ error: error.message });
         }

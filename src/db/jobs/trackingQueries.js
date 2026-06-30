@@ -48,3 +48,37 @@ export async function trackApplyClick(jobId, visitorId) {
 
     return { applyClicks: result?.applyClicks || 1, alreadyTracked: false };
 }
+
+/**
+ * Marks an apply-click record as "confirmed applied" — the user came back
+ * from the external ATS site and said "Yes, I applied."
+ */
+export async function confirmApplied(jobId, visitorId) {
+    const db = await connectToDb();
+    const clicksCollection = db.collection('applyClicks');
+
+    if (!ObjectId.isValid(jobId)) throw new Error('Invalid job id');
+
+    const objectId = new ObjectId(jobId);
+
+    // Upsert: if they somehow confirm without a prior click record, create one.
+    await clicksCollection.updateOne(
+        { jobId: objectId, visitorId },
+        { $set: { confirmedApplied: true, confirmedAt: new Date() }, $setOnInsert: { clickedAt: new Date() } },
+        { upsert: true }
+    );
+}
+
+/**
+ * Returns an array of job ID strings the visitor has confirmed-applied to.
+ */
+export async function getAppliedJobIds(visitorId) {
+    const db = await connectToDb();
+    const clicksCollection = db.collection('applyClicks');
+
+    const records = await clicksCollection
+        .find({ visitorId, confirmedApplied: true }, { projection: { jobId: 1 } })
+        .toArray();
+
+    return records.map(r => r.jobId.toString());
+}
