@@ -12,9 +12,11 @@ import { callGemini } from './geminiClient.js';
 import {
     getPassASystemPrompt,
     getPassBSystemPrompt,
+} from './prompts.js';
+import {
     buildPassAUserMessage,
     buildPassBUserMessage,
-} from './prompts.js';
+} from './promptBuilders.js';
 
 const PASS_A_BATCH_SIZE = 50;
 const PASS_B_BATCH_SIZE = 10;
@@ -170,6 +172,8 @@ async function runPassB(profile, shortlistedJobs) {
                     bonus_skills: Array.isArray(row.bonus_skills) ? row.bonus_skills : [],
                     experience_fit: row.experience_fit || null,
                     location_fit: row.location_fit || null,
+                    german_fit: row.german_fit || null,
+                    visa_fit: row.visa_fit || null,
                     reasoning: row.reasoning || '',
                     job: {
                         JobTitle: job.JobTitle,

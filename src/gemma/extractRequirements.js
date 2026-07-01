@@ -1,161 +1,129 @@
 // ─── Extract Requirements ──────────────────────────────────────────────────────
 //
-// Uses Gemma 4 31B to extract structured requirements from a job description.
-// Returns a validated object, or null if extraction fails after retries — the
-// caller decides how to handle failures.
-//
-// Separate from src/gemini/ — does not import from it.
+// Uses Gemma 4 to extract structured requirements from a job description.
+// Returns a validated object, or null if extraction fails — caller decides.
 
 import { callGemma } from './gemmaClient.js';
 
 const VALID_EXPERIENCE_LEVELS = ['Entry', 'Mid', 'Senior', 'Lead', 'Executive'];
 const VALID_EMPLOYMENT_TYPES = ['Full-time', 'Part-time', 'Contract', 'Internship'];
+const VALID_SKILL_CATEGORIES = ['Language', 'Framework', 'Database', 'Cloud', 'DevOps', 'Tool', 'Domain', 'Other'];
+const VALID_SPONSORSHIP = ['available', 'not_available', 'not_mentioned'];
+const VALID_REMOTE = ['fully_remote', 'hybrid', 'on_site', 'not_mentioned'];
+const VALID_RELOCATION = ['available', 'not_available', 'not_mentioned'];
 
-const SYSTEM_PROMPT = `You are a job description parser. Extract structured requirements from the job description below.
+const SYSTEM_PROMPT = `You are a job description parser for a German job market platform. Extract structured requirements from the job description below.
 
-Return ONLY valid JSON, no markdown fences, no preamble, no explanation.
+Return ONLY valid JSON, no markdown fences, no preamble.
 
 {
-  "required_skills": ["list of explicitly required technical and professional skills"],
-  "preferred_skills": ["list of nice-to-have or preferred skills"],
-  "min_experience_years": <number or null if not mentioned>,
-  "required_education": "<highest education requirement or null>",
+  "required_skills": [{ "name": "skill name", "category": "Language | Framework | Database | Cloud | DevOps | Tool | Domain | Other" }],
+  "preferred_skills": [{ "name": "skill name", "category": "category" }],
+  "tools_and_platforms": ["Jira", "Confluence", "Figma"],
+  "min_experience_years": <number or null>,
+  "max_experience_years": <number or null>,
+  "required_education": "<education requirement or null>",
   "experience_level": "<Entry | Mid | Senior | Lead | Executive | null>",
   "employment_type": "<Full-time | Part-time | Contract | Internship | null>",
-  "key_responsibilities": ["top 3-5 core responsibilities, short phrases"]
+  "german_level_detail": "<e.g. 'C1 required' | 'B2 preferred' | 'nice to have' | 'not mentioned'>",
+  "visa_sponsorship": "<available | not_available | not_mentioned>",
+  "remote_policy_detail": "<fully_remote | hybrid | on_site | not_mentioned>",
+  "relocation_support": "<available | not_available | not_mentioned>",
+  "team_context": "<e.g. 'team of 5 engineers' | 'cross-functional squad' | null>",
+  "key_responsibilities": ["top 3-5 duties, short phrases"]
 }
 
 RULES:
-- Extract skills as they appear. "React" stays "React", "SQL" stays "SQL". Do not infer skills not mentioned.
-- For min_experience_years: look for patterns like "3+ years", "minimum 5 years", "at least 2 years". If a range like "3-5 years" is given, use the minimum (3). If not mentioned, return null.
-- For required_education: look for "Bachelor's", "Master's", "PhD", "degree in CS", etc. Return the specific requirement or null.
-- For experience_level: infer from job title and years required if not explicitly stated.
-  Junior/Associate/Entry = Entry
-  Mid-level/Intermediate/no prefix = Mid
-  Senior/Staff = Senior
-  Lead/Principal/Head = Lead
-  Director/VP/C-level = Executive
-- For employment_type: look for Full-time, Part-time, Contract, Freelance, Internship.
-- For key_responsibilities: pick the 3-5 most important duties. Keep them short (under 10 words each).
-- Keep arrays empty (not null) if nothing found.
-- Do NOT include soft skills like "team player" or "good communication" in required_skills — only technical/professional skills.`;
+- Skill categories: Language (JS, Python, Java), Framework (React, Django, Spring), Database (PostgreSQL, MongoDB), Cloud (AWS, GCP, Azure), DevOps (Docker, Kubernetes, CI/CD), Tool (Git, VS Code), Domain (ML, NLP, FinTech), Other.
+- tools_and_platforms: project management and collaboration tools (Jira, Confluence, Slack, Figma, Salesforce). NOT programming languages or frameworks.
+- min/max_experience_years: "3-5 years" → min 3, max 5. "5+ years" → min 5, max null. Not mentioned → both null.
+- german_level_detail: look for "Deutsch", "German", CEFR levels (A1-C2), "Deutschkenntnisse", "fließend Deutsch". Distinguish "required/mandatory/erforderlich" vs "preferred/nice to have/von Vorteil" vs not mentioned.
+- visa_sponsorship: look for "visa sponsorship", "work authorization", "EU work permit", "Aufenthaltserlaubnis". If mentions "EU citizens only" → not_available.
+- remote_policy_detail: look for "remote", "hybrid", "on-site", "Homeoffice", "work from home". "2-3 days office" = hybrid.
+- relocation_support: look for "relocation package", "relocation assistance", "moving support".
+- Do NOT include soft skills in required_skills.
+- Keep arrays empty (not null) if nothing found.`;
 
-/**
- * Strips HTML tags from a description and collapses whitespace.
- */
 function stripHtml(html) {
     if (!html) return '';
-    return html
-        .replace(/<[^>]*>/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
+    return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-/**
- * Robustly parses Gemma's JSON response.
- *   1. Strip markdown fences if present.
- *   2. Try JSON.parse directly.
- *   3. Fall back to extracting the first {...} object via regex.
- * Throws a descriptive error if all attempts fail.
- */
 function parseJsonResponse(raw) {
     if (!raw || typeof raw !== 'string') {
         throw new Error('[Gemma] Empty response — nothing to parse');
     }
-
-    // Strip ```json ... ``` or ``` ... ``` fences.
-    let cleaned = raw.trim();
-    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
-
-    try {
-        return JSON.parse(cleaned);
-    } catch {
-        // Fall through to regex extraction.
-    }
-
+    let cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    try { return JSON.parse(cleaned); } catch { /* fall through */ }
     const match = cleaned.match(/\{[\s\S]*\}/);
-    if (match) {
-        try {
-            return JSON.parse(match[0]);
-        } catch {
-            // Fall through to throw.
-        }
-    }
-
+    if (match) { try { return JSON.parse(match[0]); } catch { /* fall through */ } }
     throw new Error('[Gemma] Failed to parse JSON from response');
 }
 
-/**
- * Normalizes a value into a string array (drops non-strings).
- */
+function normalizeSkillArray(value) {
+    if (!Array.isArray(value)) return [];
+    return value.map(item => {
+        if (typeof item === 'string') return { name: item, category: 'Other' };
+        if (item && typeof item === 'object' && typeof item.name === 'string') {
+            return {
+                name: item.name,
+                category: VALID_SKILL_CATEGORIES.includes(item.category) ? item.category : 'Other',
+            };
+        }
+        return null;
+    }).filter(Boolean);
+}
+
 function normalizeStringArray(value) {
     if (!Array.isArray(value)) return [];
     return value.filter(item => typeof item === 'string');
 }
 
-/**
- * Coerces a value into an enum member or null.
- */
-function normalizeEnum(value, allowed) {
-    return allowed.includes(value) ? value : null;
+function normalizeEnum(value, allowed, fallback = null) {
+    return allowed.includes(value) ? value : fallback;
 }
 
-/**
- * Validates and normalizes the parsed model output into the canonical shape.
- */
 function validateResult(parsed) {
-    const minYears = parsed?.min_experience_years;
-    const normalizedMinYears = typeof minYears === 'number' ? minYears : null;
-
-    const education = parsed?.required_education;
-    const normalizedEducation = typeof education === 'string' && education.trim()
-        ? education
-        : null;
+    const minYears = typeof parsed?.min_experience_years === 'number' ? parsed.min_experience_years : null;
+    const maxYears = typeof parsed?.max_experience_years === 'number' ? parsed.max_experience_years : null;
+    const education = typeof parsed?.required_education === 'string' && parsed.required_education.trim()
+        ? parsed.required_education : null;
+    const germanDetail = typeof parsed?.german_level_detail === 'string' && parsed.german_level_detail.trim()
+        ? parsed.german_level_detail : 'not mentioned';
+    const teamContext = typeof parsed?.team_context === 'string' && parsed.team_context.trim()
+        ? parsed.team_context : null;
 
     return {
-        required_skills: normalizeStringArray(parsed?.required_skills),
-        preferred_skills: normalizeStringArray(parsed?.preferred_skills),
-        min_experience_years: normalizedMinYears,
-        required_education: normalizedEducation,
-        experience_level: normalizeEnum(parsed?.experience_level, VALID_EXPERIENCE_LEVELS),
-        employment_type: normalizeEnum(parsed?.employment_type, VALID_EMPLOYMENT_TYPES),
+        required_skills:      normalizeSkillArray(parsed?.required_skills),
+        preferred_skills:     normalizeSkillArray(parsed?.preferred_skills),
+        tools_and_platforms:  normalizeStringArray(parsed?.tools_and_platforms),
+        min_experience_years: minYears,
+        max_experience_years: maxYears,
+        required_education:   education,
+        experience_level:     normalizeEnum(parsed?.experience_level, VALID_EXPERIENCE_LEVELS),
+        employment_type:      normalizeEnum(parsed?.employment_type, VALID_EMPLOYMENT_TYPES),
+        german_level_detail:  germanDetail,
+        visa_sponsorship:     normalizeEnum(parsed?.visa_sponsorship, VALID_SPONSORSHIP, 'not_mentioned'),
+        remote_policy_detail: normalizeEnum(parsed?.remote_policy_detail, VALID_REMOTE, 'not_mentioned'),
+        relocation_support:   normalizeEnum(parsed?.relocation_support, VALID_RELOCATION, 'not_mentioned'),
+        team_context:         teamContext,
         key_responsibilities: normalizeStringArray(parsed?.key_responsibilities),
     };
 }
 
-/**
- * Extracts structured requirements from a job document via Gemma 4 31B.
- *
- * @param {{ Description?: string, JobTitle?: string, Company?: string }} job
- * @returns {Promise<object|null>} validated requirements + extractedAt, or null on failure
- */
 export async function extractRequirements(job) {
     const description = stripHtml(job?.Description);
     if (!description) {
         console.warn('[Gemma] extractRequirements — empty description, skipping');
         return null;
     }
-
-    const jobTitle = job?.JobTitle || '';
-    const company = job?.Company || '';
-    const userMessage =
-        `Job Title: ${jobTitle}\n` +
-        `Company: ${company}\n\n` +
-        `Job Description:\n${description}`;
-
+    const userMessage = `Job Title: ${job?.JobTitle || ''}\nCompany: ${job?.Company || ''}\n\nJob Description:\n${description}`;
     try {
         const raw = await callGemma(SYSTEM_PROMPT, userMessage);
         const parsed = parseJsonResponse(raw);
-        const validated = validateResult(parsed);
-
-        return {
-            ...validated,
-            extractedAt: new Date().toISOString(),
-        };
+        return { ...validateResult(parsed), extractedAt: new Date().toISOString() };
     } catch (error) {
-        console.error(
-            `[Gemma] extractRequirements failed for "${jobTitle}" @ ${company}: ${error.message}`
-        );
+        console.error(`[Gemma] extractRequirements failed for "${job?.JobTitle}" @ ${job?.Company}: ${error.message}`);
         return null;
     }
 }

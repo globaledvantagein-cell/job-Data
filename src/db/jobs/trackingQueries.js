@@ -82,3 +82,55 @@ export async function getAppliedJobIds(visitorId) {
 
     return records.map(r => r.jobId.toString());
 }
+
+/**
+ * Returns applied jobs with full details for the Applied Jobs page.
+ * Joins applyClicks (confirmed only) with the jobs collection.
+ * Includes expired/deleted jobs so the user can see their full history.
+ */
+export async function getAppliedJobsWithDetails(visitorId) {
+    const db = await connectToDb();
+    const clicksCollection = db.collection('applyClicks');
+    const jobsCollection = db.collection('jobs');
+
+    const clicks = await clicksCollection
+        .find({ visitorId, confirmedApplied: true })
+        .sort({ confirmedAt: -1 })
+        .toArray();
+
+    if (clicks.length === 0) return [];
+
+    const jobIds = clicks.map(c => c.jobId);
+    const jobs = await jobsCollection
+        .find(
+            { _id: { $in: jobIds } },
+            { projection: {
+                JobTitle: 1, Company: 1, Location: 1, ApplicationURL: 1,
+                Status: 1, IsRemote: 1, Category: 1, Domain: 1,
+                ExperienceLevel: 1, PostedDate: 1,
+            }}
+        )
+        .toArray();
+
+    const jobMap = new Map(jobs.map(j => [j._id.toString(), j]));
+
+    return clicks.map(click => {
+        const job = jobMap.get(click.jobId.toString());
+        return {
+            jobId: click.jobId.toString(),
+            appliedAt: click.confirmedAt || click.clickedAt,
+            isActive: job?.Status === 'active',
+            job: job ? {
+                JobTitle: job.JobTitle,
+                Company: job.Company,
+                Location: job.Location,
+                ApplicationURL: job.ApplicationURL,
+                IsRemote: job.IsRemote,
+                Category: job.Category,
+                Domain: job.Domain,
+                ExperienceLevel: job.ExperienceLevel,
+                PostedDate: job.PostedDate,
+            } : null,
+        };
+    }).filter(entry => entry.job !== null);
+}

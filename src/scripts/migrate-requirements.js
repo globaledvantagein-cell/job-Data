@@ -30,9 +30,14 @@ const DRY_RUN_LIMIT = 6;
 const PROGRESS_EVERY = 10;
 const CONCURRENCY = 6;  // number of parallel workers (1 per API key is safe)
 
-const QUERY = { Status: 'active', parsedRequirements: { $exists: false } };
-
 const isDryRun = process.argv.includes('--dry-run');
+const isForce  = process.argv.includes('--force');
+
+// Default: only process jobs missing parsedRequirements (resumable).
+// --force: re-process ALL active jobs (use when schema changes).
+const QUERY = isForce
+    ? { Status: 'active' }
+    : { Status: 'active', parsedRequirements: { $exists: false } };
 
 // Shared progress state so the SIGINT handler can report it.
 const progress = {
@@ -103,7 +108,8 @@ function finish() {
 }
 
 async function main() {
-    console.log(`[migrate-requirements] Mode: ${isDryRun ? 'DRY RUN (no writes)' : 'FULL MIGRATION'}`);
+    const mode = isDryRun ? 'DRY RUN (no writes)' : (isForce ? 'FULL MIGRATION (force re-process all)' : 'FULL MIGRATION');
+    console.log(`[migrate-requirements] Mode: ${mode}`);
 
     // ── Connect ──────────────────────────────────────────────────────────────
     let db;

@@ -13,8 +13,8 @@ import { getCacheStats } from '../cache/index.js';
  * Builds the meta block for a match response.
  */
 function buildMeta(totalJobsSearched, afterHardFilter, startTime) {
-    // 1 parse call + ceil(filtered/20) Pass A batches + ~2 Pass B batches.
-    const geminiCallsUsed = 1 + Math.ceil(afterHardFilter / 20) + 2;
+    // 1 parse call + ceil(filtered/50) Pass A batches + ~2 Pass B batches.
+    const geminiCallsUsed = 1 + Math.ceil(afterHardFilter / 50) + 2;
     return {
         totalJobsSearched,
         afterHardFilter,
@@ -92,6 +92,8 @@ export {
     getResumeParsePrompt,
     getPassASystemPrompt,
     getPassBSystemPrompt,
+} from './prompts.js';
+export {
     buildPassAUserMessage,
     buildPassBUserMessage,
-} from './prompts.js';
+} from './promptBuilders.js';

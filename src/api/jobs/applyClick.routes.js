@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb';
-import { findJobById, trackApplyClick, confirmApplied, getAppliedJobIds } from '../../db/index.js';
+import { findJobById, trackApplyClick, confirmApplied, getAppliedJobIds, getAppliedJobsWithDetails } from '../../db/index.js';
 import { verifyToken } from '../../middleware/authMiddleware.js';
 
 export function attachApplyClickRoute(router) {
@@ -54,6 +54,17 @@ export function attachApplyClickRoute(router) {
             const visitorId = `user_${req.user.id}`;
             const ids = await getAppliedJobIds(visitorId);
             res.status(200).json({ ids });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Get full applied jobs with details for the Applied Jobs page
+    router.get('/applied', verifyToken, async (req, res) => {
+        try {
+            const visitorId = `user_${req.user.id}`;
+            const jobs = await getAppliedJobsWithDetails(visitorId);
+            res.status(200).json({ success: true, jobs });
         } catch (error) {
             res.status(500).json({ error: error.message });
         }

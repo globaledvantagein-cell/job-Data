@@ -21,6 +21,7 @@ export {
     trackApplyClick,
     confirmApplied,
     getAppliedJobIds,
+    getAppliedJobsWithDetails,
     getCompanyDirectoryStats,
     findJobById,
     findJobByIdOrJobID,
