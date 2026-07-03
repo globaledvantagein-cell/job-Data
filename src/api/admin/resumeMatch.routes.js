@@ -35,13 +35,16 @@ export function attachResumeMatchRoutes(router) {
                     if (!ALLOWED_MIMES.includes(req.file.mimetype)) {
                         return res.status(400).json({ success: false, error: 'Please upload a PDF or DOCX file' });
                     }
-                    result = await matchResumeToJobs(req.file.buffer, req.file.mimetype);
+                    result = await matchResumeToJobs(req.file.buffer, req.file.mimetype, req.user.id);
                 } else if (req.body.resumeText) {
-                    // Pasted text.
-                    if (req.body.resumeText.length < 50) {
+                    // Pasted text or stored profile signal.
+                    if (req.body.resumeText === 'USE_STORED_PROFILE') {
+                        result = await matchResumeTextToJobs(null, req.user.id);
+                    } else if (req.body.resumeText.length < 50) {
                         return res.status(400).json({ success: false, error: 'Resume text is too short. Please paste your full resume.' });
+                    } else {
+                        result = await matchResumeTextToJobs(req.body.resumeText, req.user.id);
                     }
-                    result = await matchResumeTextToJobs(req.body.resumeText);
                 } else {
                     return res.status(400).json({ success: false, error: 'Please upload a PDF or paste your resume text' });
                 }

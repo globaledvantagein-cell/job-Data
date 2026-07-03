@@ -44,6 +44,9 @@ export {
     updateLastEmailSent,
     unsubscribeUser,
     updateUserPreferences,
+    saveMatchProfile,
+    getMatchProfile,
+    updateJobPreferences,
 } from './userQueries.js';
 
 // ── Feedback Queries ──

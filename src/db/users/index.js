@@ -10,4 +10,7 @@ export {
     updateLastEmailSent,
     unsubscribeUser,
     updateUserPreferences,
+    saveMatchProfile,
+    getMatchProfile,
+    updateJobPreferences,
 } from './subscription.js';

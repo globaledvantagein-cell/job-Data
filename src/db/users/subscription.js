@@ -65,3 +65,54 @@ export async function updateUserPreferences(userId, { desiredCategories, isSubsc
         { projection: { password: 0 } },
     );
 }
+
+/**
+ * Saves the AI-parsed resume profile and its hash on the user document.
+ * Called after Gemini parses a resume so we don't re-parse the same file.
+ */
+export async function saveMatchProfile(userId, parsedProfile, resumeHash) {
+    const db = await connectToDb();
+    const usersCollection = db.collection('users');
+
+    await usersCollection.updateOne(
+        { _id: new ObjectId(userId) },
+        { $set: {
+            parsedProfile,
+            lastResumeHash: resumeHash,
+            profileParsedAt: new Date(),
+            profileUpdatedAt: new Date(),
+        }},
+    );
+}
+
+/**
+ * Returns the stored parsed profile + job preferences for the matcher.
+ */
+export async function getMatchProfile(userId) {
+    const db = await connectToDb();
+    const usersCollection = db.collection('users');
+
+    const user = await usersCollection.findOne(
+        { _id: new ObjectId(userId) },
+        { projection: { parsedProfile: 1, lastResumeHash: 1, jobPreferences: 1 } },
+    );
+    return user || null;
+}
+
+/**
+ * Saves user-editable job matching preferences (salary, work style, etc.).
+ */
+export async function updateJobPreferences(userId, prefs) {
+    const db = await connectToDb();
+    const usersCollection = db.collection('users');
+
+    await usersCollection.updateOne(
+        { _id: new ObjectId(userId) },
+        { $set: { jobPreferences: prefs, profileUpdatedAt: new Date() } },
+    );
+
+    return await usersCollection.findOne(
+        { _id: new ObjectId(userId) },
+        { projection: { jobPreferences: 1 } },
+    );
+}

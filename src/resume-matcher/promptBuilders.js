@@ -51,6 +51,19 @@ function truncateWords(text, wordCount) {
  */
 export function buildPassAUserMessage(profile, jobs) {
     let message = `CANDIDATE PROFILE:\n${JSON.stringify(profile, null, 2)}`;
+
+    // Append job preferences if user has set them
+    if (profile._jobPreferences) {
+        const jp = profile._jobPreferences;
+        const parts = [];
+        if (jp.salary_min || jp.salary_max) parts.push(`Salary: €${jp.salary_min || '?'}–${jp.salary_max || '?'}/yr`);
+        if (jp.preferred_work_style) parts.push(`Work style: ${jp.preferred_work_style}`);
+        if (jp.notice_period) parts.push(`Notice: ${jp.notice_period}`);
+        if (jp.available_from) parts.push(`Available: ${jp.available_from}`);
+        if (jp.visa_status) parts.push(`Visa: ${jp.visa_status}`);
+        if (parts.length > 0) message += `\n\nCANDIDATE PREFERENCES:\n${parts.join(' | ')}`;
+    }
+
     message += `\n\nJOBS TO SCORE:\n`;
 
     jobs.forEach((job, index) => {
@@ -74,6 +87,18 @@ export function buildPassAUserMessage(profile, jobs) {
  */
 export function buildPassBUserMessage(profile, jobs) {
     let message = `CANDIDATE PROFILE:\n${JSON.stringify(profile, null, 2)}`;
+
+    if (profile._jobPreferences) {
+        const jp = profile._jobPreferences;
+        const parts = [];
+        if (jp.salary_min || jp.salary_max) parts.push(`Salary: €${jp.salary_min || '?'}–${jp.salary_max || '?'}/yr`);
+        if (jp.preferred_work_style) parts.push(`Work style: ${jp.preferred_work_style}`);
+        if (jp.notice_period) parts.push(`Notice: ${jp.notice_period}`);
+        if (jp.available_from) parts.push(`Available: ${jp.available_from}`);
+        if (jp.visa_status) parts.push(`Visa: ${jp.visa_status}`);
+        if (parts.length > 0) message += `\n\nCANDIDATE PREFERENCES:\n${parts.join(' | ')}`;
+    }
+
     message += `\n\nJOBS TO ANALYZE:\n`;
 
     jobs.forEach((job, index) => {

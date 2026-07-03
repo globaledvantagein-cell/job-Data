@@ -1,8 +1,14 @@
 import { body, validationResult } from 'express-validator';
+import multer from 'multer';
+ import crypto from 'crypto';
 import {
     getUserProfile,
     updateUserPreferences,
+    updateJobPreferences,
+    saveMatchProfile,
+    getMatchProfile,
 } from '../../db/index.js';
+import { parseResume, parseResumeFromText } from '../../resume-matcher/index.js';
 import { verifyToken } from '../../middleware/authMiddleware.js';
 import {
     renderSubscriptionConfirmation,
@@ -83,6 +89,65 @@ export function attachProfileRoutes(authRouter) {
         } catch (error) {
             console.error('[Auth/preferences] Failed:', error.message);
             res.status(500).json({ error: 'Server Error' });
+        }
+    });
+
+    // ─── Job matching preferences (Profile page) ─────────────────────────
+    // PATCH /api/auth/job-preferences
+    // Body: { salary_min?, salary_max?, preferred_work_style?, notice_period?, available_from?, visa_status? }
+    authRouter.patch('/job-preferences', verifyToken, async (req, res) => {
+        try {
+            const { salary_min, salary_max, preferred_work_style, notice_period, available_from, visa_status } = req.body;
+
+            const prefs = {};
+            if (salary_min != null) prefs.salary_min = Number(salary_min) || null;
+            if (salary_max != null) prefs.salary_max = Number(salary_max) || null;
+            if (preferred_work_style) prefs.preferred_work_style = String(preferred_work_style);
+            if (notice_period) prefs.notice_period = String(notice_period);
+            if (available_from) prefs.available_from = String(available_from);
+            if (visa_status) prefs.visa_status = String(visa_status);
+
+            const updated = await updateJobPreferences(req.user.id, prefs);
+            if (!updated) return res.status(404).json({ error: 'User not found' });
+            res.json({ success: true, jobPreferences: updated.jobPreferences });
+        } catch (error) {
+            console.error('[Auth/job-preferences] Failed:', error.message);
+            res.status(500).json({ error: 'Server Error' });
+        }
+    });
+
+    // ─── Upload & parse resume (saves to user profile) ───────────────────
+    // POST /api/auth/upload-resume
+    const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+   
+
+    authRouter.post('/upload-resume', verifyToken, upload.single('resume'), async (req, res) => {
+        try {
+            let profile;
+            let resumeHash;
+
+            if (req.file) {
+                resumeHash = crypto.createHash('md5').update(req.file.buffer).digest('hex');
+
+                // Check if same resume was already parsed
+                const stored = await getMatchProfile(req.user.id);
+                if (stored?.lastResumeHash === resumeHash && stored?.parsedProfile) {
+                    return res.json({ success: true, profile: stored.parsedProfile, reused: true });
+                }
+
+                profile = await parseResume(req.file.buffer, req.file.mimetype);
+            } else if (req.body?.resumeText) {
+                resumeHash = crypto.createHash('md5').update(req.body.resumeText).digest('hex');
+                profile = await parseResumeFromText(req.body.resumeText);
+            } else {
+                return res.status(400).json({ error: 'Upload a PDF or paste resume text' });
+            }
+
+            await saveMatchProfile(req.user.id, profile, resumeHash);
+            res.json({ success: true, profile, reused: false });
+        } catch (error) {
+            console.error('[Auth/upload-resume] Failed:', error.message);
+            res.status(500).json({ error: 'Failed to parse resume. Please try again.' });
         }
     });
 }

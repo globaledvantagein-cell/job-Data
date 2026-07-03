@@ -1,40 +1,76 @@
 // ─── Resume Matcher — Orchestrator + Barrel ────────────────────────────────────
 //
-// Ties the pipeline together: parse → filter → score. Two public entry points:
-//   matchResumeToJobs(pdfBuffer, mimeType) — for uploaded PDF/DOCX
-//   matchResumeTextToJobs(text)            — for pasted resume text
+// Ties the pipeline together: parse → filter → score.
+// Saves the parsed profile on the user doc (with hash) so re-uploads of the
+// same resume skip the Gemini parse call entirely.
 
+import crypto from 'crypto';
 import { parseResume, parseResumeFromText } from './parseResume.js';
 import { filterJobs } from './filterJobs.js';
 import { scoreJobs } from './scoreJobs.js';
 import { getCacheStats } from '../cache/index.js';
+import { saveMatchProfile, getMatchProfile } from '../db/index.js';
 
-/**
- * Builds the meta block for a match response.
- */
-function buildMeta(totalJobsSearched, afterHardFilter, startTime) {
-    // 1 parse call + ceil(filtered/50) Pass A batches + ~2 Pass B batches.
-    const geminiCallsUsed = 1 + Math.ceil(afterHardFilter / 50) + 2;
+function md5(buffer) {
+    return crypto.createHash('md5').update(buffer).digest('hex');
+}
+
+function buildMeta(totalJobsSearched, afterHardFilter, startTime, skippedParse) {
+    const parseCalls = skippedParse ? 0 : 1;
+    const geminiCallsUsed = parseCalls + Math.ceil(afterHardFilter / 50) + 2;
     return {
         totalJobsSearched,
         afterHardFilter,
         processingTimeMs: Date.now() - startTime,
         geminiCallsUsed,
+        profileReused: skippedParse,
         timestamp: new Date().toISOString(),
     };
 }
 
-/**
- * Shared pipeline driver — `parseFn` produces the profile, everything else is
- * identical for the PDF and text entry points.
- */
-async function runPipeline(parseFn) {
+async function runPipeline(parseFn, userId, resumeHash) {
     const startTime = Date.now();
+    let profile;
+    let skippedParse = false;
 
-    // Step 1 — parse the resume into a structured profile.
-    const profile = await parseFn();
+    // ── Try to reuse stored profile if hash matches (or no hash = "use stored") ──
+    if (userId) {
+        try {
+            const stored = await getMatchProfile(userId);
+            if (stored?.parsedProfile) {
+                const hashMatches = !resumeHash || stored.lastResumeHash === resumeHash;
+                if (hashMatches) {
+                    profile = stored.parsedProfile;
+                    skippedParse = true;
+                    console.log('[ResumeMatch] Reusing stored profile');
+                }
+            }
+        } catch { /* fall through to fresh parse */ }
+    }
 
-    // Step 2 — hard-filter active jobs from the RAM cache.
+    // ── Parse resume if no stored profile ──────────────────────────────
+    if (!profile) {
+        profile = await parseFn();
+
+        // Save to user doc for reuse
+        if (userId) {
+            saveMatchProfile(userId, profile, resumeHash || null).catch(err =>
+                console.warn('[ResumeMatch] Failed to save profile:', err.message)
+            );
+        }
+    }
+
+    // ── Merge job preferences from user doc ────────────────────────────
+    if (userId) {
+        try {
+            const stored = await getMatchProfile(userId);
+            if (stored?.jobPreferences) {
+                profile._jobPreferences = stored.jobPreferences;
+            }
+        } catch { /* preferences are optional */ }
+    }
+
+    // ── Filter ─────────────────────────────────────────────────────────
     const filteredJobs = filterJobs(profile);
     const totalJobsSearched = getCacheStats().size;
 
@@ -42,45 +78,34 @@ async function runPipeline(parseFn) {
         return {
             profile,
             results: [],
-            meta: {
-                totalJobsSearched,
-                afterHardFilter: 0,
-                processingTimeMs: Date.now() - startTime,
-                geminiCallsUsed: 1,
-                timestamp: new Date().toISOString(),
-            },
+            meta: { totalJobsSearched, afterHardFilter: 0, processingTimeMs: Date.now() - startTime, geminiCallsUsed: skippedParse ? 0 : 1, profileReused: skippedParse, timestamp: new Date().toISOString() },
         };
     }
 
-    // Step 3 — score (Pass A coarse → Pass B deep).
+    // ── Score ───────────────────────────────────────────────────────────
     const results = await scoreJobs(profile, filteredJobs);
 
     return {
         profile,
         results,
-        meta: buildMeta(totalJobsSearched, filteredJobs.length, startTime),
+        meta: buildMeta(totalJobsSearched, filteredJobs.length, startTime, skippedParse),
     };
 }
 
-/**
- * Match an uploaded resume file (PDF/DOCX) to active jobs.
- *
- * @param {Buffer} pdfBuffer
- * @param {string} mimeType
- * @returns {Promise<{profile: object, results: object[], meta: object}>}
- */
-export async function matchResumeToJobs(pdfBuffer, mimeType) {
-    return runPipeline(() => parseResume(pdfBuffer, mimeType));
+export async function matchResumeToJobs(pdfBuffer, mimeType, userId) {
+    const resumeHash = md5(pdfBuffer);
+    return runPipeline(() => parseResume(pdfBuffer, mimeType), userId, resumeHash);
 }
 
-/**
- * Match a pasted-text resume to active jobs.
- *
- * @param {string} text
- * @returns {Promise<{profile: object, results: object[], meta: object}>}
- */
-export async function matchResumeTextToJobs(text) {
-    return runPipeline(() => parseResumeFromText(text));
+export async function matchResumeTextToJobs(text, userId) {
+    // text === null means "use stored profile, don't parse"
+    if (!text) {
+        return runPipeline(async () => {
+            throw new Error('No text provided and no stored profile found');
+        }, userId, null);
+    }
+    const resumeHash = md5(Buffer.from(text, 'utf8'));
+    return runPipeline(() => parseResumeFromText(text), userId, resumeHash);
 }
 
 // ── Barrel re-exports ─────────────────────────────────────────────────────────
