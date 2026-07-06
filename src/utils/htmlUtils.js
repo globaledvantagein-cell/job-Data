@@ -43,6 +43,11 @@ export function SanitizeHtml(html) {
     const dom = new JSDOM(`<!DOCTYPE html><html><body>${html}</body></html>`);
     const doc = dom.window.document;
 
+    // ── Phase 0: Remove ATS boilerplate sections ──────────────────────
+    // Greenhouse wraps company blurbs in div.content-intro and legal
+    // disclaimers in div.content-conclusion. Neither is part of the JD.
+    doc.querySelectorAll('.content-intro, .content-conclusion').forEach(el => el.remove());
+
     // Remove whole subtrees first (faster than per-node checks)
     SANITIZE_REMOVE_TREE.forEach(tag => {
         doc.querySelectorAll(tag).forEach(el => el.remove());
@@ -83,9 +88,43 @@ export function SanitizeHtml(html) {
 
     Array.from(doc.body.childNodes).forEach(walk);
 
+    // ── Phase 2: Wrap orphaned text/inline nodes in <p> ──────────────
+    // After div-unwrapping, bare text nodes and inline elements (strong, em, br)
+    // can end up as direct children of <body> with no block-level wrapper.
+    // Group consecutive non-block siblings into <p> tags for proper spacing.
+    const BLOCK_TAGS = new Set(['p', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']);
+    const body = doc.body;
+    const children = Array.from(body.childNodes);
+    let run = [];
+
+    function flushRun() {
+        if (run.length === 0) return;
+        // Only wrap if the run has visible text content
+        const text = run.map(n => n.textContent || '').join('').trim();
+        if (text.length > 0) {
+            const p = doc.createElement('p');
+            run[0].parentNode.insertBefore(p, run[0]);
+            run.forEach(n => p.appendChild(n));
+        }
+        run = [];
+    }
+
+    for (const child of children) {
+        const isBlock = child.nodeType === 1 && BLOCK_TAGS.has(child.tagName.toLowerCase());
+        if (isBlock) {
+            flushRun();
+        } else {
+            run.push(child);
+        }
+    }
+    flushRun();
+
     // Collapse runs of 3+ <br> tags that ATS systems sometimes produce
     let result = doc.body.innerHTML;
     result = result.replace(/(<br\s*\/?>\s*){3,}/gi, '<br>');
+
+    // Remove empty paragraphs (leftover from unwrapping empty divs)
+    result = result.replace(/<p>\s*(<br\s*\/?>)?\s*<\/p>/gi, '');
 
     return result.trim();
 }
