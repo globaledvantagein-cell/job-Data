@@ -150,4 +150,52 @@ export function attachProfileRoutes(authRouter) {
             res.status(500).json({ error: 'Failed to parse resume. Please try again.' });
         }
     });
+
+    // ─── Edit profile skills ─────────────────────────────────────────────
+    // PATCH /api/auth/skills
+    // Body: { skills: [{ name: string, category?: string }] }
+    //
+    // Overwrites parsedProfile.skills with the provided array.
+    // Validates each skill has a non-empty name string.
+    authRouter.patch('/skills', verifyToken, async (req, res) => {
+        try {
+            const { skills } = req.body;
+
+            if (!Array.isArray(skills)) {
+                return res.status(400).json({ error: 'skills must be an array' });
+            }
+
+            const VALID_CATEGORIES = ['Language', 'Framework', 'Database', 'Cloud', 'DevOps', 'Tool', 'Domain', 'Other'];
+
+            const cleaned = skills
+                .filter(s => s && typeof s.name === 'string' && s.name.trim().length > 0)
+                .map(s => ({
+                    name: s.name.trim(),
+                    category: VALID_CATEGORIES.includes(s.category) ? s.category : 'Other',
+                }));
+
+            const db = (await import('../../db/connection.js')).connectToDb;
+            const database = await db();
+            const { ObjectId } = await import('mongodb');
+
+            const result = await database.collection('users').updateOne(
+                { _id: new ObjectId(req.user.id) },
+                {
+                    $set: {
+                        'parsedProfile.skills': cleaned,
+                        profileUpdatedAt: new Date(),
+                    },
+                },
+            );
+
+            if (result.matchedCount === 0) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+
+            res.json({ success: true, skills: cleaned });
+        } catch (error) {
+            console.error('[Auth/skills] Failed:', error.message);
+            res.status(500).json({ error: 'Failed to update skills' });
+        }
+    });
 }
