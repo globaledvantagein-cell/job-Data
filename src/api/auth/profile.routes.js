@@ -185,6 +185,7 @@ export function attachProfileRoutes(authRouter) {
                         'parsedProfile.skills': cleaned,
                         profileUpdatedAt: new Date(),
                     },
+                    $unset: { dailyMatches: '' },  // invalidate Today's Matches cache
                 },
             );
 
