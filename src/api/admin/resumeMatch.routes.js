@@ -30,6 +30,7 @@ async function saveCachedResults(userId, result) {
             { _id: new ObjectId(userId) },
             { $set: {
                 smartMatchCache: {
+                    profile: result.profile,
                     results: result.results,
                     meta: result.meta,
                     cachedAt: new Date(),
