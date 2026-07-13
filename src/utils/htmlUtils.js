@@ -141,8 +141,8 @@ export function SanitizeHtml(html) {
     let result = doc.body.innerHTML;
     result = result.replace(/(<br\s*\/?>\s*){3,}/gi, '<br>');
 
-    // Remove empty paragraphs (leftover from unwrapping empty divs)
-    result = result.replace(/<p>\s*(<br\s*\/?>)?\s*<\/p>/gi, '');
+    // Remove empty paragraphs (leftover from unwrapping empty divs, or nbsp-only)
+    result = result.replace(/<p>\s*(<br\s*\/?>|\s|&nbsp;)*\s*<\/p>/gi, '');
 
     return result.trim();
 }
