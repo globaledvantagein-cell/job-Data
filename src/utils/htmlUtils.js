@@ -6,7 +6,9 @@ export const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 export function StripHtml(html) {
     if (!html) return "";
-    const stripped = he.decode(html).replace(/<[^>]+>/g, "");
+    // Decode first (handles double-encoded &lt;p&gt; → <p>), then strip tags
+    const decoded = he.decode(html);
+    const stripped = decoded.replace(/<[^>]+>/g, "");
     const clean = he.decode(stripped).replace(/\s+/g, " ").trim();
     return clean;
 }
@@ -37,10 +39,26 @@ const SANITIZE_REMOVE_TREE = new Set([
  * @param {string} html - Raw HTML string from an ATS API
  * @returns {string} Sanitized HTML string
  */
+/**
+ * Detects if content is double-encoded HTML (e.g. &lt;p&gt; instead of <p>).
+ * Some ATS APIs (Greenhouse for certain companies) return HTML-encoded content.
+ */
+function decodeIfNeeded(html) {
+    if (!html) return html;
+    // If the string contains &lt; followed by a tag-like pattern, it's double-encoded
+    if (/&lt;\s*\/?[a-z]/i.test(html)) {
+        return he.decode(html);
+    }
+    return html;
+}
+
 export function SanitizeHtml(html) {
     if (!html || typeof html !== 'string') return '';
 
-    const dom = new JSDOM(`<!DOCTYPE html><html><body>${html}</body></html>`);
+    // Decode double-encoded HTML before JSDOM sees it
+    const decoded = decodeIfNeeded(html);
+
+    const dom = new JSDOM(`<!DOCTYPE html><html><body>${decoded}</body></html>`);
     const doc = dom.window.document;
 
     // ── Phase 0: Remove ATS boilerplate sections ──────────────────────
