@@ -9,46 +9,56 @@
  * been through marked + sanitize-html in careerGuide.routes.js.
  */
 import { CAREER_GUIDE_CATEGORY_LABELS } from '../db/careerGuide.js';
-import { escapeHtml, serializeJsonLd, PAGE_STYLE } from './templates.js';
+import { escapeHtml, serializeJsonLd, PAGE_STYLE, renderHeader, renderFooter } from './templates.js';
 import { SITE_URL } from '../env.js';
 
 const GUIDE_NAME = 'Germany Career Guide';
 
 // Typography for rendered markdown, plus the breadcrumb/CTA chrome. Appended to
 // PAGE_STYLE so the guide inherits the same base look as the other SEO pages.
+// Career-guide-specific styling. Colours come from the brand CSS variables
+// defined in PAGE_STYLE so the guide matches the city/category pages exactly.
 const GUIDE_STYLE = `
-  .crumbs { font-size: 0.82rem; color: #57606a; margin: 0 0 20px; }
+  .crumbs { font-size: 0.82rem; color: var(--muted); margin: 0 0 20px; }
   .crumbs a { text-decoration: none; }
   .crumbs span { margin: 0 6px; opacity: 0.5; }
-  .cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin: 0 0 40px; }
-  .cat { border: 1px solid #d8dee4; border-radius: 10px; padding: 16px; text-decoration: none; display: block; color: inherit; }
-  .cat strong { display: block; font-size: 1rem; margin-bottom: 2px; }
-  .cat span { font-size: 0.82rem; color: #57606a; }
-  .article-body { margin: 28px 0 36px; }
-  .article-body h2 { font-size: 1.35rem; margin: 32px 0 10px; line-height: 1.3; }
-  .article-body h3 { font-size: 1.1rem; margin: 24px 0 8px; }
-  .article-body p { margin: 0 0 14px; }
-  .article-body ul, .article-body ol { margin: 0 0 14px; padding-left: 22px; }
+
+  /* Category cards — clickable, interactive hover (border + lift shadow only) */
+  .cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin: 0 0 40px; }
+  .cat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px;
+         text-decoration: none; display: block; color: inherit;
+         transition: border-color 0.16s ease, box-shadow 0.16s ease; }
+  .cat:hover { border-color: var(--brand); box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+  .cat strong { display: block; font-size: 1.02rem; margin-bottom: 3px; color: var(--text); }
+  .cat span { font-size: 0.82rem; color: var(--muted); }
+
+  /* Article list (hub + category pages) */
+  ul.jobs { list-style: none; padding: 0; margin: 0 0 32px; }
+  ul.jobs > li { background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+         padding: 14px 16px; margin-bottom: 10px; transition: border-color 0.16s ease; }
+  ul.jobs > li:hover { border-color: var(--brand); }
+  ul.jobs > li > a { font-weight: 700; font-size: 1rem; color: var(--text); text-decoration: none; }
+  ul.jobs > li > a:hover { color: var(--brand); }
+
+  .article-body { margin: 28px 0 36px; max-width: 760px; font-size: 1.02rem; }
+  .article-body h2 { font-size: 1.4rem; margin: 34px 0 10px; line-height: 1.3; }
+  .article-body h3 { font-size: 1.12rem; margin: 24px 0 8px; }
+  .article-body p { margin: 0 0 15px; }
+  .article-body ul, .article-body ol { margin: 0 0 15px; padding-left: 22px; }
   .article-body li { margin-bottom: 6px; }
   .article-body img { max-width: 100%; height: auto; border-radius: 8px; }
-  .article-body pre { background: #f6f8fa; padding: 12px 14px; border-radius: 8px; overflow-x: auto; }
-  .article-body code { background: #f6f8fa; padding: 1px 5px; border-radius: 4px; font-size: 0.88em; }
+  .article-body pre { background: var(--brand-soft); padding: 12px 14px; border-radius: 8px; overflow-x: auto; }
+  .article-body code { background: var(--brand-soft); padding: 1px 5px; border-radius: 4px; font-size: 0.88em; }
   .article-body pre code { background: none; padding: 0; }
-  .article-body blockquote { margin: 0 0 14px; padding: 2px 0 2px 14px; border-left: 3px solid #d8dee4; color: #57606a; }
-  .article-body table { border-collapse: collapse; width: 100%; margin: 0 0 14px; display: block; overflow-x: auto; }
-  .article-body th, .article-body td { border: 1px solid #d8dee4; padding: 6px 10px; text-align: left; }
-  .byline { color: #57606a; font-size: 0.86rem; margin: 0 0 4px; }
-  .cta-box { border: 1px solid #d8dee4; border-radius: 12px; padding: 20px; margin: 32px 0; }
-  .cta-box p { margin: 10px 0 0; font-size: 0.88rem; }
+  .article-body blockquote { margin: 0 0 15px; padding: 2px 0 2px 14px; border-left: 3px solid var(--brand); color: var(--muted); }
+  .article-body table { border-collapse: collapse; width: 100%; margin: 0 0 15px; display: block; overflow-x: auto; }
+  .article-body th, .article-body td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }
+  .byline { color: var(--muted); font-size: 0.86rem; margin: 0 0 4px; }
+  .cta-box { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin: 32px 0; }
+  .cta-box p { margin: 12px 0 0; font-size: 0.88rem; color: var(--muted); }
   .tags { margin: 0 0 24px; }
-  .tags span { display: inline-block; font-size: 0.74rem; color: #57606a; border: 1px solid #d8dee4;
+  .tags span { display: inline-block; font-size: 0.74rem; color: var(--muted); border: 1px solid var(--border);
                border-radius: 999px; padding: 2px 10px; margin: 0 6px 6px 0; }
-  @media (prefers-color-scheme: dark) {
-    .crumbs, .cat span, .byline, .article-body blockquote, .tags span { color: #8b949e; }
-    .cat, .cta-box, .tags span { border-color: #30363d; }
-    .article-body pre, .article-body code { background: #161b22; }
-    .article-body th, .article-body td, .article-body blockquote { border-color: #30363d; }
-  }
 `;
 
 /** Breadcrumb trail. `trail` is [{ label, path|null }] — last item has no link. */
@@ -110,9 +120,11 @@ function renderShell({ title, description, canonicalPath, jsonLd, body }) {
 ${ldBlocks}
 </head>
 <body>
-<div class="wrap">
+${renderHeader()}
+<main class="wrap">
 ${body}
-</div>
+</main>
+${renderFooter()}
 </body>
 </html>`;
 }

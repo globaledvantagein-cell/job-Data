@@ -30,33 +30,108 @@ export function serializeJsonLd(data) {
     return JSON.stringify(data).replace(/</g, '\\u003c');
 }
 
+// Brand design system, inline (SSR — no external stylesheet). Colours and the
+// warm "Paper + Ink" cream match the React app so crossing from the SPA to a
+// city page never feels like a different site. Shared by the career-guide
+// templates too (they import PAGE_STYLE), so this is the single source of truth.
 export const PAGE_STYLE = `
-  :root { color-scheme: light dark; }
-  * { box-sizing: border-box; }
-  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-         background: #fff; color: #14171a; line-height: 1.6; }
-  .wrap { max-width: 860px; margin: 0 auto; padding: 40px 20px 64px; }
-  a { color: #1f6feb; }
-  h1 { font-size: clamp(1.6rem, 4vw, 2.3rem); line-height: 1.2; margin: 0 0 8px; }
-  .count { color: #57606a; margin: 0 0 28px; font-size: 1rem; }
-  ul.jobs { list-style: none; padding: 0; margin: 0 0 32px; }
-  ul.jobs li { border: 1px solid #d8dee4; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; }
-  ul.jobs a { font-weight: 600; text-decoration: none; }
-  ul.jobs a:hover { text-decoration: underline; }
-  .meta { color: #57606a; font-size: 0.86rem; margin-top: 2px; }
-  .cta { display: inline-block; background: #1f6feb; color: #fff; text-decoration: none;
-         padding: 10px 18px; border-radius: 8px; font-weight: 600; }
-  nav.links { margin-top: 40px; border-top: 1px solid #d8dee4; padding-top: 20px; }
-  nav.links h2 { font-size: 0.95rem; margin: 0 0 8px; }
-  nav.links a { display: inline-block; margin: 0 10px 6px 0; font-size: 0.86rem; }
-  .empty { color: #57606a; }
-  @media (prefers-color-scheme: dark) {
-    body { background: #0d1117; color: #e6edf3; }
-    ul.jobs li { border-color: #30363d; }
-    .count, .meta, .empty { color: #8b949e; }
-    nav.links { border-color: #30363d; }
+  :root {
+    color-scheme: light dark;
+    --brand: #059669;
+    --brand-dark: #047857;
+    --brand-soft: #ecfdf5;
+    --text: #1a1a1a;
+    --muted: #5f6b66;
+    --bg: #f9f6f1;
+    --card: #ffffff;
+    --border: #e7e2d9;
   }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --brand: #34d399; --brand-dark: #10b981; --brand-soft: #0e2a20;
+      --text: #ececec; --muted: #a3a89f; --bg: #14120f; --card: #1c1a16; --border: #2e2a23;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+         background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--brand); }
+
+  /* Header + footer chrome */
+  .site-header { border-bottom: 1px solid var(--border); background: var(--card); }
+  .site-header .bar, .site-footer .bar { max-width: 1200px; margin: 0 auto; padding: 14px 20px;
+         display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .logo { font-weight: 800; font-size: 1.15rem; letter-spacing: -0.02em; color: var(--text); text-decoration: none; }
+  .logo b { color: var(--brand); font-weight: 800; }
+  .site-header .navlinks a { color: var(--muted); text-decoration: none; font-size: 0.88rem; font-weight: 600; margin-left: 20px; }
+  .site-header .navlinks a:hover { color: var(--text); }
+  .site-footer { border-top: 1px solid var(--border); background: var(--card); margin-top: 56px; }
+  .site-footer .bar { font-size: 0.82rem; color: var(--muted); }
+  .site-footer a { color: var(--muted); text-decoration: none; margin-left: 16px; }
+  .site-footer a:hover { color: var(--text); }
+
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 44px 20px 24px; }
+
+  /* Hero */
+  .hero { margin: 0 0 24px; }
+  h1 { font-size: clamp(1.7rem, 4vw, 2.6rem); line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 8px; color: var(--text); }
+  .count { color: var(--muted); margin: 0; font-size: 1.05rem; }
+
+  /* Job card grid — 3 / 2 / 1 columns */
+  .job-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 28px 0 32px; }
+  .job-card { display: flex; flex-direction: column; gap: 8px; min-height: 118px;
+         background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px;
+         text-decoration: none; color: inherit;
+         transition: border-color 0.16s ease, box-shadow 0.16s ease; }
+  .job-card:hover { border-color: var(--brand); box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+  .job-card .title { font-weight: 700; font-size: 0.98rem; line-height: 1.35; color: var(--text); }
+  .job-card .company { font-size: 0.85rem; color: var(--muted); }
+  .badge { align-self: flex-start; margin-top: auto; font-size: 0.72rem; font-weight: 600;
+         padding: 3px 10px; border-radius: 999px; background: var(--brand-soft); color: var(--brand-dark); }
+
+  .cta { display: inline-block; background: var(--brand); color: #fff; text-decoration: none;
+         padding: 12px 22px; border-radius: 10px; font-weight: 700; font-size: 0.95rem;
+         transition: background-color 0.16s ease; }
+  .cta:hover { background: var(--brand-dark); }
+  .meta { color: var(--muted); font-size: 0.86rem; margin: 4px 0 0; }
+  .empty { color: var(--muted); }
+
+  /* Cross-link pills */
+  nav.links { margin-top: 44px; border-top: 1px solid var(--border); padding-top: 24px; }
+  nav.links h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 10px; }
+  nav.links a { display: inline-block; margin: 0 8px 8px 0; font-size: 0.85rem; color: var(--muted);
+         text-decoration: none; border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px;
+         transition: border-color 0.16s ease, color 0.16s ease; }
+  nav.links a:hover { border-color: var(--brand); color: var(--brand); }
+
+  @media (max-width: 900px) { .job-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .job-grid { grid-template-columns: 1fr; } .wrap { padding: 28px 16px 16px; } }
 `;
+
+/** Shared brand header bar — logo links home, plus the main nav for crawl paths. */
+export function renderHeader() {
+    return `<header class="site-header"><div class="bar">
+  <a class="logo" href="${SITE_URL}/">English <b>Jobs</b></a>
+  <nav class="navlinks">
+    <a href="${SITE_URL}/jobs">Browse Jobs</a>
+    <a href="${SITE_URL}/directory">Companies</a>
+    <a href="${SITE_URL}/career-guide">Career Guide</a>
+  </nav>
+</div></header>`;
+}
+
+/** Shared brand footer — copyright + legal/contact links. */
+export function renderFooter() {
+    const year = new Date().getFullYear();
+    return `<footer class="site-footer"><div class="bar">
+  <span>&copy; ${year} English Jobs in Germany</span>
+  <nav>
+    <a href="${SITE_URL}/legal?tab=privacy">Privacy</a>
+    <a href="${SITE_URL}/legal?tab=terms">Terms</a>
+    <a href="mailto:support@englishjobsgermany.com">Contact</a>
+  </nav>
+</div></footer>`;
+}
 
 /**
  * Shared page skeleton — head tags, OG/Twitter cards, canonical, JSON-LD.
@@ -67,17 +142,25 @@ function renderShell({ title, description, canonicalPath, heading, countLine, jo
     // The list is capped, but the count reflects the real total — so say so
     // rather than silently implying these are all of them.
     const moreHtml = totalCount > jobs.length
-        ? `<p class="meta">Showing the ${jobs.length} newest of ${totalCount}. <a href="${escapeHtml(ctaHref)}">See all ${totalCount}</a>.</p>`
+        ? `<p class="meta" style="margin: 0 0 24px">Showing ${jobs.length} of ${totalCount} jobs. <a href="${escapeHtml(ctaHref)}">See all ${totalCount}</a>.</p>`
         : '';
 
     const jobsHtml = jobs.length === 0
         ? `<p class="empty">No open roles here right now. New jobs are added every day — <a href="${SITE_URL}/jobs">browse all English-speaking jobs</a>.</p>`
-        : `<ul class="jobs">${jobs.map(job => `
-    <li>
-      <a href="${SITE_URL}/jobs/${escapeHtml(job._id)}">${escapeHtml(job.JobTitle)}</a>
-      <div class="meta">${escapeHtml(job.Company)}${job.Location ? ` &middot; ${escapeHtml(job.Location)}` : ''}</div>
-    </li>`).join('')}
-  </ul>${moreHtml}`;
+        : `<div class="job-grid">${jobs.map(job => {
+            const catLabel = job.Category && CATEGORY_LABELS[job.Category] ? CATEGORY_LABELS[job.Category] : null;
+            const badge = catLabel ? `<span class="badge">${escapeHtml(catLabel)}</span>` : '';
+            const company = job.Location
+                ? `${escapeHtml(job.Company)} &middot; ${escapeHtml(job.Location)}`
+                : escapeHtml(job.Company);
+            return `
+    <a class="job-card" href="${SITE_URL}/jobs/${escapeHtml(job._id)}">
+      <span class="title">${escapeHtml(job.JobTitle)}</span>
+      <span class="company">${company}</span>
+      ${badge}
+    </a>`;
+        }).join('')}
+  </div>${moreHtml}`;
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -101,13 +184,17 @@ function renderShell({ title, description, canonicalPath, heading, countLine, jo
 <script type="application/ld+json">${serializeJsonLd(jsonLd)}</script>
 </head>
 <body>
-<div class="wrap">
-  <h1>${escapeHtml(heading)}</h1>
-  <p class="count">${escapeHtml(countLine)}</p>
+${renderHeader()}
+<main class="wrap">
+  <section class="hero">
+    <h1>${escapeHtml(heading)}</h1>
+    <p class="count">${escapeHtml(countLine)}</p>
+  </section>
   ${jobsHtml}
   <a class="cta" href="${escapeHtml(ctaHref)}">${escapeHtml(ctaLabel)}</a>
   ${renderCrossLinks()}
-</div>
+</main>
+${renderFooter()}
 </body>
 </html>`;
 }
