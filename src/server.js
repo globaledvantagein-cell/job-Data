@@ -11,8 +11,6 @@ import { jobsApiRouter } from './api/jobs.routes.js';
 import { authRouter } from './api/auth.routes.js';
 import { analyticsRouter } from './api/analytics.routes.js';
 import { feedbackRouter } from './api/feedback.routes.js';
-import { seoRouter } from './api/seo.routes.js';
-import { careerGuideRouter } from './api/careerGuide.routes.js';
 import { adminCareerGuideRouter } from './api/admin/careerGuide.routes.js';
 import { adminCompanyProfilesRouter } from './api/admin/companyProfiles.routes.js';
 import { attachVisitor } from './middleware/visitorMiddleware.js';
@@ -47,13 +45,9 @@ app.use('/api/feedback', feedbackRouter);
 app.use('/api/admin/career-guide', adminCareerGuideRouter);
 app.use('/api/admin/company-profiles', adminCompanyProfilesRouter);
 
-// --- SEO landing pages (root-mounted: /city/*, /category/*, /sitemap.xml) ---
-// Requires an nginx proxy rule for these paths — see api/seo.routes.js.
-app.use(seoRouter);
-
-// --- Career Guide public pages (root-mounted: /career-guide/*) ---
-// Also needs an nginx proxy rule — see api/careerGuide.routes.js.
-app.use(careerGuideRouter);
+// NOTE: All public HTML pages — the /city/*, /category/*, /sitemap.xml SEO
+// landing pages and the /career-guide/* pages — are now served by the Next.js
+// frontend (App Router). Express is API-only; it renders no HTML.
 
 // --- Health Check ---
 app.get('/', (req, res) => {
