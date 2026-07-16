@@ -27,6 +27,13 @@ export const NEW_VISITOR_RATE_LIMIT_PER_HOUR = Number(process.env.NEW_VISITOR_RA
 export const VISITOR_IP_SALT = process.env.VISITOR_IP_SALT;
 export const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
 
+// ── SEO ───────────────────────────────────────────────────────────────────
+// Canonical public origin, used for <link rel=canonical>, OG tags, JSON-LD
+// and sitemap URLs. Must be the real public site — NOT the API origin, or
+// Google will index the wrong host. Distinct from FRONTEND_ORIGIN, which is
+// a CORS allow-list value and points at localhost in development.
+export const SITE_URL = (process.env.SITE_URL || 'https://englishjobsgermany.com').replace(/\/$/, '');
+
 // ── Google OAuth ──────────────────────────────────────────────────────────
 // Web Client ID from Google Cloud Console. Same value as VITE_GOOGLE_CLIENT_ID.
 // We use the ID-token flow, so no client secret is needed.

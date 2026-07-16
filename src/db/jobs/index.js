@@ -39,6 +39,20 @@ export {
     cleanAllDescriptions,
 } from './cleanupQueries.js';
 
-export { getCompanyDirectoryStats } from './directoryQueries.js';
-export { trackApplyClick, confirmApplied, getAppliedJobIds, getAppliedJobsWithDetails } from './trackingQueries.js';
+export {
+    getCompanyDirectoryStats,
+    updateCompanyDescription,
+    getCompanyProfile,
+    getAllCompanyProfiles,
+} from './directoryQueries.js';
+export {
+    trackApplyClick,
+    confirmApplied,
+    getAppliedJobIds,
+    getAppliedJobsWithDetails,
+    saveJob,
+    unsaveJob,
+    getSavedJobIds,
+    getSavedJobsWithDetails,
+} from './trackingQueries.js';
 export { getDigestJobs } from './digestQueries.js';

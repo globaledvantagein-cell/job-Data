@@ -17,6 +17,7 @@ import {
     sendEmailQuietly,
     checkIfNewUser,
 } from './helpers.js';
+import { Analytics } from '../../models/analyticsModel.js';
 
 export function attachSigninRoutes(authRouter) {
     // ─── Talent Pool / Weekly Alerts ──────────────────────────────────────
@@ -134,6 +135,10 @@ export function attachSigninRoutes(authRouter) {
             const isNewUser = await checkIfNewUser(user.id);
 
             if (isNewUser) {
+                // New signup via Google — fire-and-forget counters.
+                Analytics.increment('signups');
+                Analytics.increment('signups_google');
+
                 // Send welcome email
                 try {
                     const { subject, html, text } = renderWelcomeEmail({

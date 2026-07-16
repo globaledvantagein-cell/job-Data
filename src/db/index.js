@@ -22,7 +22,14 @@ export {
     confirmApplied,
     getAppliedJobIds,
     getAppliedJobsWithDetails,
+    saveJob,
+    unsaveJob,
+    getSavedJobIds,
+    getSavedJobsWithDetails,
     getCompanyDirectoryStats,
+    updateCompanyDescription,
+    getCompanyProfile,
+    getAllCompanyProfiles,
     findJobById,
     findJobByIdOrJobID,
     getJobsEligibleForReanalysis,
@@ -48,6 +55,24 @@ export {
     getMatchProfile,
     updateJobPreferences,
 } from './userQueries.js';
+
+// ── Career Guide Queries ──
+export {
+    CAREER_GUIDE_CATEGORIES,
+    CAREER_GUIDE_CATEGORY_LABELS,
+    slugify,
+    createArticle,
+    updateArticle,
+    deleteArticle,
+    getArticleBySlug,
+    getArticleById,
+    getArticlesByCategory,
+    getAllPublishedArticles,
+    getAllArticlesAdmin,
+    publishArticle,
+    unpublishArticle,
+    getCategories,
+} from './careerGuide.js';
 
 // ── Feedback Queries ──
 export {

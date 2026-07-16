@@ -39,14 +39,16 @@ export async function reviewJobDecision(jobId, decision) {
     if (decision === 'accept') newStatus = 'active';
     if (decision === 'reject') newStatus = 'rejected';
 
+    const now = new Date();
+    const fields = {
+        Status: newStatus,
+        reviewedAt: now
+    };
+    if (decision === 'reject') fields.rejectedAt = now;
+
     await jobsCollection.updateOne(
         { _id: new ObjectId(jobId) },
-        {
-            $set: {
-                Status: newStatus,
-                reviewedAt: new Date()
-            }
-        }
+        { $set: fields }
     );
     return { success: true, status: newStatus };
 }

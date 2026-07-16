@@ -9,6 +9,7 @@ import { attachAdminMaintenanceRoutes } from './jobs/adminMaintenance.routes.js'
 import { attachCacheDebugRoute } from './jobs/cacheDebug.routes.js';
 import { attachResumeMatchRoutes } from './admin/resumeMatch.routes.js';
 import { attachSkillMatchRoutes } from './jobs/skillMatch.routes.js';
+import { attachSavedJobsRoutes } from './jobs/savedJobs.routes.js';
 
 /**
  * The main jobs router. Each section lives in its own file under ./jobs/.
@@ -19,6 +20,7 @@ export const jobsApiRouter = Router();
 
 attachPublicReadRoutes(jobsApiRouter);     // /public-bait, /, /:id/full, /company-names, /category-counts, /directory
 attachSkillMatchRoutes(jobsApiRouter);    // GET /skill-matches (must be before :id catch-all)
+attachSavedJobsRoutes(jobsApiRouter);      // GET /saved-ids, GET /saved (before :id catch-all), POST+DELETE /:id/save
 attachAdminReviewRoutes(jobsApiRouter);    // /admin/review, /admin/decision/:id, /rejected, /admin/restore/:id
 attachApplyClickRoute(jobsApiRouter);      // POST /:id/apply-click
 attachAdminReanalysisRoutes(jobsApiRouter);// /admin/reanalyze-all, /admin/reanalyze/:id, /:id/analyze

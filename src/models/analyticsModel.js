@@ -9,7 +9,23 @@ const analyticsSchema = new mongoose.Schema({
   jobsSentToAI: { type: Number, default: 0 },     // Passed keywords
   jobsPendingReview: { type: Number, default: 0 }, // AI Score 70-85
   jobsPublished: { type: Number, default: 0 },    // AI Score >85 or Manual Approve
-  
+
+  // ── Engagement metrics ──
+  // NOTE: these field names use snake_case per the tracking spec, unlike the
+  // camelCase counters above. They MUST be declared here — Mongoose runs in
+  // strict mode and silently drops $inc on any path not in the schema, so an
+  // undeclared counter would no-op forever.
+  pageViews_jobs: { type: Number, default: 0 },        // GET /api/jobs list
+  pageViews_jobDetail: { type: Number, default: 0 },   // GET /api/jobs/:id/full
+  pageViews_smartMatch: { type: Number, default: 0 },  // Smart Match GET + POST
+  pageViews_todayMatches: { type: Number, default: 0 },// GET /skill-matches
+  signups: { type: Number, default: 0 },               // new users (any method)
+  signups_google: { type: Number, default: 0 },        // new users via Google
+  smartMatch_runs: { type: Number, default: 0 },       // Smart Match pipeline runs
+  todayMatch_runs: { type: Number, default: 0 },       // fresh skill-match computes
+  applyClicks_total: { type: Number, default: 0 },     // apply-click events
+  visitor_conversions: { type: Number, default: 0 },   // anon visitor → logged in
+
   lastUpdated: { type: Date, default: Date.now }
 });
 

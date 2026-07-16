@@ -9,6 +9,7 @@ import {
 import { upsertJob, removeJob } from '../../cache/index.js';
 import { verifyToken, verifyAdmin } from '../../middleware/authMiddleware.js';
 import { extractAndStoreRequirements } from '../../gemma/index.js';
+import { Analytics } from '../../models/analyticsModel.js';
 
 export function attachAdminReviewRoutes(router) {
 
@@ -34,6 +35,10 @@ export function attachAdminReviewRoutes(router) {
                 return res.status(400).json({ error: "Invalid decision" });
             }
             await reviewJobDecision(id, decision);
+
+            if (decision === 'accept') {
+                await Analytics.increment('jobsPublished');
+            }
 
             // ── Cache sync ───────────────────────────────────────────
             // After accept → fetch the updated doc and add to cache.

@@ -11,6 +11,10 @@ import { jobsApiRouter } from './api/jobs.routes.js';
 import { authRouter } from './api/auth.routes.js';
 import { analyticsRouter } from './api/analytics.routes.js';
 import { feedbackRouter } from './api/feedback.routes.js';
+import { seoRouter } from './api/seo.routes.js';
+import { careerGuideRouter } from './api/careerGuide.routes.js';
+import { adminCareerGuideRouter } from './api/admin/careerGuide.routes.js';
+import { adminCompanyProfilesRouter } from './api/admin/companyProfiles.routes.js';
 import { attachVisitor } from './middleware/visitorMiddleware.js';
 import { FRONTEND_ORIGIN } from './env.js';
 import { initJobsCache } from './cache/index.js';
@@ -40,6 +44,16 @@ app.use('/api/auth', authRouter);
 app.use('/api/jobs', jobsApiRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/feedback', feedbackRouter);
+app.use('/api/admin/career-guide', adminCareerGuideRouter);
+app.use('/api/admin/company-profiles', adminCompanyProfilesRouter);
+
+// --- SEO landing pages (root-mounted: /city/*, /category/*, /sitemap.xml) ---
+// Requires an nginx proxy rule for these paths — see api/seo.routes.js.
+app.use(seoRouter);
+
+// --- Career Guide public pages (root-mounted: /career-guide/*) ---
+// Also needs an nginx proxy rule — see api/careerGuide.routes.js.
+app.use(careerGuideRouter);
 
 // --- Health Check ---
 app.get('/', (req, res) => {

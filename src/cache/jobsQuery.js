@@ -112,6 +112,7 @@ export function getPublicBaitJobsFromCache() {
         Company: job.Company,
         Location: job.Location,
         Department: job.Department,
+        Category: job.Category,
         PostedDate: job.PostedDate,
         ApplicationURL: job.ApplicationURL,
         GermanRequired: job.GermanRequired,

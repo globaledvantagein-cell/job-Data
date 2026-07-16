@@ -11,6 +11,17 @@ const VALID_SKILL_CATEGORIES = ['Language', 'Framework', 'Database', 'Cloud', 'D
 const VALID_SPONSORSHIP = ['available', 'not_available', 'not_mentioned'];
 const VALID_REMOTE = ['fully_remote', 'hybrid', 'on_site', 'not_mentioned'];
 const VALID_RELOCATION = ['available', 'not_available', 'not_mentioned'];
+const VALID_CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF'];
+const VALID_SALARY_INTERVALS = ['yearly', 'monthly', 'hourly'];
+
+// Plausible ranges per interval. Gemma reads "70k" as 70 about as often as
+// 70000, so an unbounded number would put "€0K" on a job card. Anything
+// outside these bounds is treated as a misread and dropped rather than shown.
+const SALARY_BOUNDS = {
+    yearly:  { min: 10000, max: 1000000 },
+    monthly: { min: 800,   max: 100000 },
+    hourly:  { min: 5,     max: 2000 },
+};
 
 const SYSTEM_PROMPT = `You are a job description parser for a German job market platform. Extract structured requirements from the job description below.
 
@@ -30,7 +41,11 @@ Return ONLY valid JSON, no markdown fences, no preamble.
   "remote_policy_detail": "<fully_remote | hybrid | on_site | not_mentioned>",
   "relocation_support": "<available | not_available | not_mentioned>",
   "team_context": "<e.g. 'team of 5 engineers' | 'cross-functional squad' | null>",
-  "key_responsibilities": ["top 3-5 duties, short phrases"]
+  "key_responsibilities": ["top 3-5 duties, short phrases"],
+  "salary_min": <number or null>,
+  "salary_max": <number or null>,
+  "salary_currency": "<EUR | USD | GBP | CHF | null>",
+  "salary_interval": "<yearly | monthly | hourly | null>"
 }
 
 RULES:
@@ -41,6 +56,11 @@ RULES:
 - visa_sponsorship: look for "visa sponsorship", "work authorization", "EU work permit", "Aufenthaltserlaubnis". If mentions "EU citizens only" → not_available.
 - remote_policy_detail: look for "remote", "hybrid", "on-site", "Homeoffice", "work from home". "2-3 days office" = hybrid.
 - relocation_support: look for "relocation package", "relocation assistance", "moving support".
+- Extract salary/compensation if explicitly mentioned in the JD. Look for patterns like €60,000-€80,000, 70k EUR, competitive salary of €65,000. Return null if no salary is mentioned — do NOT guess.
+- salary_min/salary_max: return the FULL number, not shorthand. "70k" → 70000, NOT 70. "€60,000-€80,000" → min 60000, max 80000. A single figure ("salary of €65,000") → min 65000, max 65000. "from €70k" → min 70000, max null.
+- salary_currency: infer from the symbol — € → EUR, $ → USD, £ → GBP, CHF → CHF. Null if no salary.
+- salary_interval: "per year"/"p.a."/"annually"/"Jahresgehalt" → yearly. "per month"/"monatlich" → monthly. "per hour"/"/h"/"Stundenlohn" → hourly. If a salary is given with no stated period, assume yearly.
+- "competitive salary", "attractive compensation", "market rate" with NO number → all salary fields null.
 - Do NOT include soft skills in required_skills.
 - Keep arrays empty (not null) if nothing found.`;
 
@@ -83,6 +103,42 @@ function normalizeEnum(value, allowed, fallback = null) {
     return allowed.includes(value) ? value : fallback;
 }
 
+const NO_SALARY = { salary_min: null, salary_max: null, salary_currency: null, salary_interval: null };
+
+/**
+ * Validates Gemma's salary output. Returns all-null unless the numbers are
+ * genuinely usable — a wrong salary on a job card is worse than none.
+ *
+ * Rejects: non-numbers, zero/negative, values outside SALARY_BOUNDS for the
+ * interval, and unknown currencies. Swaps min/max if the model inverts them.
+ */
+function normalizeSalary(parsed) {
+    const rawMin = typeof parsed?.salary_min === 'number' && Number.isFinite(parsed.salary_min) ? parsed.salary_min : null;
+    const rawMax = typeof parsed?.salary_max === 'number' && Number.isFinite(parsed.salary_max) ? parsed.salary_max : null;
+    if (rawMin === null && rawMax === null) return { ...NO_SALARY };
+
+    // An amount with no period is meaningless to render, and the prompt says
+    // to assume yearly — so mirror that here rather than dropping the data.
+    const interval = normalizeEnum(parsed?.salary_interval, VALID_SALARY_INTERVALS) || 'yearly';
+    const currency = normalizeEnum(
+        typeof parsed?.salary_currency === 'string' ? parsed.salary_currency.toUpperCase() : null,
+        VALID_CURRENCIES,
+    );
+
+    // Currency-less numbers can't be displayed correctly (€60k vs $60k differ).
+    if (!currency) return { ...NO_SALARY };
+
+    const bounds = SALARY_BOUNDS[interval];
+    const inBounds = (v) => v === null || (v >= bounds.min && v <= bounds.max);
+    if (!inBounds(rawMin) || !inBounds(rawMax)) return { ...NO_SALARY };
+
+    let min = rawMin;
+    let max = rawMax;
+    if (min !== null && max !== null && min > max) [min, max] = [max, min];
+
+    return { salary_min: min, salary_max: max, salary_currency: currency, salary_interval: interval };
+}
+
 function validateResult(parsed) {
     const minYears = typeof parsed?.min_experience_years === 'number' ? parsed.min_experience_years : null;
     const maxYears = typeof parsed?.max_experience_years === 'number' ? parsed.max_experience_years : null;
@@ -108,6 +164,7 @@ function validateResult(parsed) {
         relocation_support:   normalizeEnum(parsed?.relocation_support, VALID_RELOCATION, 'not_mentioned'),
         team_context:         teamContext,
         key_responsibilities: normalizeStringArray(parsed?.key_responsibilities),
+        ...normalizeSalary(parsed),
     };
 }
 

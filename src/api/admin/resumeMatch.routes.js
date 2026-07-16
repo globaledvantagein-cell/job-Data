@@ -12,6 +12,7 @@ import { verifyToken, verifyAdmin } from '../../middleware/authMiddleware.js';
 import { matchResumeToJobs, matchResumeTextToJobs } from '../../resume-matcher/index.js';
 import { connectToDb } from '../../db/connection.js';
 import { ObjectId } from 'mongodb';
+import { Analytics } from '../../models/analyticsModel.js';
 
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -46,6 +47,7 @@ export function attachResumeMatchRoutes(router) {
     // ── GET: return cached results ─────────────────────────────────────
     router.get('/admin/resume-match', verifyToken, verifyAdmin, async (req, res) => {
         try {
+            Analytics.increment('pageViews_smartMatch'); // page opened (cache hit or miss)
             const db = await connectToDb();
             const user = await db.collection('users').findOne(
                 { _id: new ObjectId(req.user.id) },
@@ -96,6 +98,10 @@ export function attachResumeMatchRoutes(router) {
 
                 // Save results for future GET requests
                 saveCachedResults(req.user.id, result);
+
+                // Fire-and-forget — a successful run is also a page view.
+                Analytics.increment('pageViews_smartMatch');
+                Analytics.increment('smartMatch_runs');
 
                 res.status(200).json({ success: true, ...result, cached: false });
             } catch (error) {

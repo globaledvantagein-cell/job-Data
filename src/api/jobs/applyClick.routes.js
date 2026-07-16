@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb';
 import { findJobById, trackApplyClick, confirmApplied, getAppliedJobIds, getAppliedJobsWithDetails } from '../../db/index.js';
 import { verifyToken } from '../../middleware/authMiddleware.js';
+import { Analytics } from '../../models/analyticsModel.js';
 
 export function attachApplyClickRoute(router) {
     router.post('/:id/apply-click', verifyToken, async (req, res) => {
@@ -21,6 +22,7 @@ export function attachApplyClickRoute(router) {
             }
 
             const result = await trackApplyClick(id, visitorId);
+            Analytics.increment('applyClicks_total'); // fire-and-forget
             res.status(200).json({
                 ...result,
                 applicationUrl: job.ApplicationURL,

@@ -1,25 +1,46 @@
 import jwt from 'jsonwebtoken';
+import { ObjectId } from 'mongodb';
 import { OAuth2Client } from 'google-auth-library';
-import { linkVisitorToUser, getUserProfile } from '../../db/index.js';
+import { linkVisitorToUser, getUserProfile, connectToDb } from '../../db/index.js';
 import { GOOGLE_CLIENT_ID } from '../../env.js';
 import { sendEmail } from '../../email/index.js';
+import { Analytics } from '../../models/analyticsModel.js';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
 export const googleClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : null;
 
 /**
- * Issue a JWT and link the current visitor (if any) to the user.
+ * Issue a JWT, link the current visitor (if any) to the user, and record
+ * the login timestamp.
  */
 export async function finalizeLogin(req, user) {
     try {
         const visitor = await req.resolveVisitor?.();
         if (visitor?._id) {
+            // Count the conversion only on the FIRST anonymous → linked
+            // transition. finalizeLogin runs on every login, but a visitor
+            // that already carries linkedUserId is a returning user, not a
+            // new conversion. (A returning user on a fresh device produces a
+            // new unlinked visitor, which correctly counts as a conversion.)
+            const wasAnonymous = !visitor.linkedUserId;
             await linkVisitorToUser(visitor._id, user.id);
+            if (wasAnonymous) Analytics.increment('visitor_conversions'); // fire-and-forget
         }
     } catch (err) {
         console.warn('[Auth] Failed to link visitor:', err.message);
     }
+
+    try {
+        const db = await connectToDb();
+        await db.collection('users').updateOne(
+            { _id: new ObjectId(user.id) },
+            { $set: { lastLoginAt: new Date() } },
+        );
+    } catch (err) {
+        console.warn('[Auth] Failed to record lastLoginAt:', err.message);
+    }
+
     return jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 }
 

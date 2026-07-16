@@ -19,6 +19,7 @@ import {
 } from '../../db/index.js';
 import { softVerifyToken } from '../../middleware/authMiddleware.js';
 import { toTeaser } from './helpers.js';
+import { Analytics } from '../../models/analyticsModel.js';
 
 export function attachPublicReadRoutes(router) {
 
@@ -57,6 +58,7 @@ export function attachPublicReadRoutes(router) {
             };
 
             const data = getJobsPaginatedFromCache(page, limit, filters);
+            Analytics.increment('pageViews_jobs'); // fire-and-forget, non-blocking
             res.status(200).json({
                 jobs: (data.jobs || []).map(toTeaser),
                 totalJobs: data.totalJobs,
@@ -85,6 +87,9 @@ export function attachPublicReadRoutes(router) {
             if (job.Status !== 'active' || job.GermanRequired === true) {
                 return res.status(404).json({ error: 'Job not found' });
             }
+
+            // Count real detail views (full, gated, or anon) — not 404s.
+            Analytics.increment('pageViews_jobDetail'); // fire-and-forget
 
             // Authenticated user → always full access
             if (req.user?.id) {

@@ -14,6 +14,7 @@ import { getMatchProfile } from '../../db/index.js';
 import { getSkillMatches } from '../../skill-matcher/index.js';
 import { connectToDb } from '../../db/connection.js';
 import { ObjectId } from 'mongodb';
+import { Analytics } from '../../models/analyticsModel.js';
 
 const router = Router();
 
@@ -29,6 +30,7 @@ function todayStr() {
 
 router.get('/skill-matches', verifyToken, async (req, res) => {
     try {
+        Analytics.increment('pageViews_todayMatches'); // page opened (cache hit or miss)
         const stored = await getMatchProfile(req.user.id);
         const profile = stored?.parsedProfile || null;
         const forceRefresh = req.query.refresh === '1';
@@ -62,6 +64,8 @@ router.get('/skill-matches', verifyToken, async (req, res) => {
             ).catch(err => console.warn('[SkillMatch] Cache save failed:', err.message));
         }
 
+        // Only reached on a fresh compute — the cached branch returned above.
+        Analytics.increment('todayMatch_runs'); // fire-and-forget
         res.json({ matches, meta, cached: false });
     } catch (error) {
         console.error('[SkillMatch] Failed:', error.message);
