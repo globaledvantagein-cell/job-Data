@@ -319,10 +319,19 @@ export function getSkillMatches(parsedProfile, limit = 5) {
         });
     }
 
-    // Sort: highest score first, then tiebreaker for daily rotation
+    // Sort: highest score first, then daily seed for rotation.
+    //
+    // Comparing raw scores made the seed a no-op — float scores almost never
+    // tie exactly, so the top-N was identical every day ("same jobs every
+    // day"). Bucketing scores into 0.05 bands means jobs of comparable match
+    // quality share a band and rotate daily by `_tiebreaker`, while a clearly
+    // stronger band still ranks above a weaker one. Exact score breaks final ties.
+    const scoreBand = (s) => Math.round(s * 20); // 0.05-wide bands
     scored.sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        return a._tiebreaker - b._tiebreaker;
+        const bandDiff = scoreBand(b.score) - scoreBand(a.score);
+        if (bandDiff !== 0) return bandDiff;
+        if (a._tiebreaker !== b._tiebreaker) return a._tiebreaker - b._tiebreaker;
+        return b.score - a.score;
     });
 
     const matches = scored.slice(0, limit).map(({ _tiebreaker, ...rest }) => rest);

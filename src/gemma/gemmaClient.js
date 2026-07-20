@@ -92,17 +92,17 @@ async function requestOnce(apiKey, body) {
 export async function callGemma(systemPrompt, userMessage, options = {}) {
     const temperature = options.temperature ?? DEFAULT_TEMPERATURE;
 
+    // Gemma models on the generativelanguage API do NOT accept `system_instruction`
+    // (400: "Developer instruction is not enabled for models/gemma-…") and do NOT
+    // support `responseMimeType` JSON mode. Fold the system prompt into the user
+    // turn and let parseJsonResponse() extract the JSON from the plain-text reply.
     const body = {
-        system_instruction: {
-            parts: [{ text: systemPrompt }],
-        },
         contents: [{
             role: 'user',
-            parts: [{ text: userMessage }],
+            parts: [{ text: `${systemPrompt}\n\n${userMessage}` }],
         }],
         generationConfig: {
             temperature,
-            responseMimeType: 'application/json',
         },
     };
 
