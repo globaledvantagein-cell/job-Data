@@ -1,6 +1,7 @@
 import { body, validationResult } from 'express-validator';
 import multer from 'multer';
- import crypto from 'crypto';
+import crypto from 'crypto';
+import { ObjectId } from 'mongodb';
 import {
     getUserProfile,
     updateUserPreferences,
@@ -8,6 +9,7 @@ import {
     saveMatchProfile,
     getMatchProfile,
 } from '../../db/index.js';
+import { connectToDb } from '../../db/connection.js';
 import { parseResume, parseResumeFromText } from '../../resume-matcher/index.js';
 import { verifyToken } from '../../middleware/authMiddleware.js';
 import {
@@ -121,33 +123,141 @@ export function attachProfileRoutes(authRouter) {
     const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
    
 
+    // ASYNC parsing: the Gemma call takes 60–90s, which trips Cloudflare's 100s
+    // edge timeout (524). So we respond in < 1s and parse in the background,
+    // tracked by `resumeParseStatus` on the user doc; the client polls
+    // GET /parse-status. The raw PDF is NEVER persisted — the buffer lives only
+    // in the background task's closure and is gone once parsing finishes.
     authRouter.post('/upload-resume', verifyToken, upload.single('resume'), async (req, res) => {
+        const userId = req.user.id;
         try {
-            let profile;
             let resumeHash;
+            let parseFn;
 
             if (req.file) {
-                resumeHash = crypto.createHash('md5').update(req.file.buffer).digest('hex');
-
-                // Check if same resume was already parsed
-                const stored = await getMatchProfile(req.user.id);
-                if (stored?.lastResumeHash === resumeHash && stored?.parsedProfile) {
-                    return res.json({ success: true, profile: stored.parsedProfile, reused: true });
-                }
-
-                profile = await parseResume(req.file.buffer, req.file.mimetype);
+                const buffer = req.file.buffer;
+                const mimeType = req.file.mimetype;
+                resumeHash = crypto.createHash('md5').update(buffer).digest('hex');
+                parseFn = () => parseResume(buffer, mimeType);
             } else if (req.body?.resumeText) {
-                resumeHash = crypto.createHash('md5').update(req.body.resumeText).digest('hex');
-                profile = await parseResumeFromText(req.body.resumeText);
+                const text = req.body.resumeText;
+                resumeHash = crypto.createHash('md5').update(text).digest('hex');
+                parseFn = () => parseResumeFromText(text);
             } else {
                 return res.status(400).json({ error: 'Upload a PDF or paste resume text' });
             }
 
-            await saveMatchProfile(req.user.id, profile, resumeHash);
-            res.json({ success: true, profile, reused: false });
+            const stored = await getMatchProfile(userId);
+
+            // Same resume already parsed → nothing to do, return instantly.
+            if (stored?.lastResumeHash === resumeHash && stored?.parsedProfile) {
+                return res.json({ status: 'unchanged', profile: stored.parsedProfile });
+            }
+
+            const db = await connectToDb();
+            const users = db.collection('users');
+
+            // Already parsing (e.g. a duplicate upload while one is in flight)
+            // → don't kick off a second parse.
+            const current = await users.findOne(
+                { _id: new ObjectId(userId) },
+                { projection: { resumeParseStatus: 1 } },
+            );
+            if (current?.resumeParseStatus === 'processing') {
+                return res.json({ status: 'processing', message: 'Your resume is already being analyzed' });
+            }
+
+            // Mark processing and respond immediately.
+            await users.updateOne(
+                { _id: new ObjectId(userId) },
+                {
+                    $set: { resumeParseStatus: 'processing', resumeParseStartedAt: new Date() },
+                    $unset: { resumeParseError: '' },
+                },
+            );
+            res.json({ status: 'processing', message: 'Your resume is being analyzed' });
+
+            // Background parse — intentionally NOT awaited by the request.
+            setImmediate(async () => {
+                try {
+                    const profile = await parseFn();
+                    await saveMatchProfile(userId, profile, resumeHash);
+                    await users.updateOne(
+                        { _id: new ObjectId(userId) },
+                        {
+                            $set: { resumeParseStatus: 'complete' },
+                            // Fresh profile invalidates the Today's Matches cache.
+                            $unset: { dailyMatches: '', resumeParseStartedAt: '', resumeParseError: '' },
+                        },
+                    );
+                    console.log(`[Auth/upload-resume] Background parse complete for ${userId}`);
+                } catch (err) {
+                    console.error('[Auth/upload-resume] Background parse failed:', err.message);
+                    await users.updateOne(
+                        { _id: new ObjectId(userId) },
+                        {
+                            $set: { resumeParseStatus: 'failed', resumeParseError: err.message },
+                            $unset: { resumeParseStartedAt: '' },
+                        },
+                    ).catch(() => { /* nothing more we can do */ });
+                }
+            });
         } catch (error) {
-            console.error('[Auth/upload-resume] Failed:', error.message);
-            res.status(500).json({ error: 'Failed to parse resume. Please try again.' });
+            console.error('[Auth/upload-resume] Failed to start:', error.message);
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'Failed to start resume analysis. Please try again.' });
+            }
+        }
+    });
+
+    // ─── Poll resume parse status ────────────────────────────────────────
+    // GET /api/auth/parse-status
+    // Returns { status: 'idle' | 'processing' | 'complete' | 'failed', ... }.
+    // On 'complete' it also returns the parsedProfile and resets the flag to
+    // 'idle' so a later visit doesn't re-show a stale "complete".
+    authRouter.get('/parse-status', verifyToken, async (req, res) => {
+        const userId = req.user.id;
+        try {
+            const db = await connectToDb();
+            const users = db.collection('users');
+            const user = await users.findOne(
+                { _id: new ObjectId(userId) },
+                { projection: { resumeParseStatus: 1, resumeParseError: 1, resumeParseStartedAt: 1, parsedProfile: 1 } },
+            );
+            if (!user) return res.status(404).json({ error: 'User not found' });
+
+            let status = user.resumeParseStatus || 'idle';
+
+            // Stuck-processing cleanup: a server restart mid-parse would leave the
+            // status 'processing' forever. If it's older than 10 min, reset it.
+            if (status === 'processing' && user.resumeParseStartedAt) {
+                const ageMs = Date.now() - new Date(user.resumeParseStartedAt).getTime();
+                if (ageMs > 10 * 60 * 1000) {
+                    await users.updateOne(
+                        { _id: new ObjectId(userId) },
+                        { $set: { resumeParseStatus: 'idle' }, $unset: { resumeParseStartedAt: '' } },
+                    );
+                    status = 'idle';
+                }
+            }
+
+            if (status === 'complete') {
+                // Hand back the profile once, then reset the flag.
+                await users.updateOne(
+                    { _id: new ObjectId(userId) },
+                    { $set: { resumeParseStatus: 'idle' } },
+                );
+                return res.json({ status: 'complete', profile: user.parsedProfile || null });
+            }
+
+            if (status === 'failed') {
+                return res.json({ status: 'failed', error: user.resumeParseError || 'Resume analysis failed' });
+            }
+
+            return res.json({ status }); // 'idle' | 'processing'
+        } catch (error) {
+            console.error('[Auth/parse-status] Failed:', error.message);
+            res.status(500).json({ error: 'Server Error' });
         }
     });
 
