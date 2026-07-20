@@ -11,6 +11,7 @@ import { jobsApiRouter } from './api/jobs.routes.js';
 import { authRouter } from './api/auth.routes.js';
 import { analyticsRouter } from './api/analytics.routes.js';
 import { feedbackRouter } from './api/feedback.routes.js';
+import { careerGuideRouter } from './api/careerGuide.routes.js';
 import { adminCareerGuideRouter } from './api/admin/careerGuide.routes.js';
 import { adminCompanyProfilesRouter } from './api/admin/companyProfiles.routes.js';
 import { attachVisitor } from './middleware/visitorMiddleware.js';
@@ -42,6 +43,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/jobs', jobsApiRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/feedback', feedbackRouter);
+app.use('/api/career-guide', careerGuideRouter);
 app.use('/api/admin/career-guide', adminCareerGuideRouter);
 app.use('/api/admin/company-profiles', adminCompanyProfilesRouter);
 
