@@ -21,6 +21,7 @@ export {
 
 export {
     getJobsPaginatedFromCache,
+    getFilterCountsFromCache,
     getCompanyNamesFromCache,
     getCategoryCountsFromCache,
     getPublicBaitJobsFromCache,

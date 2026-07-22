@@ -6,6 +6,7 @@
 // No await on cache helpers — they're synchronous (instant from RAM).
 import {
     getJobsPaginatedFromCache,
+    getFilterCountsFromCache,
     getCompanyNamesFromCache,
     getCategoryCountsFromCache,
     getPublicBaitJobsFromCache,
@@ -18,8 +19,71 @@ import {
     recordJobView,
 } from '../../db/index.js';
 import { softVerifyToken } from '../../middleware/authMiddleware.js';
-import { toTeaser } from './helpers.js';
+import { toTeaser, toPublicJob } from './helpers.js';
 import { Analytics } from '../../models/analyticsModel.js';
+
+// ─── Query-param validation whitelists ────────────────────────────────────
+// Every value in req.query arrives as a STRING (or array of strings). Booleans
+// are the literal string "true"; numbers must be parseInt'd. We validate hard
+// against these lists so junk input can never reach the cache filter pipeline.
+const VALID_WORKPLACE = ['remote', 'hybrid', 'onsite'];
+const VALID_EXPERIENCE = ['entry', 'mid', 'senior', 'lead', 'executive'];
+const VALID_EMPLOYMENT = ['fulltime', 'parttime', 'contract', 'internship'];
+const VALID_SORT = ['newest', 'company', 'salary'];
+const SALARY_LOWER_BOUND = 0;
+const SALARY_UPPER_BOUND = 1000000;
+
+// Normalize a repeated-key query param (?workplace=remote&workplace=hybrid) into
+// a clean string array. Express gives a string for one value, an array for many.
+// When `allowed` is supplied, drop anything not on the whitelist.
+function toArrayParam(value, allowed) {
+    let arr;
+    if (!value) arr = [];
+    else if (typeof value === 'string') arr = [value];
+    else if (Array.isArray(value)) arr = value.filter(v => typeof v === 'string');
+    else arr = [];
+    return allowed ? arr.filter(v => allowed.includes(v)) : arr;
+}
+
+// parseInt a salary bound; return null unless it's a finite integer in range.
+function parseSalaryBound(value) {
+    const parsed = parseInt(value, 10);
+    if (!Number.isFinite(parsed) || parsed < SALARY_LOWER_BOUND || parsed > SALARY_UPPER_BOUND) {
+        return null;
+    }
+    return parsed;
+}
+
+// Shared parser for the main list + filter-counts routes. Takes req.query and
+// returns the exact `filters` shape getJobsPaginatedFromCache / getFilterCounts
+// expect. Plain function (not middleware) so both routes stay in sync.
+function parseJobFilters(query) {
+    const sort = VALID_SORT.includes(query.sort) ? query.sort : 'newest';
+
+    let salaryMin = parseSalaryBound(query.salaryMin);
+    let salaryMax = parseSalaryBound(query.salaryMax);
+    // A min above the max is nonsensical — drop both rather than guess intent.
+    if (salaryMin != null && salaryMax != null && salaryMin > salaryMax) {
+        salaryMin = null;
+        salaryMax = null;
+    }
+
+    return {
+        company:    toArrayParam(query.company),
+        category:   toArrayParam(query.category),
+        search:     query.search || '',
+        date:       query.date   || 'All',
+        sort,
+        workplace:  toArrayParam(query.workplace,  VALID_WORKPLACE),
+        experience: toArrayParam(query.experience, VALID_EXPERIENCE),
+        employment: toArrayParam(query.employment, VALID_EMPLOYMENT),
+        visa:       query.visa       === 'true' ? true : null,
+        relocation: query.relocation === 'true' ? true : null,
+        hasSalary:  query.hasSalary  === 'true' ? true : null,
+        salaryMin,
+        salaryMax,
+    };
+}
 
 export function attachPublicReadRoutes(router) {
 
@@ -39,23 +103,7 @@ export function attachPublicReadRoutes(router) {
             const page  = parseInt(req.query.page)  || 1;
             const limit = Math.min(parseInt(req.query.limit) || 30, 100);
 
-            // `company` can arrive as a single string OR an array
-            // (?company=Stripe&company=Shopify → Express gives us an array)
-            let company = req.query.company;
-            if (!company)                        company = [];
-            else if (typeof company === 'string') company = company ? [company] : [];
-
-            let category = req.query.category;
-            if (!category)                        category = [];
-            else if (typeof category === 'string') category = category ? [category] : [];
-
-            const filters = {
-                company,
-                category,
-                search: req.query.search  || '',
-                date:   req.query.date    || 'All',
-                sort:   req.query.sort    || 'newest',
-            };
+            const filters = parseJobFilters(req.query);
 
             const data = getJobsPaginatedFromCache(page, limit, filters);
             Analytics.increment('pageViews_jobs'); // fire-and-forget, non-blocking
@@ -65,6 +113,20 @@ export function attachPublicReadRoutes(router) {
             });
         } catch (error) {
             res.status(500).json({ error: "Failed to fetch jobs" });
+        }
+    });
+
+    // ─── Facet counts — "(42)" badges beside each filter option ───────
+    // Reads the SAME filters as GET / and returns per-facet counts of the
+    // current result set. Public, no auth. MUST be registered before
+    // `/:id/full` — otherwise Express matches "filter-counts" as :id.
+    router.get('/filter-counts', (req, res) => {
+        try {
+            const filters = parseJobFilters(req.query);
+            const counts = getFilterCountsFromCache(filters);
+            res.status(200).json(counts);
+        } catch (error) {
+            res.status(500).json({ error: "Failed to fetch filter counts" });
         }
     });
 
@@ -93,7 +155,7 @@ export function attachPublicReadRoutes(router) {
 
             // Authenticated user → always full access
             if (req.user?.id) {
-                return res.status(200).json({ gated: false, job });
+                return res.status(200).json({ gated: false, job: toPublicJob(job) });
             }
 
             // Anonymous → resolve visitor and check gate
@@ -108,7 +170,7 @@ export function attachPublicReadRoutes(router) {
             }
 
             await recordJobView(visitor._id, jobIdString);
-            return res.status(200).json({ gated: false, job });
+            return res.status(200).json({ gated: false, job: toPublicJob(job) });
 
         } catch (error) {
             console.error('[Jobs/full] Error:', error);

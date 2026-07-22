@@ -6,9 +6,18 @@
 // Designed to be called WITHOUT await — callers should attach a .catch().
 // Uses the native MongoDB driver (db.collection pattern), like the rest of the
 // codebase. Separate from src/gemini/.
+//
+// TODO(filters): the reanalysis flow (updateJobAfterReanalysis in
+// db/jobs/reviewQueries.js) does NOT currently rewrite parsedRequirements or any
+// ATS filter-source field (WorkplaceType/ExperienceLevel/EmploymentType/Salary),
+// so filter* fields stay valid across a reanalysis and need no recompute there.
+// If that ever changes — e.g. reanalysis starts re-extracting requirements — it
+// must also call resolveAll() and $set the filter* fields, like this module does.
 
 import { connectToDb } from '../db/connection.js';
 import { extractRequirements } from './extractRequirements.js';
+import { resolveAll } from '../utils/filterNormalizer.js';
+import { upsertJob } from '../cache/jobsCache.js';
 
 /**
  * Maps Gemma's salary output onto the job document's flat Salary* fields —
@@ -56,15 +65,43 @@ export async function extractAndStoreRequirements(job) {
     // extractor found none. No extra AI call.
     const salaryUpdate = buildSalaryUpdate(job, result);
 
+    // Compute canonical filter* fields from what the document will look like
+    // AFTER this write: the original ATS fields + the fresh Gemma extraction +
+    // any salary we're about to fill in. resolveAll then applies the trust
+    // hierarchy across both sources. Pure in-memory Map lookups (~0ms).
+    const mergedJob = {
+        ...job,
+        parsedRequirements: result,
+        ...(Object.keys(salaryUpdate).length > 0 ? salaryUpdate : {}),
+    };
+    const filterFields = resolveAll(mergedJob);
+
     const db = await connectToDb();
     await db.collection('jobs').updateOne(
         { _id: job._id },
-        { $set: { parsedRequirements: result, ...salaryUpdate } }
+        { $set: { parsedRequirements: result, ...salaryUpdate, ...filterFields } }
     );
+
+    // Cache sync: the job entered the RAM cache at approval time WITHOUT
+    // parsedRequirements or filter* fields (this runs fire-and-forget, seconds
+    // to minutes later). Re-fetch the now-updated doc and upsert so the public
+    // list reflects the new filters. Wrapped so a cache miss can't crash the
+    // extraction flow — the DB is already correct, and the next refresh recovers.
+    try {
+        const updated = await db.collection('jobs').findOne({ _id: job._id });
+        if (updated) upsertJob(updated);
+    } catch (cacheErr) {
+        console.warn(`[Gemma] Cache sync failed for ${job._id}: ${cacheErr.message}`);
+    }
 
     const salaryNote = Object.keys(salaryUpdate).length > 0
         ? ` (+salary ${salaryUpdate.SalaryMin ?? '?'}-${salaryUpdate.SalaryMax ?? '?'} ${salaryUpdate.SalaryCurrency}/${salaryUpdate.SalaryInterval})`
         : '';
-    console.log(`[Gemma] Stored parsedRequirements for ${job._id} | ${job.JobTitle}${salaryNote}`);
+    console.log(
+        `[Gemma] Stored parsedRequirements for ${job._id} | ${job.JobTitle}${salaryNote} ` +
+        `(workplace: ${filterFields.filterWorkplace ?? 'null'}, ` +
+        `experience: ${filterFields.filterExperience ?? 'null'}, ` +
+        `salary: ${filterFields.filterSalaryTier ?? 'null'})`,
+    );
     return true;
 }
