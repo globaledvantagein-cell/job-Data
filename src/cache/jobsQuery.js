@@ -1,5 +1,5 @@
 import {
-    getAllJobs, getJobsArray,
+    getAllJobs, getJobsArray, getCacheStats,
     getWorkplaceIndex, getExperienceIndex, getEmploymentIndex,
     getVisaIndex, getRelocationIndex, getSalaryTierIndex,
     getCategoryIndex, getCompanyIndex,
@@ -112,14 +112,42 @@ function computeFilteredIndexSet(filters = {}) {
 //
 //   filters  ← built by the route handler from req.query
 //   returns  → { jobs: [...], totalJobs: N }  (same shape MongoDB returned)
+// Memoized full-list sort for the no-filter request (the most common one —
+// default page load). Keyed by cacheVersion + sortMode; any upsert/remove/
+// refresh bumps cacheVersion and invalidates automatically.
+let sortedAllMemo = { version: -1, sortMode: null, jobs: null };
+
+function isUnfiltered(filters) {
+    return (!filters.company || filters.company.length === 0)
+        && (!filters.category || filters.category.length === 0)
+        && (!filters.workplace || filters.workplace.length === 0)
+        && (!filters.experience || filters.experience.length === 0)
+        && (!filters.employment || filters.employment.length === 0)
+        && filters.visa !== true && filters.relocation !== true && filters.hasSalary !== true
+        && filters.salaryMin == null && filters.salaryMax == null
+        && (!filters.search || !filters.search.trim())
+        && (!filters.date || filters.date === 'All');
+}
+
 export function getJobsPaginatedFromCache(page = 1, limit = 30, filters = {}) {
 
-    const { resultSet, jobsArr } = computeFilteredIndexSet(filters);
+    let sorted;
+    if (isUnfiltered(filters)) {
+        const version = getCacheStats().cacheVersion;
+        const sortMode = filters.sort || 'newest';
+        if (sortedAllMemo.version !== version || sortedAllMemo.sortMode !== sortMode) {
+            const all = getJobsArray().filter(job => job !== null && job.GermanRequired === false);
+            sortedAllMemo = { version, sortMode, jobs: sortJobs(all, sortMode) };
+        }
+        sorted = sortedAllMemo.jobs;
+    } else {
+        const { resultSet, jobsArr } = computeFilteredIndexSet(filters);
 
-    // Materialize the surviving jobs, then sort (never touches cache arrays).
-    const resultJobs = [];
-    for (const idx of resultSet) resultJobs.push(jobsArr[idx]);
-    const sorted = sortJobs(resultJobs, filters.sort);
+        // Materialize the surviving jobs, then sort (never touches cache arrays).
+        const resultJobs = [];
+        for (const idx of resultSet) resultJobs.push(jobsArr[idx]);
+        sorted = sortJobs(resultJobs, filters.sort);
+    }
 
     // Total BEFORE slicing (frontend uses this for pagination UI).
     const totalJobs = sorted.length;
@@ -142,7 +170,17 @@ export function getJobsPaginatedFromCache(page = 1, limit = 30, filters = {}) {
 // V1 (Indeed-style): counts reflect the CURRENT result set with ALL filters
 // applied — "of these results, how many are remote / senior / …". The
 // "exclude-self" (LinkedIn-style) variant can be layered on later.
+// Memoized no-filter counts (the default page load), keyed by cacheVersion —
+// same invalidation contract as the sorted-list memo above.
+let countsMemo = { version: -1, counts: null };
+
 export function getFilterCountsFromCache(filters = {}) {
+
+    const unfiltered = isUnfiltered(filters);
+    if (unfiltered) {
+        const version = getCacheStats().cacheVersion;
+        if (countsMemo.version === version && countsMemo.counts) return countsMemo.counts;
+    }
 
     const { resultSet, jobsArr } = computeFilteredIndexSet(filters);
 
@@ -178,6 +216,7 @@ export function getFilterCountsFromCache(filters = {}) {
         }
     }
 
+    if (unfiltered) countsMemo = { version: getCacheStats().cacheVersion, counts };
     return counts;
 }
 
