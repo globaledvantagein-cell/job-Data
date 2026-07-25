@@ -10,9 +10,12 @@ import { FREE_VIEW_LIMIT } from '../../env.js';
  *   2. linkedUserId present → never gate (signed up)
  *   3. isFlagged → gate immediately (rate-limit bypass attempt)
  *   4. Job already viewed → never gate (idempotent)
- *   5. viewCount >= FREE_VIEW_LIMIT → gate
+ *   5. viewCount >= viewLimit → gate
+ *
+ * `viewLimit` defaults to FREE_VIEW_LIMIT so existing callers are unchanged; the
+ * /:id/full route passes ANONYMOUS_VIEW_LIMIT (a lower cap) for anonymous users.
  */
-export function shouldGate(visitor, jobIdString) {
+export function shouldGate(visitor, jobIdString, viewLimit = FREE_VIEW_LIMIT) {
     if (!visitor) return true;
     if (visitor.linkedUserId) return false;
     if (visitor.isFlagged) return true;
@@ -20,7 +23,7 @@ export function shouldGate(visitor, jobIdString) {
     const alreadyViewed = (visitor.jobsViewedSet || []).some(id => id === jobIdString);
     if (alreadyViewed) return false;
 
-    return (visitor.viewCount || 0) >= FREE_VIEW_LIMIT;
+    return (visitor.viewCount || 0) >= viewLimit;
 }
 
 /**

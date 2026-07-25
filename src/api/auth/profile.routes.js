@@ -11,7 +11,7 @@ import {
 } from '../../db/index.js';
 import { connectToDb } from '../../db/connection.js';
 import { parseResume, parseResumeFromText } from '../../resume-matcher/index.js';
-import { verifyToken } from '../../middleware/authMiddleware.js';
+import { verifyToken, requirePremium } from '../../middleware/authMiddleware.js';
 import {
     renderSubscriptionConfirmation,
     renderUnsubscribeConfirmation,
@@ -128,7 +128,10 @@ export function attachProfileRoutes(authRouter) {
     // tracked by `resumeParseStatus` on the user doc; the client polls
     // GET /parse-status. The raw PDF is NEVER persisted — the buffer lives only
     // in the background task's closure and is gone once parsing finishes.
-    authRouter.post('/upload-resume', verifyToken, upload.single('resume'), async (req, res) => {
+    // Resume upload is the Smart Match entry point → premium-only. Note the
+    // partner route GET /parse-status stays OPEN (no requirePremium) so users
+    // with a pre-gate parsed resume can still poll their status.
+    authRouter.post('/upload-resume', verifyToken, requirePremium, upload.single('resume'), async (req, res) => {
         const userId = req.user.id;
         try {
             let resumeHash;

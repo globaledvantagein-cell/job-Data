@@ -38,6 +38,18 @@ const userSchemaDefinition = {
     subscriptionTier: { type: String, default: "free" },
     isSubscribed: { type: Boolean, default: false },
 
+    // Premium (paid/promo) + weekly usage counters.
+    // premiumUntil is the source of truth for premium status: null = free tier,
+    // a future Date = active premium. jdViewsThisWeek / applyClicksThisWeek are
+    // reset to 0 every Monday 00:00 UTC by the weekly-reset cron; weekResetAt
+    // records when that last happened. Passing these keys through the factory
+    // requires them to be declared here — the User constructor only copies keys
+    // present in this schema definition.
+    premiumUntil: { type: Date, default: null },
+    jdViewsThisWeek: { type: Number, default: 0 },
+    applyClicksThisWeek: { type: Number, default: 0 },
+    weekResetAt: { type: Date, default: null },
+
     // System
     lastEmailSent: { type: Date, default: null },
     createdAt: { type: Date },

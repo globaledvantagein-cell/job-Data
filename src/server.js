@@ -7,6 +7,7 @@ import { client, connectToDb } from './db/index.js';
 import { runScraper } from './cron/runScraper.js';
 import { runValidator } from './cron/runValidator.js';
 import { runWeeklyDigest } from './cron/runWeeklyDigest.js';
+import { runWeeklyReset } from './cron/runWeeklyReset.js';
 import { jobsApiRouter } from './api/jobs.routes.js';
 import { authRouter } from './api/auth.routes.js';
 import { analyticsRouter } from './api/analytics.routes.js';
@@ -86,6 +87,12 @@ app.listen(PORT, async () => {
             console.log('--- Cron Job: Running Weekly Digest ---');
             runWeeklyDigest().catch(err => console.error('[digest] Failed:', err));
         });
+
+        // Weekly usage-counter reset — every Monday at 00:00 UTC.
+        cron.schedule('0 0 * * 1', () => {
+            console.log('--- Cron Job: Running Weekly Reset ---');
+            runWeeklyReset().catch(err => console.error('[weekly-reset] Failed:', err));
+        }, { timezone: 'UTC' });
 
         console.log("✅ Cron tasks are scheduled.");
         console.log('--- Running initial scrape on start... ---');

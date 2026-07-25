@@ -9,7 +9,7 @@
 
 import { Router } from 'express';
 import crypto from 'node:crypto';
-import { verifyToken } from '../../middleware/authMiddleware.js';
+import { verifyToken, requirePremium } from '../../middleware/authMiddleware.js';
 import { getMatchProfile } from '../../db/index.js';
 import { getSkillMatches } from '../../skill-matcher/index.js';
 import { connectToDb } from '../../db/connection.js';
@@ -28,7 +28,10 @@ function todayStr() {
     return new Date().toISOString().slice(0, 10); // "2026-07-09"
 }
 
-router.get('/skill-matches', verifyToken, async (req, res) => {
+// Smart Match AND Today's Matches both flow through this one route (Today's
+// Matches is the cached same-day read, Smart Match is ?refresh=1) — so a single
+// requirePremium here gates both. requirePremium must run AFTER verifyToken.
+router.get('/skill-matches', verifyToken, requirePremium, async (req, res) => {
     try {
         Analytics.increment('pageViews_todayMatches'); // page opened (cache hit or miss)
         const stored = await getMatchProfile(req.user.id);

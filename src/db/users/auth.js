@@ -50,6 +50,11 @@ export async function registerUser({ email, password, name, role = 'user', locat
         desiredCategories: Array.isArray(desiredCategories) ? desiredCategories : [],
         isWaitlist,
         isSubscribed: true,
+        // Premium + weekly usage defaults (free tier at signup).
+        premiumUntil: null,
+        jdViewsThisWeek: 0,
+        applyClicksThisWeek: 0,
+        weekResetAt: new Date(),
         createdAt: new Date(),
     });
 
@@ -164,6 +169,11 @@ export async function findOrCreateGoogleUser(payload, { acceptedTerms = false } 
         avatarUrl,
         isWaitlist: false,
         acceptedTermsAt: new Date(),
+        // Premium + weekly usage defaults (free tier at signup).
+        premiumUntil: null,
+        jdViewsThisWeek: 0,
+        applyClicksThisWeek: 0,
+        weekResetAt: new Date(),
         createdAt: new Date(),
     });
 

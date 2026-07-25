@@ -1,7 +1,19 @@
 import { ObjectId } from 'mongodb';
-import { findJobById, trackApplyClick, confirmApplied, getAppliedJobIds, getAppliedJobsWithDetails } from '../../db/index.js';
+import {
+    findJobById,
+    trackApplyClick,
+    confirmApplied,
+    getAppliedJobIds,
+    getAppliedJobsWithDetails,
+    getUserProfile,
+    isPremium,
+    incrementApplyClicks,
+} from '../../db/index.js';
 import { verifyToken } from '../../middleware/authMiddleware.js';
 import { Analytics } from '../../models/analyticsModel.js';
+
+// Per-week apply-click allowance for signed-up free users (premium unlimited).
+const FREE_APPLY_LIMIT = 15;
 
 export function attachApplyClickRoute(router) {
     router.post('/:id/apply-click', verifyToken, async (req, res) => {
@@ -21,8 +33,32 @@ export function attachApplyClickRoute(router) {
                 return res.status(404).json({ error: 'Job not found' });
             }
 
-            const result = await trackApplyClick(id, visitorId);
+            // Global analytics counter fires for EVERY click attempt, including
+            // ones that get gated below — keeps the raw metric intact.
             Analytics.increment('applyClicks_total'); // fire-and-forget
+
+            // ── Apply-click metering ─────────────────────────────────────
+            const isAdmin = req.user.role === 'admin';
+            // Admins skip the DB read; free/premium need the doc for isPremium
+            // + weekResetAt (surfaced in the gated usage payload).
+            const user = isAdmin ? null : await getUserProfile(req.user.id);
+
+            // Free (non-premium) users are metered. Increment first, then check
+            // the RETURNED count: on the 16th click the counter reads 16 (> 15),
+            // so we gate WITHOUT tracking the click or leaking the apply URL.
+            // Their 15th click was tracked and returned normally.
+            if (!isAdmin && !isPremium(user)) {
+                const used = await incrementApplyClicks(req.user.id);
+                if (used > FREE_APPLY_LIMIT) {
+                    return res.status(403).json({
+                        gated: true,
+                        gateReason: 'apply_limit',
+                        usage: { used, limit: FREE_APPLY_LIMIT, resetsAt: user?.weekResetAt ?? null },
+                    });
+                }
+            }
+
+            const result = await trackApplyClick(id, visitorId);
             res.status(200).json({
                 ...result,
                 applicationUrl: job.ApplicationURL,

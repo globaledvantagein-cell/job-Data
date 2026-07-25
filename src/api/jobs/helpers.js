@@ -5,11 +5,15 @@ import { resolveAll } from '../../utils/filterNormalizer.js';
  * Strip a full job document to a public-safe "teaser" used by list endpoints.
  * Description, ApplicationURL, and salary are DELIBERATELY omitted —
  * those are gated behind the /:id/full endpoint.
+ *
+ * Salary insights (filterSalary*) are PREMIUM-only on list/teaser views: pass
+ * { includeSalaryInsights: true } for premium users. Default is false so free
+ * users, anonymous visitors, and the home-page bait never leak salary data.
  */
-export function toTeaser(job) {
+export function toTeaser(job, { includeSalaryInsights = false } = {}) {
     if (!job) return null;
     const filters = resolveAll(job);
-    return {
+    const teaser = {
         _id: job._id,
         JobID: job.JobID,
         JobTitle: job.JobTitle,
@@ -37,13 +41,21 @@ export function toTeaser(job) {
         filterEmployment: filters.filterEmployment,
         filterVisa: filters.filterVisa,
         filterRelocation: filters.filterRelocation,
-        filterSalaryMin: filters.filterSalaryMin,
-        filterSalaryMax: filters.filterSalaryMax,
-        filterSalaryTier: filters.filterSalaryTier,
         // Deliberately omitted: Description, DescriptionHtml, ApplicationURL,
         // DirectApplyURL, SalaryMin, SalaryMax, SalaryCurrency, SalaryInterval,
         // ATSPlatform, sourceSite, GermanRequired (internal / infra leakage)
     };
+
+    // Salary insights are premium-only on teasers.
+    if (includeSalaryInsights) {
+        teaser.filterSalaryMin = filters.filterSalaryMin;
+        teaser.filterSalaryMax = filters.filterSalaryMax;
+        teaser.filterSalaryTier = filters.filterSalaryTier;
+        teaser.filterSalaryCurrency = filters.filterSalaryCurrency;
+        teaser.filterSalaryInterval = filters.filterSalaryInterval;
+    }
+
+    return teaser;
 }
 
 /**

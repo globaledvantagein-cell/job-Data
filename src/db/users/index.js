@@ -13,4 +13,9 @@ export {
     saveMatchProfile,
     getMatchProfile,
     updateJobPreferences,
+    isPremium,
+    incrementJdViews,
+    incrementApplyClicks,
+    getUsageStats,
+    activatePremium,
 } from './subscription.js';

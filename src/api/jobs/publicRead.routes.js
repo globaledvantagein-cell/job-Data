@@ -17,10 +17,67 @@ import {
     findJobByIdOrJobID,
     shouldGate,
     recordJobView,
+    getUserProfile,
+    isPremium,
+    incrementJdViews,
 } from '../../db/index.js';
-import { softVerifyToken } from '../../middleware/authMiddleware.js';
+import { softVerifyToken, attachPremiumStatus } from '../../middleware/authMiddleware.js';
 import { toTeaser, toPublicJob } from './helpers.js';
+import { StripHtml } from '../../utils/htmlUtils.js';
+import { ANONYMOUS_VIEW_LIMIT } from '../../env.js';
 import { Analytics } from '../../models/analyticsModel.js';
+
+// Per-week JD view allowance for signed-up free users (anonymous visitors use
+// the lower ANONYMOUS_VIEW_LIMIT via the visitor gate; premium is unlimited).
+const FREE_JD_VIEW_LIMIT = 20;
+
+// Advanced (premium-only) list filters. Non-premium requests get these stripped.
+const ADVANCED_ARRAY_FILTERS = ['workplace', 'experience', 'employment'];
+const ADVANCED_BOOLEAN_FILTERS = ['visa', 'relocation', 'hasSalary'];
+const ADVANCED_SALARY_FILTERS = ['salaryMin', 'salaryMax'];
+
+// Build the 150-char plain-text description teaser shown on gated responses.
+function buildDescriptionPreview(job) {
+    const plain = StripHtml(job?.Description || job?.DescriptionHtml || '');
+    return `${plain.slice(0, 150)}...`;
+}
+
+// Strip advanced filters + the salary sort for non-premium users. Returns the
+// (possibly modified) filters plus the list of param names that were removed so
+// the frontend can surface a "Premium required" indicator. Premium/admin users
+// pass through untouched. Shared by GET / and GET /filter-counts to stay in sync.
+function applyPremiumFilterGating(filters, isPremiumUser) {
+    if (isPremiumUser) return { filters, premiumFiltersIgnored: [] };
+
+    const gated = { ...filters };
+    const premiumFiltersIgnored = [];
+
+    for (const key of ADVANCED_ARRAY_FILTERS) {
+        if (Array.isArray(gated[key]) && gated[key].length > 0) {
+            premiumFiltersIgnored.push(key);
+            gated[key] = [];
+        }
+    }
+    for (const key of ADVANCED_BOOLEAN_FILTERS) {
+        if (gated[key] === true) {
+            premiumFiltersIgnored.push(key);
+            gated[key] = null;
+        }
+    }
+    for (const key of ADVANCED_SALARY_FILTERS) {
+        if (gated[key] != null) {
+            premiumFiltersIgnored.push(key);
+            gated[key] = null;
+        }
+    }
+    // Salary sort is premium-only → fall back to newest.
+    if (gated.sort === 'salary') {
+        premiumFiltersIgnored.push('sort');
+        gated.sort = 'newest';
+    }
+
+    return { filters: gated, premiumFiltersIgnored };
+}
 
 // ─── Query-param validation whitelists ────────────────────────────────────
 // Every value in req.query arrives as a STRING (or array of strings). Booleans
@@ -98,18 +155,24 @@ export function attachPublicReadRoutes(router) {
     });
 
     // ─── Main jobs list — filtered, sorted, paginated ─────────────────
-    router.get('/', (req, res) => {
+    // softVerifyToken + attachPremiumStatus are soft (non-blocking): they set
+    // req.user / req.isPremium when a valid token is present, and leave the
+    // route fully public for anonymous visitors. Advanced filters + salary
+    // insights are premium-only (see applyPremiumFilterGating / toTeaser).
+    router.get('/', softVerifyToken, attachPremiumStatus, (req, res) => {
         try {
             const page  = parseInt(req.query.page)  || 1;
             const limit = Math.min(parseInt(req.query.limit) || 30, 100);
 
-            const filters = parseJobFilters(req.query);
+            const parsed = parseJobFilters(req.query);
+            const { filters, premiumFiltersIgnored } = applyPremiumFilterGating(parsed, req.isPremium);
 
             const data = getJobsPaginatedFromCache(page, limit, filters);
             Analytics.increment('pageViews_jobs'); // fire-and-forget, non-blocking
             res.status(200).json({
-                jobs: (data.jobs || []).map(toTeaser),
+                jobs: (data.jobs || []).map(job => toTeaser(job, { includeSalaryInsights: req.isPremium })),
                 totalJobs: data.totalJobs,
+                premiumFiltersIgnored, // [] unless non-premium sent advanced filters
             });
         } catch (error) {
             res.status(500).json({ error: "Failed to fetch jobs" });
@@ -118,11 +181,13 @@ export function attachPublicReadRoutes(router) {
 
     // ─── Facet counts — "(42)" badges beside each filter option ───────
     // Reads the SAME filters as GET / and returns per-facet counts of the
-    // current result set. Public, no auth. MUST be registered before
-    // `/:id/full` — otherwise Express matches "filter-counts" as :id.
-    router.get('/filter-counts', (req, res) => {
+    // current result set. Soft auth so advanced filters are gated identically
+    // to GET /. MUST be registered before `/:id/full` — otherwise Express
+    // matches "filter-counts" as :id.
+    router.get('/filter-counts', softVerifyToken, attachPremiumStatus, (req, res) => {
         try {
-            const filters = parseJobFilters(req.query);
+            const parsed = parseJobFilters(req.query);
+            const { filters } = applyPremiumFilterGating(parsed, req.isPremium);
             const counts = getFilterCountsFromCache(filters);
             res.status(200).json(counts);
         } catch (error) {
@@ -150,22 +215,56 @@ export function attachPublicReadRoutes(router) {
                 return res.status(404).json({ error: 'Job not found' });
             }
 
-            // Count real detail views (full, gated, or anon) — not 404s.
+            // Count real detail views (full, gated, or anon) — not 404s. Fires
+            // for EVERY user type, before any gate decision, so the analytics
+            // counter reflects total detail views including gated ones.
             Analytics.increment('pageViews_jobDetail'); // fire-and-forget
 
-            // Authenticated user → always full access
+            // ── Authenticated users ──────────────────────────────────────
             if (req.user?.id) {
-                return res.status(200).json({ gated: false, job: toPublicJob(job) });
+                const isAdmin = req.user.role === 'admin';
+                // Admins skip the DB read entirely; free/premium need the doc
+                // for the isPremium check + weekResetAt in the usage payload.
+                const user = isAdmin ? null : await getUserProfile(req.user.id);
+
+                // Premium / admin → unlimited, no metering.
+                if (isAdmin || isPremium(user)) {
+                    return res.status(200).json({ gated: false, job: toPublicJob(job) });
+                }
+
+                // Free user → meter this view against the weekly limit.
+                const used = await incrementJdViews(req.user.id);
+                if (used <= FREE_JD_VIEW_LIMIT) {
+                    return res.status(200).json({
+                        gated: false,
+                        job: toPublicJob(job),
+                        usage: { used, limit: FREE_JD_VIEW_LIMIT },
+                    });
+                }
+
+                // Over the limit → gated teaser (salary insights withheld).
+                const teaser = toTeaser(job, { includeSalaryInsights: false });
+                teaser.descriptionPreview = buildDescriptionPreview(job);
+                return res.status(200).json({
+                    gated: true,
+                    teaser,
+                    gateReason: 'jd_limit',
+                    usage: { used, limit: FREE_JD_VIEW_LIMIT, resetsAt: user?.weekResetAt ?? null },
+                });
             }
 
-            // Anonymous → resolve visitor and check gate
+            // ── Anonymous visitors → visitor-doc gate at ANONYMOUS_VIEW_LIMIT ─
             const visitor = await req.resolveVisitor();
             const jobIdString = String(job._id);
 
-            if (shouldGate(visitor, jobIdString)) {
+            if (shouldGate(visitor, jobIdString, ANONYMOUS_VIEW_LIMIT)) {
+                const teaser = toTeaser(job, { includeSalaryInsights: false });
+                teaser.descriptionPreview = buildDescriptionPreview(job);
                 return res.status(200).json({
                     gated: true,
-                    teaser: toTeaser(job),
+                    teaser,
+                    gateReason: 'signup_required',
+                    message: 'Sign up for free to view more job descriptions',
                 });
             }
 

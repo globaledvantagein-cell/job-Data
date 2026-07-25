@@ -23,6 +23,11 @@ export const RESEND_API_KEY = process.env.RESEND_API_KEY;
 //   Generate: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 // FRONTEND_ORIGIN: needed for CORS with credentials (cookies + JWT).
 export const FREE_VIEW_LIMIT = Number(process.env.FREE_VIEW_LIMIT) || 20;
+// ANONYMOUS_VIEW_LIMIT: JD views an anonymous (non-signed-up) visitor gets per
+// week before the signup gate. Deliberately lower than FREE_VIEW_LIMIT — the
+// gate on the /:id/full route passes this to shouldGate() for anonymous users,
+// while other callers keep using FREE_VIEW_LIMIT. NEVER expose to client.
+export const ANONYMOUS_VIEW_LIMIT = Number(process.env.ANONYMOUS_VIEW_LIMIT) || 5;
 export const NEW_VISITOR_RATE_LIMIT_PER_HOUR = Number(process.env.NEW_VISITOR_RATE_LIMIT_PER_HOUR) || 20;
 export const VISITOR_IP_SALT = process.env.VISITOR_IP_SALT;
 export const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';

@@ -18,6 +18,12 @@ export async function connectToDb() {
     db = client.db("job-scraper");
     const clicksCollection = db.collection('applyClicks');
     await clicksCollection.createIndex({ jobId: 1, visitorId: 1 }, { unique: true });
+
+    // Premium: promo codes are unique by code; subscription history is queried
+    // per-user, newest-first.
+    await db.collection('promoCodes').createIndex({ code: 1 }, { unique: true });
+    await db.collection('subscriptions').createIndex({ userId: 1, createdAt: -1 });
+
     console.log("🗄️  Successfully connected to MongoDB.");
     return db;
 }

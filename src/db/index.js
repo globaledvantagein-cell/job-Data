@@ -54,7 +54,22 @@ export {
     saveMatchProfile,
     getMatchProfile,
     updateJobPreferences,
+    isPremium,
+    incrementJdViews,
+    incrementApplyClicks,
+    getUsageStats,
+    activatePremium,
 } from './userQueries.js';
+
+// ── Promo Codes & Subscriptions ──
+export {
+    createPromoCode,
+    validatePromoCode,
+    redeemPromoCode,
+    createSubscription,
+    getSubscriptionHistory,
+    expireOldSubscriptions,
+} from './promoCodeQueries.js';
 
 // ── Career Guide Queries ──
 export {
