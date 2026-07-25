@@ -52,6 +52,18 @@ export function attachPremiumRoutes(authRouter) {
                 });
             }
 
+            // One redemption per user per code — without this, a user could
+            // re-redeem the same unlimited code every 90 days forever.
+            const priorSubs = await getSubscriptionHistory(req.user.id);
+            const normalizedCode = code.trim().toUpperCase();
+            if (priorSubs.some(s => s.promoCode === normalizedCode)) {
+                return res.status(400).json({
+                    error: 'invalid_promo',
+                    reason: 'already_used',
+                    message: "You've already used this code.",
+                });
+            }
+
             // 100% off → grant premium and burn one use of the code.
             const updatedUser = await activatePremium(req.user.id, PREMIUM_DURATION_DAYS, code);
             await redeemPromoCode(code);
