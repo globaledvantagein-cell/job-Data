@@ -30,5 +30,12 @@ export function extractCookieVid(req) {
     if (req.cookies?.vid) return req.cookies.vid;
     const cookieHeader = req.headers.cookie || '';
     const match = cookieHeader.match(/(?:^|;\s*)vid=([^;]+)/);
-    return match ? decodeURIComponent(match[1]) : null;
+    if (match) return decodeURIComponent(match[1]);
+    // Fallback: the frontend mirrors the vid in an x-vid header, so the very
+    // first request (before the Set-Cookie round-trips) still carries the vid.
+    // This stops that first request from creating a vid:null doc that a later,
+    // cookie-bearing request would then fail to match — a second-doc bug.
+    const headerVid = req.headers['x-vid'];
+    if (typeof headerVid === 'string' && headerVid.length > 0) return headerVid;
+    return null;
 }

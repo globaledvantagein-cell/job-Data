@@ -28,6 +28,18 @@ async function ensureIndexes(db) {
 // signals (vid cookie, ipHash, fingerprint) line up. Bypassing requires
 // changing 2 signals at once. Falls back to cookie-only if nothing scores 2+.
 async function findExistingVisitor(db, { vid, ipHash, fingerprint }) {
+    // IP-only edge case: a request with NEITHER a vid cookie NOR a fingerprint
+    // (bots, curl, cookie/JS-disabled browsers). The 2-of-3 check below can
+    // never score 2 here, so historically every such request made a new doc.
+    // Collapse them all into the single doc for this IP where both vid AND
+    // fingerprint are null — treating one IP's cookieless traffic as one entity.
+    if (!vid && !fingerprint && ipHash) {
+        return await db.collection('visitors').findOne(
+            { ipHash, vid: null, fingerprint: null },
+            { sort: { lastSeenAt: -1 } },
+        );
+    }
+
     const conditions = [];
     if (vid) conditions.push({ vid });
     if (ipHash) conditions.push({ ipHash });
@@ -88,6 +100,29 @@ export async function resolveVisitor(req) {
 
     // Brand new — check rate limit before creating
     const flagged = await isRateLimited(db, ipHash);
+
+    // Flagged bot pattern (rate-limited, no vid, no fingerprint): collapse into
+    // ONE flagged doc per ipHash via upsert instead of minting a fresh flagged
+    // doc per request. This is what previously let one bot create thousands of
+    // docs. viewCount here counts requests, not distinct jobs (bots are gated).
+    if (flagged && !vid && !fingerprint && ipHash) {
+        const doc = await db.collection('visitors').findOneAndUpdate(
+            { ipHash, fingerprint: null, vid: null, isFlagged: true },
+            {
+                $set: { lastSeenAt: new Date() },
+                $inc: { viewCount: 1 },
+                $setOnInsert: {
+                    createdAt: new Date(),
+                    jobsViewedSet: [],
+                    isFlagged: true,
+                    linkedUserId: null,
+                },
+            },
+            { upsert: true, returnDocument: 'after' },
+        );
+        console.warn(`[Gate] 🚩 Flagged bot collapsed into single doc — IP hash ${ipHash}`);
+        return doc;
+    }
 
     const newVisitor = {
         vid: vid || null,
