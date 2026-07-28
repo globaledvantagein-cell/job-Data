@@ -39,6 +39,12 @@ export const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:
 // a CORS allow-list value and points at localhost in development.
 export const SITE_URL = (process.env.SITE_URL || 'https://englishjobsgermany.com').replace(/\/$/, '');
 
+// ── Premium beta (fake-door test) ─────────────────────────────────────────
+// One shared 100%-off code, redeemable once per user (enforced in
+// premium.routes.js via subscription history). Sent in the welcome email to
+// new signups and via scripts/send-premium-invite.js to existing users.
+export const BETA_PROMO_CODE = (process.env.BETA_PROMO_CODE || 'BETA2026').toUpperCase();
+
 // ── Google OAuth ──────────────────────────────────────────────────────────
 // Web Client ID from Google Cloud Console. Same value as VITE_GOOGLE_CLIENT_ID.
 // We use the ID-token flow, so no client secret is needed.

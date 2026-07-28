@@ -84,6 +84,34 @@ export async function redeemPromoCode(code) {
     return updated || null;
 }
 
+// ─── Payment intents (fake-door metric) ───────────────────────────────────
+
+/**
+ * Record that a logged-in user tried to pay by CARD (no promo code) on the
+ * checkout page. This is the core signal of the fake-door premium test:
+ * these users demonstrated real willingness to pay. NEVER stores card data —
+ * only the fact that a complete-looking card form was submitted.
+ *
+ * One document per user (upserted); attempts increments on repeat tries so
+ * distinct-user counts stay trivial: db.paymentIntents.countDocuments().
+ */
+export async function recordPaymentIntent(userId, { email = null } = {}) {
+    if (!userId) return null;
+    const db = await connectToDb();
+    const _id = userId instanceof ObjectId ? userId : new ObjectId(userId);
+    const now = new Date();
+    const updated = await db.collection('paymentIntents').findOneAndUpdate(
+        { userId: _id },
+        {
+            $inc: { attempts: 1 },
+            $set: { lastAttemptAt: now, email },
+            $setOnInsert: { userId: _id, firstAttemptAt: now, createdAt: now },
+        },
+        { upsert: true, returnDocument: 'after' },
+    );
+    return updated;
+}
+
 // ─── Subscriptions ────────────────────────────────────────────────────────
 
 /**
@@ -91,7 +119,7 @@ export async function redeemPromoCode(code) {
  * (paid Stripe flow is future work). expiresAt = now + durationDays.
  * Returns the inserted document (with its _id).
  */
-export async function createSubscription(userId, plan, amount = 0, promoCode = null, durationDays = 90) {
+export async function createSubscription(userId, plan, amount = 0, promoCode = null, durationDays = 180) {
     const db = await connectToDb();
     const days = Number(durationDays) || 0;
     const now = new Date();
@@ -99,7 +127,7 @@ export async function createSubscription(userId, plan, amount = 0, promoCode = n
 
     const doc = {
         userId: userId instanceof ObjectId ? userId : new ObjectId(userId),
-        plan: plan || 'premium_3mo',
+        plan: plan || 'premium_6mo',
         amount: Number(amount) || 0,
         currency: 'EUR',
         promoCode: promoCode ? String(promoCode).trim().toUpperCase() : null,

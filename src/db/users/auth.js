@@ -13,6 +13,7 @@ export async function registerUser({ email, password, name, role = 'user', locat
     const db = await connectToDb();
     const usersCollection = db.collection('users');
 
+    email = String(email).toLowerCase().trim();
     const existingUser = await usersCollection.findOne({ email });
 
     if (existingUser) {
@@ -73,7 +74,7 @@ export async function registerUser({ email, password, name, role = 'user', locat
  */
 export async function loginUser(email, password) {
     const db = await connectToDb();
-    const user = await db.collection('users').findOne({ email });
+    const user = await db.collection('users').findOne({ email: String(email).toLowerCase().trim() });
     if (!user) throw new Error('Invalid credentials');
     if (!user.password) throw new Error('No password on this account');
 

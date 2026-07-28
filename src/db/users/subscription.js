@@ -46,7 +46,7 @@ export async function updateLastEmailSent(emails) {
 export async function unsubscribeUser(email) {
     const db = await connectToDb();
     const result = await db.collection('users').updateOne(
-        { email },
+        { email: String(email).toLowerCase().trim() },
         { $set: { isSubscribed: false, updatedAt: new Date() } },
     );
     return result.modifiedCount > 0;
@@ -241,7 +241,7 @@ export async function activatePremium(userId, durationDays, promoCode = null) {
     );
 
     // Append a subscription history record for this activation.
-    await createSubscription(userId, 'premium_3mo', 0, promoCode, days);
+    await createSubscription(userId, 'premium_6mo', 0, promoCode, days);
 
     return await usersCollection.findOne({ _id }, { projection: { password: 0 } });
 }

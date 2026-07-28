@@ -66,6 +66,7 @@ export {
     createPromoCode,
     validatePromoCode,
     redeemPromoCode,
+    recordPaymentIntent,
     createSubscription,
     getSubscriptionHistory,
     expireOldSubscriptions,

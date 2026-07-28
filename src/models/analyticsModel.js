@@ -26,6 +26,10 @@ const analyticsSchema = new mongoose.Schema({
   applyClicks_total: { type: Number, default: 0 },     // apply-click events
   visitor_conversions: { type: Number, default: 0 },   // anon visitor → logged in
 
+  // ── Premium fake-door funnel ──
+  payment_attempts_card: { type: Number, default: 0 }, // card "Confirm payment" clicks (no promo) — real willingness to pay
+  promo_redemptions: { type: Number, default: 0 },     // successful promo activations
+
   lastUpdated: { type: Date, default: Date.now }
 });
 

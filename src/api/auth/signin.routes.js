@@ -6,7 +6,7 @@ import {
     linkVisitorToUser,
     updateUserPreferences,
 } from '../../db/index.js';
-import { GOOGLE_CLIENT_ID } from '../../env.js';
+import { GOOGLE_CLIENT_ID, BETA_PROMO_CODE } from '../../env.js';
 import {
     renderWelcomeEmail,
     renderSubscriptionConfirmation,
@@ -146,6 +146,7 @@ export function attachSigninRoutes(authRouter) {
                         email: user.email || payload.email,
                         isSubscribed: wantsDigest && cats.length > 0,
                         categories: cats,
+                        promoCode: BETA_PROMO_CODE,
                     });
                     sendEmailQuietly({ to: user.email || payload.email, subject, html, text });
                 } catch (emailErr) {

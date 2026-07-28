@@ -7,6 +7,7 @@
  * Returns { subject, html, text }
  */
 import { escapeHtml, renderHeaderBanner, renderFooter } from './components.js';
+import { renderPromoBlock, promoBlockText } from './premiumInvite.js';
 import { buildUnsubscribeUrl } from '../unsubscribe.js';
 
 const BASE_URL = process.env.FRONTEND_ORIGIN || 'https://englishjobsgermany.com';
@@ -17,15 +18,18 @@ const BASE_URL = process.env.FRONTEND_ORIGIN || 'https://englishjobsgermany.com'
  * @param {string} args.email    - User's email
  * @param {boolean} args.isSubscribed - Whether they opted into the weekly digest
  * @param {string[]} args.categories  - Category IDs they picked (may be empty)
+ * @param {string} [args.promoCode]   - Early-access premium code (fake-door beta); omit to skip the block
  */
-export function renderWelcomeEmail({ name, email, isSubscribed = false, categories = [] }) {
+export function renderWelcomeEmail({ name, email, isSubscribed = false, categories = [], promoCode = null }) {
     const firstName = capitalizeFirst((name || 'there').split(' ')[0]);
     const unsubscribeUrl = buildUnsubscribeUrl(email, BASE_URL);
 
-    const subject = `Welcome to English Jobs in Germany`;
+    const subject = promoCode
+        ? `Welcome — your 6 months of Premium are free`
+        : `Welcome to English Jobs in Germany`;
 
-    const html = buildHtml({ firstName, email, isSubscribed, categories, unsubscribeUrl });
-    const text = buildText({ firstName, email, isSubscribed, categories, unsubscribeUrl });
+    const html = buildHtml({ firstName, email, isSubscribed, categories, unsubscribeUrl, promoCode });
+    const text = buildText({ firstName, email, isSubscribed, categories, unsubscribeUrl, promoCode });
 
     return { subject, html, text };
 }
@@ -37,7 +41,7 @@ function capitalizeFirst(s) {
 
 // ─── HTML version ──────────────────────────────────────────────────────────
 
-function buildHtml({ firstName, email, isSubscribed, categories, unsubscribeUrl }) {
+function buildHtml({ firstName, email, isSubscribed, categories, unsubscribeUrl, promoCode }) {
     const digestSection = isSubscribed
         ? `<table width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0; border-collapse: collapse;">
                 <tr>
@@ -75,6 +79,8 @@ function buildHtml({ firstName, email, isSubscribed, categories, unsubscribeUrl 
         You now have full access to every English-speaking role we track across Germany — complete descriptions, salary details, and direct apply links.
     </p>
 
+    ${promoCode ? renderPromoBlock(promoCode) : ''}
+
     ${digestSection}
 
     <p style="font-size: 14px; line-height: 1.6; margin: 24px 0 0;">
@@ -103,7 +109,7 @@ function renderSimpleFooter() {
 
 // ─── Plain text version ────────────────────────────────────────────────────
 
-function buildText({ firstName, email, isSubscribed, categories, unsubscribeUrl }) {
+function buildText({ firstName, email, isSubscribed, categories, unsubscribeUrl, promoCode }) {
     const lines = [];
     lines.push('English Jobs in Germany');
     lines.push('');
@@ -113,6 +119,11 @@ function buildText({ firstName, email, isSubscribed, categories, unsubscribeUrl 
     lines.push('');
     lines.push('You now have full access to every English-speaking role we track across Germany — complete descriptions, salary details, and direct apply links.');
     lines.push('');
+
+    if (promoCode) {
+        lines.push(promoBlockText(promoCode));
+        lines.push('');
+    }
 
     if (isSubscribed) {
         lines.push('✓ Weekly digest activated');

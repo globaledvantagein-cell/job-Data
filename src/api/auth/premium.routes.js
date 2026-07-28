@@ -6,8 +6,10 @@ import {
     getSubscriptionHistory,
     isPremium,
     getUsageStats,
+    recordPaymentIntent,
 } from '../../db/index.js';
 import { verifyToken } from '../../middleware/authMiddleware.js';
+import { Analytics } from '../../models/analyticsModel.js';
 
 // Human-readable messages for the validatePromoCode failure reasons.
 const PROMO_ERROR_MESSAGES = {
@@ -16,9 +18,9 @@ const PROMO_ERROR_MESSAGES = {
     exhausted: 'That promo code has reached its usage limit.',
 };
 
-// 3-month plan = 90 days of premium.
-const PREMIUM_PLAN = 'premium_3mo';
-const PREMIUM_DURATION_DAYS = 90;
+// 6-month plan = 180 days of premium.
+const PREMIUM_PLAN = 'premium_6mo';
+const PREMIUM_DURATION_DAYS = 180;
 
 /**
  * Premium / subscription routes. Mounted on the shared authRouter, so all
@@ -53,7 +55,7 @@ export function attachPremiumRoutes(authRouter) {
             }
 
             // One redemption per user per code — without this, a user could
-            // re-redeem the same unlimited code every 90 days forever.
+            // re-redeem the same unlimited code every 180 days forever.
             const priorSubs = await getSubscriptionHistory(req.user.id);
             const normalizedCode = code.trim().toUpperCase();
             if (priorSubs.some(s => s.promoCode === normalizedCode)) {
@@ -67,6 +69,7 @@ export function attachPremiumRoutes(authRouter) {
             // 100% off → grant premium and burn one use of the code.
             const updatedUser = await activatePremium(req.user.id, PREMIUM_DURATION_DAYS, code);
             await redeemPromoCode(code);
+            Analytics.increment('promo_redemptions'); // fire-and-forget
 
             return res.status(200).json({
                 success: true,
@@ -76,6 +79,25 @@ export function attachPremiumRoutes(authRouter) {
         } catch (error) {
             console.error('[Auth/redeem-promo] Failed:', error.message);
             res.status(500).json({ error: 'Server Error' });
+        }
+    });
+
+    // ─── Record a card payment attempt (fake-door metric) ─────────────────
+    // POST /api/auth/payment-intent — called when a user clicks "Confirm
+    // payment" with a filled card form and no promo code. Card billing is not
+    // wired up, so this is the willingness-to-pay signal. The body is
+    // deliberately IGNORED: card data must never reach the server.
+    authRouter.post('/payment-intent', verifyToken, async (req, res) => {
+        try {
+            const user = await getUserProfile(req.user.id);
+            await recordPaymentIntent(req.user.id, { email: user?.email || null });
+            Analytics.increment('payment_attempts_card'); // fire-and-forget
+            // Same message regardless of anything — the fake door stays closed.
+            res.status(200).json({ accepted: true });
+        } catch (error) {
+            console.error('[Auth/payment-intent] Failed:', error.message);
+            // Still 200 — losing one analytics write must not surface an error.
+            res.status(200).json({ accepted: true });
         }
     });
 
