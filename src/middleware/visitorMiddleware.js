@@ -17,8 +17,14 @@ export { shouldGate, recordJobView, linkVisitorToUser } from './visitor/gate.js'
 // Most requests (list, health check, etc.) don't need the visitor record.
 // Only routes that gate content actually call `await req.resolveVisitor()`.
 export function attachVisitor(req, res, next) {
+    // Health-check pings (admin status dashboard) must never create visitor
+    // records or count as traffic — resolveVisitor returns null for them.
+    const isHealthCheck = Boolean(req.get('x-health-check'));
+    req.isHealthCheck = isHealthCheck;
+
     let cached = null;
     req.resolveVisitor = async () => {
+        if (isHealthCheck) return null;
         if (cached) return cached;
         cached = await resolveVisitor(req);
         return cached;

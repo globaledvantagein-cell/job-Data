@@ -39,6 +39,7 @@ export function attachPremiumRoutes(authRouter) {
 
             const check = await validatePromoCode(code);
             if (!check.valid) {
+                Analytics.increment('promo_failed_attempts'); // fire-and-forget
                 return res.status(400).json({
                     error: 'invalid_promo',
                     reason: check.reason,
@@ -59,6 +60,7 @@ export function attachPremiumRoutes(authRouter) {
             const priorSubs = await getSubscriptionHistory(req.user.id);
             const normalizedCode = code.trim().toUpperCase();
             if (priorSubs.some(s => s.promoCode === normalizedCode)) {
+                Analytics.increment('promo_failed_attempts'); // fire-and-forget
                 return res.status(400).json({
                     error: 'invalid_promo',
                     reason: 'already_used',

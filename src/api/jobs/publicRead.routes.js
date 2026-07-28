@@ -168,7 +168,7 @@ export function attachPublicReadRoutes(router) {
             const { filters, premiumFiltersIgnored } = applyPremiumFilterGating(parsed, req.isPremium);
 
             const data = getJobsPaginatedFromCache(page, limit, filters);
-            Analytics.increment('pageViews_jobs'); // fire-and-forget, non-blocking
+            if (!req.isHealthCheck) Analytics.increment('pageViews_jobs'); // fire-and-forget, non-blocking
             res.status(200).json({
                 jobs: (data.jobs || []).map(job => toTeaser(job, { includeSalaryInsights: req.isPremium })),
                 totalJobs: data.totalJobs,
@@ -218,7 +218,7 @@ export function attachPublicReadRoutes(router) {
             // Count real detail views (full, gated, or anon) — not 404s. Fires
             // for EVERY user type, before any gate decision, so the analytics
             // counter reflects total detail views including gated ones.
-            Analytics.increment('pageViews_jobDetail'); // fire-and-forget
+            if (!req.isHealthCheck) Analytics.increment('pageViews_jobDetail'); // fire-and-forget
 
             // ── Authenticated users ──────────────────────────────────────
             if (req.user?.id) {

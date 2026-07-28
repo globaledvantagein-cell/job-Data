@@ -29,6 +29,7 @@ const analyticsSchema = new mongoose.Schema({
   // ── Premium fake-door funnel ──
   payment_attempts_card: { type: Number, default: 0 }, // card "Confirm payment" clicks (no promo) — real willingness to pay
   promo_redemptions: { type: Number, default: 0 },     // successful promo activations
+  promo_failed_attempts: { type: Number, default: 0 }, // invalid/expired/reused promo submissions
 
   lastUpdated: { type: Date, default: Date.now }
 });
