@@ -65,6 +65,28 @@ async function findExistingVisitor(db, { vid, ipHash, fingerprint }) {
         const byVid = candidates.find(c => c.vid === vid);
         if (byVid) return byVid;
     }
+
+    // Claim a recent IP-only doc (Problem 4). A real visitor whose FIRST request
+    // fired before the client set vid/fingerprint would have created an IP-only
+    // doc; now that they carry real signals, reuse (and backfill) that doc rather
+    // than minting a duplicate for the same person. Guardrails: only claim a doc
+    // that is fresh (<10 min old — real JS loads in seconds, not hours), NOT
+    // linked to a user, and NOT flagged — so we never hijack a bot/flagged doc.
+    if ((vid || fingerprint) && ipHash) {
+        const recentCutoff = new Date(Date.now() - 10 * 60 * 1000);
+        const claimable = await db.collection('visitors').findOne(
+            {
+                ipHash,
+                vid: null,
+                fingerprint: null,
+                isFlagged: { $ne: true },
+                linkedUserId: null,
+                createdAt: { $gte: recentCutoff },
+            },
+            { sort: { lastSeenAt: -1 } },
+        );
+        if (claimable) return claimable;
+    }
     return null;
 }
 
@@ -92,7 +114,15 @@ export async function resolveVisitor(req) {
         // Backfill missing identity bits + bump lastSeenAt
         const set = { lastSeenAt: new Date() };
         if (vid && !existing.vid) set.vid = vid;
-        if (fingerprint && !existing.fingerprint) set.fingerprint = fingerprint;
+        // Fingerprint backfill/upgrade: set it when the doc has none, OR replace
+        // a legacy FNV-1a fingerprint (8-char) with the modern FingerprintJS id
+        // (32-char). Length alone distinguishes the two formats, so a returning
+        // visitor's doc silently upgrades to the more stable identifier.
+        const incomingIsModern = fingerprint && fingerprint.length >= 32;
+        const existingIsLegacy = existing.fingerprint && existing.fingerprint.length < 32;
+        if (fingerprint && (!existing.fingerprint || (existingIsLegacy && incomingIsModern))) {
+            set.fingerprint = fingerprint;
+        }
         if (ipHash && !existing.ipHash) set.ipHash = ipHash;
         await db.collection('visitors').updateOne({ _id: existing._id }, { $set: set });
         return { ...existing, ...set };
@@ -109,12 +139,11 @@ export async function resolveVisitor(req) {
         const doc = await db.collection('visitors').findOneAndUpdate(
             { ipHash, fingerprint: null, vid: null, isFlagged: true },
             {
-                $set: { lastSeenAt: new Date() },
-                $inc: { viewCount: 1 },
+                $set: { lastSeenAt: new Date(), isFlagged: true },
+                $inc: { viewCount: 0 },
                 $setOnInsert: {
                     createdAt: new Date(),
                     jobsViewedSet: [],
-                    isFlagged: true,
                     linkedUserId: null,
                 },
             },
