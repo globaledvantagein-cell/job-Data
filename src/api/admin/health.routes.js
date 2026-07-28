@@ -76,7 +76,7 @@ const CHECKS = [
     },
     {
         key: 'career_guide_api', label: 'Career Guide API', group: 'Public API', critical: false,
-        run: () => pingEndpoint('/api/career-guide'),
+        run: () => pingEndpoint('/api/career-guide/public'),
     },
     {
         key: 'jobs_data', label: 'Active jobs in DB', group: 'Data', critical: true,
