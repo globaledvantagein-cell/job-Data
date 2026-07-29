@@ -43,11 +43,11 @@ export function renderPromoBlock(promoCode) {
                 &#9812; Early member perk
             </div>
             <div style="font-size: 18px; font-weight: 700; color: #111827; margin-bottom: 4px; letter-spacing: -0.3px;">
-                6 months of Premium — on us
+                3 months of Premium — on us
             </div>
             <div style="font-size: 13.5px; color: #4b5563; line-height: 1.6; margin-bottom: 16px;">
-                As one of our early members, your first 6 months of Premium
-                (<span style="text-decoration: line-through; color: #9ca3af;">&euro;14.99</span>
+                As one of our early members, your first 3 months of Premium
+                (<span style="text-decoration: line-through; color: #9ca3af;">&euro;14.99/month</span>
                 <strong style="color: #111827;">&euro;0.00</strong>) are free with this code:
             </div>
             <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse; margin-bottom: 16px;">
@@ -72,9 +72,9 @@ export function renderPromoBlock(promoCode) {
 export function promoBlockText(promoCode) {
     return [
         '── EARLY MEMBER PERK ─────────────────────',
-        '6 months of Premium — on us',
+        '3 months of Premium — on us',
         '',
-        'Your first 6 months of Premium (€14.99 → €0.00) are free with this code:',
+        'Your first 3 months of Premium (€14.99/month → €0.00) are free with this code:',
         '',
         `    ${promoCode}`,
         '',
@@ -97,7 +97,7 @@ export function renderPremiumInvite({ name, email, promoCode, isSubscribed = fal
     const firstName = capitalizeFirst((name || 'there').split(' ')[0]);
     const unsubscribeUrl = buildUnsubscribeUrl(email, BASE_URL);
 
-    const subject = 'Premium is here — your 6 months are free';
+    const subject = 'Premium is here — your 3 months are free';
 
     const html = `
 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #111827; max-width: 600px; margin: 0 auto; padding: 24px 20px;">
@@ -109,7 +109,7 @@ export function renderPremiumInvite({ name, email, promoCode, isSubscribed = fal
         We just launched <strong style="color: #111827;">Premium</strong> — unlimited access to every English-speaking role in Germany, plus AI-powered matching built around your resume.
     </p>
     <p style="font-size: 15px; line-height: 1.65; margin: 0 0 6px; color: #4b5563;">
-        Because you joined us early, you don't pay for it. Not for the first 6 months, anyway.
+        Because you joined us early, you don't pay for it. Not for the first 3 months, anyway.
     </p>
 
     ${renderPromoBlock(promoCode)}
@@ -136,7 +136,7 @@ export function renderPremiumInvite({ name, email, promoCode, isSubscribed = fal
         '',
         'We just launched Premium — unlimited access to every English-speaking role in Germany, plus AI-powered matching built around your resume.',
         '',
-        "Because you joined us early, you don't pay for it. Not for the first 6 months, anyway.",
+        "Because you joined us early, you don't pay for it. Not for the first 3 months, anyway.",
         '',
         promoBlockText(promoCode),
         '',

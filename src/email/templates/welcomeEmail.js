@@ -18,14 +18,14 @@ const BASE_URL = process.env.FRONTEND_ORIGIN || 'https://englishjobsgermany.com'
  * @param {string} args.email    - User's email
  * @param {boolean} args.isSubscribed - Whether they opted into the weekly digest
  * @param {string[]} args.categories  - Category IDs they picked (may be empty)
- * @param {string} [args.promoCode]   - Early-access premium code (fake-door beta); omit to skip the block
+ * @param {string} [args.promoCode]   - Early-access premium code; omit to skip the block
  */
 export function renderWelcomeEmail({ name, email, isSubscribed = false, categories = [], promoCode = null }) {
     const firstName = capitalizeFirst((name || 'there').split(' ')[0]);
     const unsubscribeUrl = buildUnsubscribeUrl(email, BASE_URL);
 
     const subject = promoCode
-        ? `Welcome — your 6 months of Premium are free`
+        ? `Welcome — your 3 months of Premium are free`
         : `Welcome to English Jobs in Germany`;
 
     const html = buildHtml({ firstName, email, isSubscribed, categories, unsubscribeUrl, promoCode });

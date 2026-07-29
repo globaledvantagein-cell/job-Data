@@ -1,6 +1,6 @@
 /**
- * Create (or verify) the shared beta promo code for the premium fake-door
- * test. Idempotent — running twice will not create a duplicate.
+ * Create (or verify) the shared early-access promo code for the premium
+ * launch. Idempotent — running twice will not create a duplicate.
  *
  * Usage:
  *   node src/scripts/create-beta-promo.js

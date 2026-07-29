@@ -26,10 +26,10 @@ const analyticsSchema = new mongoose.Schema({
   applyClicks_total: { type: Number, default: 0 },     // apply-click events
   visitor_conversions: { type: Number, default: 0 },   // anon visitor → logged in
 
-  // ── Premium fake-door funnel ──
-  payment_attempts_card: { type: Number, default: 0 }, // card "Confirm payment" clicks (no promo) — real willingness to pay
-  promo_redemptions: { type: Number, default: 0 },     // successful promo activations
-  promo_failed_attempts: { type: Number, default: 0 }, // invalid/expired/reused promo submissions
+  // ── Premium invite funnel ──
+  waitlist_joins: { type: Number, default: 0 },        // "Join the waitlist" clicks (invite code generated)
+  promo_redemptions: { type: Number, default: 0 },     // successful invite/promo activations
+  promo_failed_attempts: { type: Number, default: 0 }, // invalid/expired/reused code submissions
 
   lastUpdated: { type: Date, default: Date.now }
 });

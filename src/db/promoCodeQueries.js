@@ -21,9 +21,12 @@ import { connectToDb } from './connection.js';
 /**
  * Insert a new promo code. The code is uppercased before storage.
  * discountPercent 100 = fully free. maxUses / expiresAt null = unlimited/never.
+ *
+ * Personal invite codes (the waitlist flow) pass `generatedFor` /
+ * `generatedForEmail` so the code is linked to the user who requested it.
  * Returns the inserted document (with its _id).
  */
-export async function createPromoCode(code, discountPercent, maxUses = null, expiresAt = null) {
+export async function createPromoCode(code, discountPercent, maxUses = null, expiresAt = null, { generatedFor = null, generatedForEmail = null } = {}) {
     const db = await connectToDb();
     const normalizedCode = String(code || '').trim().toUpperCase();
     if (!normalizedCode) throw new Error('Promo code is required');
@@ -35,10 +38,39 @@ export async function createPromoCode(code, discountPercent, maxUses = null, exp
         usedCount: 0,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
         createdAt: new Date(),
+        ...(generatedFor ? {
+            generatedFor: generatedFor instanceof ObjectId ? generatedFor : new ObjectId(generatedFor),
+            generatedForEmail: generatedForEmail || null,
+        } : {}),
     };
 
     const result = await db.collection('promoCodes').insertOne(doc);
     return { ...doc, _id: result.insertedId };
+}
+
+/**
+ * Find an unused, unexpired personal invite code for a user (waitlist flow).
+ * Returns the promo document or null.
+ */
+export async function findPendingCodeForUser(userId) {
+    if (!userId) return null;
+    const db = await connectToDb();
+    const _id = userId instanceof ObjectId ? userId : new ObjectId(userId);
+    return await db.collection('promoCodes').findOne({
+        generatedFor: _id,
+        usedCount: 0,
+        expiresAt: { $gt: new Date() },
+    });
+}
+
+/** True if a promo code string already exists (collision check). */
+export async function promoCodeExists(code) {
+    const db = await connectToDb();
+    const found = await db.collection('promoCodes').findOne(
+        { code: String(code || '').trim().toUpperCase() },
+        { projection: { _id: 1 } },
+    );
+    return Boolean(found);
 }
 
 /**
@@ -84,42 +116,14 @@ export async function redeemPromoCode(code) {
     return updated || null;
 }
 
-// ─── Payment intents (fake-door metric) ───────────────────────────────────
-
-/**
- * Record that a logged-in user tried to pay by CARD (no promo code) on the
- * checkout page. This is the core signal of the fake-door premium test:
- * these users demonstrated real willingness to pay. NEVER stores card data —
- * only the fact that a complete-looking card form was submitted.
- *
- * One document per user (upserted); attempts increments on repeat tries so
- * distinct-user counts stay trivial: db.paymentIntents.countDocuments().
- */
-export async function recordPaymentIntent(userId, { email = null } = {}) {
-    if (!userId) return null;
-    const db = await connectToDb();
-    const _id = userId instanceof ObjectId ? userId : new ObjectId(userId);
-    const now = new Date();
-    const updated = await db.collection('paymentIntents').findOneAndUpdate(
-        { userId: _id },
-        {
-            $inc: { attempts: 1 },
-            $set: { lastAttemptAt: now, email },
-            $setOnInsert: { userId: _id, firstAttemptAt: now, createdAt: now },
-        },
-        { upsert: true, returnDocument: 'after' },
-    );
-    return updated;
-}
-
 // ─── Subscriptions ────────────────────────────────────────────────────────
 
 /**
- * Create an active subscription record. amount is 0 for promo activations
- * (paid Stripe flow is future work). expiresAt = now + durationDays.
+ * Create an active subscription record. amount is 0 — activation is by
+ * invite/promo code only. expiresAt = now + durationDays.
  * Returns the inserted document (with its _id).
  */
-export async function createSubscription(userId, plan, amount = 0, promoCode = null, durationDays = 180) {
+export async function createSubscription(userId, plan, amount = 0, promoCode = null, durationDays = 90) {
     const db = await connectToDb();
     const days = Number(durationDays) || 0;
     const now = new Date();
@@ -127,14 +131,14 @@ export async function createSubscription(userId, plan, amount = 0, promoCode = n
 
     const doc = {
         userId: userId instanceof ObjectId ? userId : new ObjectId(userId),
-        plan: plan || 'premium_6mo',
+        plan: plan || 'premium_3mo',
         amount: Number(amount) || 0,
         currency: 'EUR',
         promoCode: promoCode ? String(promoCode).trim().toUpperCase() : null,
         status: 'active',
         startedAt: now,
         expiresAt,
-        paymentMethod: promoCode ? 'promo' : 'stripe',
+        paymentMethod: 'promo', // invite/promo codes are the only activation path
         createdAt: now,
     };
 
