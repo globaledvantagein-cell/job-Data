@@ -97,6 +97,12 @@ export function attachPremiumRoutes(authRouter) {
                     const fresh = await getUserProfile(userId);
                     const to = fresh?.email;
                     if (!to) return;
+                    // They may have activated another code during the delay —
+                    // a "claim your free months" email would only confuse them.
+                    if (isPremium(fresh)) {
+                        console.log(`[Waitlist] Skipping invite email to ${to} — already premium`);
+                        return;
+                    }
                     const { subject, html, text } = renderWaitlistInvite({
                         name: fresh.name,
                         inviteCode: code,
@@ -150,6 +156,17 @@ export function attachPremiumRoutes(authRouter) {
             const { code } = req.body || {};
             if (!code || typeof code !== 'string') {
                 return res.status(400).json({ error: 'An invite code is required.' });
+            }
+
+            // Already-premium guard: activatePremium RESETS premiumUntil to
+            // now + 90 days (it does not extend), so redeeming a second code
+            // mid-subscription would shorten the user's remaining time.
+            const currentUser = await getUserProfile(req.user.id);
+            if (isPremium(currentUser)) {
+                return res.status(400).json({
+                    error: 'already_premium',
+                    message: "You already have Premium. Your code stays valid, save it for when your access ends.",
+                });
             }
 
             const check = await validatePromoCode(code);
