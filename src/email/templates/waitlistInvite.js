@@ -14,8 +14,8 @@ const BASE_URL = process.env.FRONTEND_ORIGIN || 'https://englishjobsgermany.com'
 const PREMIUM_FEATURES = [
     'Unlimited job description views',
     'Unlimited apply clicks',
-    'Smart Match — AI resume scoring',
-    "Today's Matches — daily personalized picks",
+    'Smart Match: AI resume scoring',
+    "Today's Matches: daily personalized picks",
     'Advanced filters & salary insights',
 ];
 
@@ -27,7 +27,7 @@ const PREMIUM_FEATURES = [
 export function renderWaitlistInvite({ name, inviteCode }) {
     const firstName = capitalizeFirst((name || 'there').split(' ')[0]);
 
-    const subject = 'Your Premium invite code is ready';
+    const subject = "You're in! Your Premium invite just landed 🎉";
 
     const features = PREMIUM_FEATURES.map(f => `
         <tr>
@@ -43,7 +43,11 @@ export function renderWaitlistInvite({ name, inviteCode }) {
 
     <p style="font-size: 17px; line-height: 1.5; margin: 0 0 8px; color: #111827; font-weight: 600; letter-spacing: -0.2px;">Hi ${escapeHtml(firstName)},</p>
     <p style="font-size: 15px; line-height: 1.65; margin: 0 0 6px; color: #4b5563;">
-        A Premium spot opened up — you're in.
+        Good news travels fast: <strong style="color: #111827;">a Premium spot just opened up, and it's yours.</strong>
+    </p>
+    <p style="font-size: 15px; line-height: 1.65; margin: 0 0 6px; color: #4b5563;">
+        We only issue a limited number of invite codes per batch. Yours is live
+        right now and reserved for this account.
     </p>
 
     <table width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0; border-collapse: collapse;">
@@ -53,7 +57,7 @@ export function renderWaitlistInvite({ name, inviteCode }) {
                     &#9812; Your personal invite
                 </div>
                 <div style="font-size: 18px; font-weight: 700; color: #111827; margin-bottom: 4px; letter-spacing: -0.3px;">
-                    3 months of Premium — on us
+                    3 months of Premium, on us
                 </div>
                 <div style="font-size: 13.5px; color: #4b5563; line-height: 1.6; margin-bottom: 16px;">
                     Your first 3 months of Premium
@@ -69,7 +73,7 @@ export function renderWaitlistInvite({ name, inviteCode }) {
                 </table>
                 <table cellpadding="0" cellspacing="0" style="border-collapse: collapse; margin-bottom: 6px;">${features}</table>
                 <div style="text-align: center; margin-top: 16px;">
-                    <a href="${BASE_URL}/premium" style="display: inline-block; padding: 13px 32px; background: #0f1620; color: #ffffff; text-decoration: none; font-weight: 700; border-radius: 8px; font-size: 14px;">Go to Premium</a>
+                    <a href="${BASE_URL}/premium" style="display: inline-block; padding: 13px 32px; background: #0f1620; color: #ffffff; text-decoration: none; font-weight: 700; border-radius: 8px; font-size: 14px;">Claim my 3 free months</a>
                 </div>
                 <div style="font-size: 11.5px; color: #9ca3af; text-align: center; margin-top: 12px; line-height: 1.5;">
                     Works once, for this account &middot; Valid for 90 days &middot; No credit card needed
@@ -79,7 +83,9 @@ export function renderWaitlistInvite({ name, inviteCode }) {
     </table>
 
     <p style="font-size: 13px; color: #9ca3af; margin: 24px 0 0; line-height: 1.6;">
-        If you have any trouble redeeming your code, just reply to this email.
+        Don't sit on it. The code expires in 90 days, and unlimited job views,
+        AI matching, and salary insights are waiting on the other side. Any
+        trouble redeeming it, just reply to this email.
     </p>
 
     <table width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0 0; border-collapse: collapse;">
@@ -97,10 +103,11 @@ export function renderWaitlistInvite({ name, inviteCode }) {
         '',
         `Hi ${firstName},`,
         '',
-        "A Premium spot opened up — you're in.",
+        "Good news travels fast: a Premium spot just opened up, and it's yours.",
+        'We only issue a limited number of invite codes per batch. Yours is live right now and reserved for this account.',
         '',
-        '── YOUR PERSONAL INVITE ──────────────────',
-        '3 months of Premium — on us',
+        'YOUR PERSONAL INVITE',
+        '3 months of Premium, on us',
         '',
         'Your first 3 months of Premium (€14.99/month → €0.00) are free with this code:',
         '',
@@ -110,9 +117,8 @@ export function renderWaitlistInvite({ name, inviteCode }) {
         '',
         `Redeem at: ${BASE_URL}/premium`,
         'Works once, for this account. Valid for 90 days. No credit card needed.',
-        '──────────────────────────────────────────',
         '',
-        'Trouble redeeming? Just reply to this email.',
+        "Don't sit on it. The code expires in 90 days. Trouble redeeming? Just reply to this email.",
         '',
         '---',
         'You requested this invite from the Premium page.',

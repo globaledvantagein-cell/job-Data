@@ -123,6 +123,25 @@ export function attachPremiumRoutes(authRouter) {
         }
     });
 
+    // ─── Waitlist status ──────────────────────────────────────────────────
+    // GET /api/auth/waitlist-status — lets the premium page restore the
+    // "spot secured" state after a refresh. The DB (pending unexpired code)
+    // is the source of truth, so it works across devices too. Fails open to
+    // { onWaitlist: false }: joining again is idempotent, so the worst case
+    // of a transient error is a harmless re-click.
+    authRouter.get('/waitlist-status', verifyToken, async (req, res) => {
+        try {
+            const pending = await findPendingCodeForUser(req.user.id);
+            res.status(200).json({
+                onWaitlist: Boolean(pending),
+                joinedAt: pending?.createdAt ?? null,
+            });
+        } catch (error) {
+            console.error('[Auth/waitlist-status] Failed:', error.message);
+            res.status(200).json({ onWaitlist: false, joinedAt: null });
+        }
+    });
+
     // ─── Redeem an invite / promo code ────────────────────────────────────
     // POST /api/auth/redeem-promo   Body: { code }
     // Invite-only launch: only 100%-off codes are honoured.
