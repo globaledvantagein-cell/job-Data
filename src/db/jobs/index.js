@@ -6,6 +6,7 @@ export {
     saveJobs,
     saveJobTestLog,
     findTestLogByFingerprint,
+    findSavedJobsByJobIDs,
     addCuratedJob,
 } from './saveQueries.js';
 

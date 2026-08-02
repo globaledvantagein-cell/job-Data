@@ -25,6 +25,7 @@ import {
 } from './processJob/helpers.js';
 import { mapRawJob } from './processJob/mapRawJob.js';
 import { rejectPreAi } from './processJob/preAiFilters.js';
+import { AUTO_PUBLISH_THRESHOLD, MANUAL_REVIEW_THRESHOLD } from '../env.js';
 
 export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders, allRawJobs, crossEntityKeys) {
     // 1. Config Pre-Filter
@@ -190,6 +191,21 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
         console.log(`✅ [Valid Job] ${mappedJob.JobTitle} (Confidence: ${aiResult.confidence})`);
     }
 
+    // 7b. LOW-CONFIDENCE REJECTION — the AI said "no German required" but wasn't
+    // sure enough to trust. Too ambiguous to publish and not worth an admin's
+    // time, so it never reaches the review queue.
+    if (finalDecision === 'accepted' && aiResult.confidence < MANUAL_REVIEW_THRESHOLD) {
+        finalDecision = 'rejected';
+        rejectionReason = 'Low confidence score';
+        console.log(`[Low Confidence] ❌ ${mappedJob.JobTitle} (Confidence: ${aiResult.confidence}) — auto-rejected`);
+        await Analytics.increment('jobsAutoRejectedLowConfidence');
+    }
+
+    // Above the auto-publish bar the job goes live straight from the scraper;
+    // between the two thresholds it queues for manual approval as before.
+    const isAutoPublished = finalDecision === 'accepted'
+        && aiResult.confidence >= AUTO_PUBLISH_THRESHOLD;
+
     // 8. SAVE TO TEST LOG (with fingerprint for future cache lookups)
     const testLogData = {
         ...mappedJob,
@@ -200,7 +216,9 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
         Evidence: aiResult.evidence,
         FinalDecision: finalDecision,
         RejectionReason: rejectionReason,
-        Status: finalDecision === 'accepted' ? 'pending_review' : 'rejected',
+        Status: finalDecision === 'rejected'
+            ? 'rejected'
+            : (isAutoPublished ? 'active' : 'pending_review'),
         fingerprint,
     };
 
@@ -211,14 +229,29 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
     // 9. RETURN NULL IF REJECTED
     if (finalDecision === 'rejected') return null;
 
-    await Analytics.increment('jobsPendingReview');
-
     // 10. Create Model
     mappedJob.GermanRequired = aiResult.german_required;
     mappedJob.Domain = deriveDomain(mappedJob.Department, mappedJob.JobTitle);
     mappedJob.SubDomain = mappedJob.Department || 'Other';
     mappedJob.ConfidenceScore = aiResult.confidence;
-    mappedJob.Status = 'pending_review';
+
+    // 10b. THREE-BAND ROUTING — high confidence goes live now, medium waits for
+    // an admin. The Gemma extraction + filter* computation for auto-published
+    // jobs is scheduled by scraperEngine.js after saveJobs(), because the job
+    // has no _id until Mongo assigns one on insert.
+    if (isAutoPublished) {
+        mappedJob.Status = 'active';
+        mappedJob.approvalMethod = 'ai_auto';
+        mappedJob.autoPublishedAt = new Date();
+        console.log(`[Auto-Publish] ✅ ${mappedJob.JobTitle} (Confidence: ${aiResult.confidence}) — published automatically`);
+        await Analytics.increment('jobsPublished');
+        await Analytics.increment('jobsAutoPublished');
+    } else {
+        mappedJob.Status = 'pending_review';
+        mappedJob.approvalMethod = null;
+        console.log(`[Manual Review] ⏳ ${mappedJob.JobTitle} (Confidence: ${aiResult.confidence}) — queued for review`);
+        await Analytics.increment('jobsPendingReview');
+    }
 
     normalizeSalaryValues(mappedJob);
     mappedJob.Location = normalizeStoredLocation(mappedJob);

@@ -32,6 +32,17 @@ export const NEW_VISITOR_RATE_LIMIT_PER_HOUR = Number(process.env.NEW_VISITOR_RA
 export const VISITOR_IP_SALT = process.env.VISITOR_IP_SALT;
 export const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
 
+// ── Auto-publish confidence bands ─────────────────────────────────────────
+// The scraper routes accepted jobs by the AI's confidence that the posting does
+// NOT require German (job *quality* is already handled by the pre-AI filters):
+//   >= AUTO_PUBLISH_THRESHOLD   → Status 'active' immediately, admin confirms later
+//   >= MANUAL_REVIEW_THRESHOLD  → Status 'pending_review', admin must approve
+//   <  MANUAL_REVIEW_THRESHOLD  → auto-rejected as too ambiguous
+// Both are env-tunable so the bands can be tightened without a deploy. Raising
+// AUTO_PUBLISH_THRESHOLD is the safe direction — it sends more jobs to humans.
+export const AUTO_PUBLISH_THRESHOLD = Number(process.env.AUTO_PUBLISH_THRESHOLD) || 0.85;
+export const MANUAL_REVIEW_THRESHOLD = Number(process.env.MANUAL_REVIEW_THRESHOLD) || 0.60;
+
 // ── SEO ───────────────────────────────────────────────────────────────────
 // Canonical public origin, used for <link rel=canonical>, OG tags, JSON-LD
 // and sitemap URLs. Must be the real public site — NOT the API origin, or

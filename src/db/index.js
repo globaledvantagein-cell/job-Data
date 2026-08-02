@@ -7,6 +7,7 @@ export {
     saveJobs,
     saveJobTestLog,
     findTestLogByFingerprint,
+    findSavedJobsByJobIDs,
     deleteOldJobs,
     deleteJobById,
     addCuratedJob,

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { Analytics } from '../models/analyticsModel.js';
 import { connectToDb } from '../db/connection.js';
 import { verifyToken, verifyAdmin } from '../middleware/authMiddleware.js';
-import { BETA_PROMO_CODE } from '../env.js';
+import { BETA_PROMO_CODE, AUTO_PUBLISH_THRESHOLD, MANUAL_REVIEW_THRESHOLD } from '../env.js';
 
 export const analyticsRouter = Router();
 
@@ -100,6 +100,77 @@ analyticsRouter.get('/counts', async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+});
+
+// GET /api/analytics/auto-publish — admin-only health check on the auto-publish
+// band. The numbers that matter are `rejectedAfterAutoPublish` (how often the
+// AI published something a human had to pull) and the confidence averages: if
+// auto-published jobs are being rejected at a meaningful rate, raise
+// AUTO_PUBLISH_THRESHOLD. `awaitingConfirmation` is the review-queue backlog.
+analyticsRouter.get('/auto-publish', verifyToken, verifyAdmin, async (req, res) => {
+    try {
+        const db = await connectToDb();
+        const jobs = db.collection('jobs');
+
+        // Local midnight, matching how the rest of the admin views bucket "today".
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+
+        const [
+            autoPublishedToday,
+            awaitingConfirmation,
+            rejectedAfterAutoPublish,
+            confidenceByMethod,
+        ] = await Promise.all([
+            jobs.countDocuments({
+                Status: 'active',
+                approvalMethod: 'ai_auto',
+                autoPublishedAt: { $gte: startOfToday },
+            }),
+            jobs.countDocuments({
+                Status: 'active',
+                approvalMethod: 'ai_auto',
+                reviewedAt: null,
+            }),
+            jobs.countDocuments({
+                Status: 'rejected',
+                approvalMethod: 'ai_auto',
+            }),
+            // One grouped pass instead of two averaging queries.
+            jobs.aggregate([
+                { $match: { approvalMethod: { $in: ['ai_auto', 'manual'] } } },
+                { $group: {
+                    _id: '$approvalMethod',
+                    avgConfidence: { $avg: '$ConfidenceScore' },
+                    count: { $sum: 1 },
+                }},
+            ]).toArray(),
+        ]);
+
+        const findMethod = (method) => confidenceByMethod.find(row => row._id === method);
+        const round = (value) => (typeof value === 'number' ? Number(value.toFixed(4)) : null);
+
+        res.json({
+            autoPublishedToday,
+            awaitingConfirmation,
+            rejectedAfterAutoPublish,
+            avgConfidence: {
+                autoPublished: round(findMethod('ai_auto')?.avgConfidence ?? null),
+                manuallyReviewed: round(findMethod('manual')?.avgConfidence ?? null),
+            },
+            counts: {
+                autoPublished: findMethod('ai_auto')?.count ?? 0,
+                manuallyReviewed: findMethod('manual')?.count ?? 0,
+            },
+            thresholds: {
+                autoPublish: AUTO_PUBLISH_THRESHOLD,
+                manualReview: MANUAL_REVIEW_THRESHOLD,
+            },
+        });
+    } catch (error) {
+        console.error('[Analytics/auto-publish] Failed:', error.message);
+        res.status(500).json({ error: 'Server Error' });
     }
 });
 

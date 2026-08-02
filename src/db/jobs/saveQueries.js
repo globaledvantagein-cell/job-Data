@@ -49,6 +49,27 @@ export async function saveJobs(jobs) {
     await jobsCollection.bulkWrite(operations);
 }
 
+/**
+ * Re-read jobs that saveJobs() just upserted, so callers get the persisted
+ * documents *with* their Mongo-assigned `_id`.
+ *
+ * The scraper needs this because the models returned by processJob() have no
+ * `_id` yet — and extractAndStoreRequirements() bails out immediately on a job
+ * without one. Scoped to a single sourceSite to keep the query on the same
+ * index saveJobs() upserts against.
+ *
+ * @param {string[]} jobIDs
+ * @param {string} sourceSite
+ * @returns {Promise<object[]>}
+ */
+export async function findSavedJobsByJobIDs(jobIDs, sourceSite) {
+    if (!Array.isArray(jobIDs) || jobIDs.length === 0) return [];
+    const db = await connectToDb();
+    return await db.collection('jobs')
+        .find({ JobID: { $in: jobIDs }, sourceSite })
+        .toArray();
+}
+
 export async function saveJobTestLog(jobTestLog) {
     if (!jobTestLog) return;
     const db = await connectToDb();

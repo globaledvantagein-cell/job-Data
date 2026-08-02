@@ -30,13 +30,15 @@ export function attachAdminReviewRoutes(router) {
     router.patch('/admin/decision/:id', async (req, res) => {
         try {
             const { id } = req.params;
-            const { decision } = req.body;
+            const { decision, rejectionReason } = req.body;
             if (!['accept', 'reject'].includes(decision)) {
                 return res.status(400).json({ error: "Invalid decision" });
             }
-            await reviewJobDecision(id, decision);
+            const { wasAutoPublished, JobTitle } = await reviewJobDecision(id, decision, rejectionReason || null);
 
-            if (decision === 'accept') {
+            // An auto-published job was already counted as published by the
+            // scraper — counting it again on confirmation would double-count it.
+            if (decision === 'accept' && !wasAutoPublished) {
                 await Analytics.increment('jobsPublished');
             }
 
@@ -44,7 +46,13 @@ export function attachAdminReviewRoutes(router) {
             // After accept → fetch the updated doc and add to cache.
             // After reject → drop from cache (no need to fetch).
             try {
-                if (decision === 'accept') {
+                if (decision === 'accept' && wasAutoPublished) {
+                    // Confirming a job that is already live and already in the
+                    // cache, with its Gemma extraction long since done. Stamping
+                    // reviewedAt (above) is the entire job — it just leaves the
+                    // review queue. Re-running either step would be wasted work.
+                    console.log(`[Admin Confirm] ✅ Confirmed auto-published: ${JobTitle}`);
+                } else if (decision === 'accept') {
                     const updated = await findJobByIdOrJobID(id);
                     if (updated) upsertJob(updated);
 
@@ -59,6 +67,11 @@ export function attachAdminReviewRoutes(router) {
                     // fetch by _id, then remove the cache entry by JobID.
                     const updated = await findJobByIdOrJobID(id);
                     if (updated?.JobID) removeJob(updated.JobID);
+                    if (wasAutoPublished) {
+                        // The safety net firing: a live auto-published job is
+                        // pulled from the public list.
+                        console.log(`[Admin Reject] ❌ Removed auto-published: ${JobTitle}`);
+                    }
                 }
             } catch (cacheErr) {
                 console.warn('[Cache] sync failed after decision:', cacheErr.message);

@@ -1,8 +1,44 @@
 import { initializeSession, fetchJobsPage } from './network.js';
 import { shouldContinuePaging } from './pagination.js';
 import { processJob } from './processJob.js';
-import { saveJobs } from '../db/index.js';
+import { saveJobs, findSavedJobsByJobIDs } from '../db/index.js';
+import { extractAndStoreRequirements } from '../gemma/index.js';
 import { sleep } from '../utils.js';
+
+/**
+ * Kick off Gemma requirement extraction for the auto-published jobs in a batch.
+ *
+ * Fire-and-forget by design: extraction is a slow AI call and must never hold up
+ * the scraper loop, so each job is scheduled via setImmediate and its failure is
+ * swallowed with a warning. A job that misses out simply stays live without
+ * parsedRequirements, exactly like one whose admin-approval extraction failed —
+ * the backfill migration picks those up later.
+ *
+ * Only the one DB read is awaited, so a save failure can't silently skip jobs.
+ *
+ * @param {object[]} savedBatch - job models just passed to saveJobs()
+ * @param {string} siteName - sourceSite the batch belongs to
+ */
+async function scheduleAutoPublishEnrichment(savedBatch, siteName) {
+    const autoPublishedIDs = savedBatch
+        .filter(job => job.Status === 'active' && job.approvalMethod === 'ai_auto')
+        .map(job => job.JobID);
+    if (autoPublishedIDs.length === 0) return;
+
+    try {
+        const savedDocs = await findSavedJobsByJobIDs(autoPublishedIDs, siteName);
+        for (const doc of savedDocs) {
+            setImmediate(() => {
+                extractAndStoreRequirements(doc).catch(err =>
+                    console.warn(`[Gemma] Auto-publish extraction error for ${doc.JobID}: ${err.message}`)
+                );
+            });
+        }
+        console.log(`   -> [Auto-Publish] Scheduled Gemma extraction for ${savedDocs.length} job(s)`);
+    } catch (err) {
+        console.warn(`[Auto-Publish] Could not schedule extraction: ${err.message}`);
+    }
+}
 
 export async function scrapeSite(siteConfig, existingIDsMap, crossEntityKeys) {
     const siteName = siteConfig.siteName;
@@ -56,7 +92,15 @@ export async function scrapeSite(siteConfig, existingIDsMap, crossEntityKeys) {
                     console.log(`   -> Saving ${newJobsInBatch.length} valid job(s)...`);
                     const jobsToSave = newJobsInBatch.map(job => ({ ...job, scrapedAt: scrapeStartTime }));
                     await saveJobs(jobsToSave);
-                    
+
+                    // Auto-published jobs are live the moment they're saved, so they
+                    // need the same enrichment an admin approval would have triggered:
+                    // Gemma requirements + the filter* fields resolveAll() derives from
+                    // them. This has to happen HERE rather than in processJob() — the
+                    // models it returns have no _id until saveJobs() upserts them, and
+                    // extractAndStoreRequirements() no-ops without one.
+                    await scheduleAutoPublishEnrichment(newJobsInBatch, siteName);
+
                     allNewJobs.push(...newJobsInBatch);
                     newJobsInBatch.forEach(job => existingIDs.add(job.JobID));
                 }

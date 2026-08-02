@@ -17,6 +17,14 @@ const jobSchemaDefinition = {
     
     Status: { type: String, default: "pending_review" },
 
+    // How the job reached 'active': "ai_auto" (confidence >= AUTO_PUBLISH_THRESHOLD,
+    // published by the scraper) or "manual" (an admin accepted it). null on jobs
+    // that predate auto-publish and on anything still pending_review.
+    // NOTE: the constructor below only copies keys declared in this schema, so
+    // autoPublishedAt must be declared here too or createJobModel() drops it.
+    approvalMethod: { type: String, default: null },
+    autoPublishedAt: { type: Date, default: null },
+
     Department: { type: String, default: "N/A" },
     Team: { type: String, default: null },
     Office: { type: String, default: null },

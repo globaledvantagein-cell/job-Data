@@ -10,6 +10,12 @@ const analyticsSchema = new mongoose.Schema({
   jobsPendingReview: { type: Number, default: 0 }, // AI Score 70-85
   jobsPublished: { type: Number, default: 0 },    // AI Score >85 or Manual Approve
 
+  // ── Auto-publish routing ──
+  // jobsAutoPublished is a subset of jobsPublished (the scraper increments both),
+  // so "manually approved today" = jobsPublished - jobsAutoPublished.
+  jobsAutoPublished: { type: Number, default: 0 },              // confidence >= AUTO_PUBLISH_THRESHOLD
+  jobsAutoRejectedLowConfidence: { type: Number, default: 0 },  // confidence < MANUAL_REVIEW_THRESHOLD
+
   // ── Engagement metrics ──
   // NOTE: these field names use snake_case per the tracking spec, unlike the
   // camelCase counters above. They MUST be declared here — Mongoose runs in

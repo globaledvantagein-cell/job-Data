@@ -6,17 +6,22 @@
 //
 // Scoring (per job):
 //   1. Skill overlap      — required match = 3pts, preferred = 1pt, tool = 1pt
+//                           scored as (requiredCoverage * 0.8) + (bonusCoverage * 0.2)
 //   2. Experience level   — penalise big seniority gaps (Entry↔Director)
 //   3. Domain alignment   — boost same-domain jobs
-//   Final score = (skill points / max skill points) * levelMultiplier * domainMultiplier
+//   Final score = skillScore * levelMultiplier * domainMultiplier
 //
 // Additional safeguards:
 //   - Synonym map for ~100 common tech skill aliases
 //   - Compound skill names (>4 words) excluded from denominator
 //   - Thin profiles (<3 skills) return a dedicated reason
 //   - Date-seeded tiebreaker for daily rotation
+//   - Max 2 results per company so one employer can't fill the whole list
 
 import { getAllJobs } from '../cache/jobsCache.js';
+
+// Most results any single company may occupy in one match set.
+const MAX_JOBS_PER_COMPANY = 2;
 
 // ── Skill Synonym Map ────────────────────────────────────────────────────────
 // Canonical → list of aliases (all lowercase, no dots/dashes/spaces).
@@ -48,7 +53,8 @@ const SYNONYM_GROUPS = [
     ['csharp',         'c#', 'dotnet', 'net'],
     ['cplusplus',      'cpp', 'c++'],
     ['golang',         'go'],
-    ['python3',        'python'],
+    ['python3',        'python', 'py'],
+    ['java',           'jvm'],
     ['rubyonrails',    'rails', 'ror'],
     ['springboot',     'spring'],
     ['graphql',        'gql'],
@@ -70,6 +76,37 @@ const SYNONYM_GROUPS = [
     ['powerbi',        'microsoftbi'],
     ['tableau',        'tableaudesktop'],
     ['sapfiori',       'sap'],
+
+    // ── Platforms, practices and role-level terms ────────────────────────────
+    // Job descriptions lean on these far more than the tool names above, so
+    // without them a strong profile silently misses required-skill points.
+    ['linux',          'unix', 'ubuntu', 'debian', 'centos'],
+    ['agile',          'scrum', 'kanban'],
+    ['projectmanagement', 'pm', 'projectmanager'],
+    ['productmanagement', 'productmanager'],
+    ['userexperience', 'ux', 'uxdesign'],
+    ['userinterface',  'ui', 'uidesign'],
+    // 'siterelibilityengineering' is the misspelling seen in real postings;
+    // the correct spelling is listed alongside it so both resolve.
+    ['devops',         'sre', 'siterelibilityengineering', 'sitereliabilityengineering'],
+    ['dataengineering', 'dataengineer', 'etl'],
+    ['datascience',    'datascientist', 'ds'],
+    ['microservices',  'microservice'],
+    ['objectrelationalmapping', 'orm'],
+    ['contentmanagementsystem', 'cms'],
+    ['searchengineoptimization', 'seo'],
+    // Distinct from the 'cicd' group above: those are the practice, these are
+    // the concrete CI products a posting names.
+    ['continuousintegration', 'jenkins', 'circleci', 'githubactions'],
+    ['monitoring',     'observability', 'datadog', 'grafana', 'prometheus'],
+    ['messagequeue',   'mq', 'pubsub'],
+    ['api',            'apis', 'webservices'],
+    ['html',           'html5'],
+    ['css',            'css3'],
+    ['swift',          'swiftui'],
+    ['kotlin',         'kotlinmultiplatform'],
+    ['flutter',        'dart'],
+    ['reactnative',    'rn'],
 ];
 
 // Build a fast lookup: normalised name → canonical name
@@ -156,13 +193,18 @@ function scoreJob(job, userSkills) {
     const preferred = Array.isArray(req.preferred_skills)  ? req.preferred_skills  : [];
     const tools     = Array.isArray(req.tools_and_platforms) ? req.tools_and_platforms : [];
 
-    let rawPoints = 0;
-    let maxPoints = 0;
+    let requiredRawPoints = 0;
+    let requiredMaxPoints = 0;
+    let optionalRawPoints = 0;
+    let optionalMaxPoints = 0;
     let totalSkillCount = 0;
     const matchedSkills = [];
     const seen = new Set();
 
-    function checkSkill(skill, weight) {
+    // isRequired routes the points into the required or the optional bucket.
+    // A single flat denominator let a long preferred/tools list drown out the
+    // required skills that actually decide whether someone can do the job.
+    function checkSkill(skill, weight, isRequired) {
         const name = extractName(skill);
         if (!name) return;
 
@@ -171,25 +213,45 @@ function scoreJob(job, userSkills) {
 
         totalSkillCount++;
         const canonical = toCanonical(normalizeSkillName(name));
-        maxPoints += weight;
+        if (isRequired) requiredMaxPoints += weight;
+        else            optionalMaxPoints += weight;
 
         if (userSkills.has(canonical) && !seen.has(canonical)) {
-            rawPoints += weight;
+            if (isRequired) requiredRawPoints += weight;
+            else            optionalRawPoints += weight;
             matchedSkills.push(name);
             seen.add(canonical);
         }
     }
 
-    for (const s of required)  checkSkill(s, 3);
-    for (const s of preferred) checkSkill(s, 1);
-    for (const s of tools)     checkSkill(s, 1);
+    for (const s of required)  checkSkill(s, 3, true);
+    for (const s of preferred) checkSkill(s, 1, false);
+    for (const s of tools)     checkSkill(s, 1, false);
 
+    const rawPoints = requiredRawPoints + optionalRawPoints;
+    const maxPoints = requiredMaxPoints + optionalMaxPoints;
     if (totalSkillCount === 0 || rawPoints === 0) return null;
 
+    // Required coverage carries 80% of the score, preferred + tools the
+    // remaining 20% — so missing optional skills can never drag a fully
+    // qualified candidate below 0.8, and matching them is a genuine bonus.
+    const requiredScore = requiredMaxPoints > 0 ? requiredRawPoints / requiredMaxPoints : 0;
+    const bonusScore    = optionalMaxPoints  > 0 ? optionalRawPoints / optionalMaxPoints  : 0;
+
+    // A posting that lists no required skills at all would otherwise be capped
+    // at 0.2 no matter how well it matched — fall back to the bonus side alone.
+    const skillScore = requiredMaxPoints > 0
+        ? (requiredScore * 0.8) + (bonusScore * 0.2)
+        : bonusScore;
+
     return {
-        skillScore: maxPoints > 0 ? rawPoints / maxPoints : 0,
+        skillScore,
         rawPoints,
         maxPoints,
+        requiredRawPoints,
+        requiredMaxPoints,
+        optionalRawPoints,
+        optionalMaxPoints,
         matchedSkills,
         matchedCount: matchedSkills.length,
         totalSkillCount,
@@ -233,12 +295,20 @@ function dateSeed() {
     return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
 }
 
+// Seeding `h` with the date and then folding characters in left the seed as a
+// constant offset (h ends up seed*31^length + hash(str)), so every ID of the
+// same length shifted by the same amount and the sort order was identical every
+// day — the rotation silently did nothing. Mixing the seed in *after* the
+// string hash makes the order genuinely seed-dependent, and still deterministic
+// for a given day.
 function hashForShuffle(str, seed) {
-    let h = seed;
+    let h = 0;
     for (let i = 0; i < str.length; i++) {
         h = ((h << 5) - h + str.charCodeAt(i)) | 0;
     }
-    return h;
+    h = Math.imul(h ^ seed, 2654435761);
+    h ^= h >>> 15;
+    return h | 0;
 }
 
 // ── Main entry point ─────────────────────────────────────────────────────────
@@ -246,10 +316,10 @@ function hashForShuffle(str, seed) {
  * Match a user's profile skills against all active jobs in the RAM cache.
  *
  * @param {object} parsedProfile - User's parsedProfile from the DB
- * @param {number} limit - Number of results to return (default 5)
+ * @param {number} limit - Number of results to return (default 10)
  * @returns {{ matches: object[], meta: object }}
  */
-export function getSkillMatches(parsedProfile, limit = 5) {
+export function getSkillMatches(parsedProfile, limit = 10) {
     if (!parsedProfile) {
         return { matches: [], meta: { reason: 'no_profile' } };
     }
@@ -323,10 +393,13 @@ export function getSkillMatches(parsedProfile, limit = 5) {
     //
     // Comparing raw scores made the seed a no-op — float scores almost never
     // tie exactly, so the top-N was identical every day ("same jobs every
-    // day"). Bucketing scores into 0.05 bands means jobs of comparable match
+    // day"). Bucketing scores into 0.10 bands means jobs of comparable match
     // quality share a band and rotate daily by `_tiebreaker`, while a clearly
     // stronger band still ranks above a weaker one. Exact score breaks final ties.
-    const scoreBand = (s) => Math.round(s * 20); // 0.05-wide bands
+    //
+    // 0.05 bands were too narrow for the range real scores land in — only jobs
+    // within 5% of each other ever rotated, so most of the list was frozen.
+    const scoreBand = (s) => Math.round(s * 10); // 0.10-wide bands
     scored.sort((a, b) => {
         const bandDiff = scoreBand(b.score) - scoreBand(a.score);
         if (bandDiff !== 0) return bandDiff;
@@ -334,7 +407,20 @@ export function getSkillMatches(parsedProfile, limit = 5) {
         return b.score - a.score;
     });
 
-    const matches = scored.slice(0, limit).map(({ _tiebreaker, ...rest }) => rest);
+    // Company cap: walk the sorted list and skip any job whose company already
+    // has MAX_JOBS_PER_COMPANY entries. Without it a single employer with many
+    // near-identical postings could fill every slot.
+    const matches = [];
+    const companyCounts = new Map();
+    for (const job of scored) {
+        if (matches.length >= limit) break;
+        const companyKey = normalizeSkillName(job.Company) || 'unknown';
+        const seenCount = companyCounts.get(companyKey) || 0;
+        if (seenCount >= MAX_JOBS_PER_COMPANY) continue;
+        companyCounts.set(companyKey, seenCount + 1);
+        const { _tiebreaker, ...rest } = job;
+        matches.push(rest);
+    }
 
     return {
         matches,
