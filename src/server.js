@@ -19,7 +19,7 @@ import { adminCompanyProfilesRouter } from './api/admin/companyProfiles.routes.j
 import { adminHealthRouter } from './api/admin/health.routes.js';
 import { attachVisitor } from './middleware/visitorMiddleware.js';
 import { FRONTEND_ORIGIN } from './env.js';
-import { initJobsCache, initRemoteJobsCache } from './cache/index.js';
+import { initJobsCache, initRemoteJobsCache, startRemoteJobsWatcher } from './cache/index.js';
 
 // --- Setup ---
 const app = express();
@@ -78,6 +78,14 @@ app.listen(PORT, async () => {
         // German product, so it's warned-and-continued rather than fatal.
         try {
             await initRemoteJobsCache();
+
+            // The remote scraper writes to Mongo out-of-process, so the cache
+            // would otherwise never see anything after this initial load. The
+            // watcher subscribes to the collection's change stream and applies
+            // each write as it commits. It never throws — if it cannot start,
+            // the cache simply behaves as it did before.
+            const mode = await startRemoteJobsWatcher();
+            console.log(`[remoteJobsWatcher] live invalidation active (mode: ${mode})`);
         } catch (remoteErr) {
             console.warn('[remoteJobsCache] init failed:', remoteErr.message);
         }

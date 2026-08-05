@@ -1,4 +1,4 @@
-import {connectToDb} from '../db/connection.js';
+import {connectToRemoteDb} from '../db/connection.js';
 
 // ── Remote jobs RAM cache ─────────────────────────────────────────────────
 // A COMPLETELY independent twin of jobsCache.js:
@@ -126,7 +126,7 @@ export async function initRemoteJobsCache(){
     console.log('[remoteJobsCache] Loading remote jobs into RAM...');
     const startTime = Date.now();
 
-    const db = await connectToDb();
+    const db = await connectToRemoteDb();
     const cursor = db.collection('remoteJobs').find({ Status: 'active' });
 
     remoteJobsMap.clear();
@@ -215,6 +215,86 @@ export function upsertRemoteJob(job){
 export function removeRemoteJob(jobId){
     evictRemoteJob(jobId);
     cacheVersion++;
+}
+
+// Internal single-job apply without the salary re-sort, so a batch can sort once
+// at the end instead of once per document. Returns true when the salary range
+// array was touched and therefore needs re-sorting.
+function applyRemoteJobNoSort(job){
+    if(!job?.JobID) return false;
+
+    if(job.Status !== 'active'){
+        const existed = remoteJobsMap.has(job.JobID);
+        evictRemoteJob(job.JobID);
+        return existed;
+    }
+
+    const existing = remoteJobsMap.get(job.JobID);
+
+    if(existing !== undefined){
+        const idx = remoteJobIdToArrayIndex.get(job.JobID);
+        const salaryDirty = hasSalaryRange(existing) || hasSalaryRange(job);
+        removeRemoteJobFromIndexes(idx, existing);
+        remoteJobsArray[idx] = job;
+        remoteJobsMap.set(job.JobID, job);
+        indexRemoteJob(idx, job);
+        return salaryDirty;
+    }
+
+    const idx = remoteJobsArray.length;
+    remoteJobsArray.push(job);
+    remoteJobIdToArrayIndex.set(job.JobID, idx);
+    remoteJobsMap.set(job.JobID, job);
+    indexRemoteJob(idx, job);
+    return hasSalaryRange(job);
+}
+
+/**
+ * Applies many changes as one unit.
+ *
+ * The scraper writes in batches of 500. Feeding those through upsertRemoteJob()
+ * one at a time would re-sort salaryRangeArray up to 500 times — an O(n log n)
+ * pass over every salaried job, per document. Here the sort happens once, after
+ * the whole batch has landed, and cacheVersion moves by one rather than by 500.
+ *
+ * @param {Array<{type:'upsert'|'remove', job?:object, jobId?:string}>} changes
+ * @returns {{upserted:number, removed:number}}
+ */
+export function applyRemoteJobChanges(changes){
+    if(!Array.isArray(changes) || changes.length === 0){
+        return { upserted: 0, removed: 0 };
+    }
+
+    let salaryDirty = false;
+    let upserted = 0;
+    let removed = 0;
+
+    for(const change of changes){
+        if(change.type === 'remove'){
+            if(remoteJobsMap.has(change.jobId)){
+                // A removed job may have carried a salary range, which leaves a
+                // hole in salaryRangeArray that the entry filter cleans up.
+                salaryDirty = salaryDirty || hasSalaryRange(remoteJobsMap.get(change.jobId));
+                evictRemoteJob(change.jobId);
+                removed++;
+            }
+            continue;
+        }
+
+        if(applyRemoteJobChangeIsUpsert(change)){
+            salaryDirty = applyRemoteJobNoSort(change.job) || salaryDirty;
+            upserted++;
+        }
+    }
+
+    if(salaryDirty) sortSalaryRange();
+    if(upserted > 0 || removed > 0) cacheVersion++;
+
+    return { upserted, removed };
+}
+
+function applyRemoteJobChangeIsUpsert(change){
+    return change.type === 'upsert' && change.job && change.job.JobID;
 }
 
 export async function refreshRemoteJobsCache(){

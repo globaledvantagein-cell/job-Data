@@ -38,8 +38,18 @@ export {
     getRemoteJobById,
     upsertRemoteJob,
     removeRemoteJob,
+    applyRemoteJobChanges,
     getRemoteCacheStats,
 } from './remoteJobsCache.js';
+
+// Real-time cache invalidation over the remoteJobs collection. The scraper
+// writes straight to Mongo, so without this the API only sees its own boot-time
+// snapshot.
+export {
+    startRemoteJobsWatcher,
+    stopRemoteJobsWatcher,
+    getRemoteJobsWatcherStats,
+} from './remoteJobsWatcher.js';
 
 export {
     getRemoteJobsPaginatedFromCache,

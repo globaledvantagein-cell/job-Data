@@ -11,6 +11,32 @@ export const GEMINI_API_KEYS = [
 
 export const MONGO_URI = process.env.MONGO_URI;
 
+// ── Remote vertical database ──────────────────────────────────────────────
+// The `remoteJobs` collection is written by a separate process
+// (ejg-remote-scraper) that points at the hosted Atlas cluster. The German
+// product, by contrast, is routinely developed against a local mongod.
+//
+// Pointing both at one URI forces a false choice: either local development
+// loses the German test data, or the remote vertical reads an empty local
+// collection while the scraper fills Atlas — which is exactly the split that
+// made the API report ~1.7k jobs while Atlas held ~3.7k.
+//
+// So the remote vertical gets its own URI. Unset, it falls back to MONGO_URI,
+// which is the correct behaviour in production where both are the same cluster.
+export const REMOTE_MONGO_URI = process.env.REMOTE_MONGO_URI || process.env.MONGO_URI;
+
+/** Host of a Mongo URI with credentials stripped — safe to log. */
+export function describeMongoUri(uri) {
+    if (!uri) return '(unset)';
+    try {
+        const withoutCreds = uri.replace(/\/\/[^@]*@/, '//');
+        const { protocol, host, pathname } = new URL(withoutCreds);
+        return `${protocol}//${host}${pathname}`;
+    } catch {
+        return '(unparseable)';
+    }
+}
+
 
 // Resend email config
 export const RESEND_API_KEY = process.env.RESEND_API_KEY;
