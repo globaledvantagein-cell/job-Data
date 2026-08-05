@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { getReviewQueueBreakdown } from '../db/index.js';
 import { Analytics } from '../models/analyticsModel.js';
 import { connectToDb } from '../db/connection.js';
 import { verifyToken, verifyAdmin } from '../middleware/authMiddleware.js';
@@ -85,16 +86,21 @@ analyticsRouter.get('/counts', async (req, res) => {
         const testLogs = db.collection('jobTestLogs');
 
         // Run all 4 counts in parallel — each uses index scans, no full collection scan
-        const [testLogsCount, pendingReviewCount, activeJobsCount, rejectedJobsCount] = await Promise.all([
+        const [testLogsCount, reviewQueue, activeJobsCount, rejectedJobsCount] = await Promise.all([
             testLogs.countDocuments({}),
-            jobs.countDocuments({ Status: 'pending_review' }),
+            // Split into blocked vs already-live — see getReviewQueueBreakdown().
+            getReviewQueueBreakdown(),
             jobs.countDocuments({ Status: 'active', GermanRequired: false }),
             jobs.countDocuments({ Status: 'rejected' }),
         ]);
 
         res.json({
             testLogs: testLogsCount,
-            pendingReview: pendingReviewCount,
+            // Kept for backward compatibility: the total, matching the review page.
+            pendingReview: reviewQueue.total,
+            // The meaningful split.
+            pendingDecision: reviewQueue.pendingDecision,
+            awaitingConfirmation: reviewQueue.awaitingConfirmation,
             activeJobs: activeJobsCount,
             rejectedJobs: rejectedJobsCount,
         });

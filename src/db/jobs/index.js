@@ -26,6 +26,8 @@ export {
 export {
     getRejectedJobs,
     getJobsForReview,
+    countJobsForReview,
+    getReviewQueueBreakdown,
     reviewJobDecision,
     getJobsEligibleForReanalysis,
     countManuallyReviewedJobs,

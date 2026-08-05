@@ -9,17 +9,25 @@ export async function getRejectedJobs() {
         .toArray();
 }
 
-export async function getJobsForReview(page = 1, limit = 50) {
-    const db = await connectToDb();
-    const jobsCollection = db.collection('jobs');
-    const skip = (page - 1) * limit;
-
-    // Two kinds of work land in this queue:
-    //   1. pending_review — needs a decision before it can go live
-    //   2. auto-published — already live, but no human has confirmed it yet.
-    //      This is the safety net on the auto-publish band: an admin can still
-    //      pull a bad job. Once reviewedAt is stamped it leaves the queue.
-    const query = {
+/**
+ * The single definition of "in the review queue".
+ *
+ * Two kinds of work land here:
+ *   1. pending_review — needs a decision before it can go live.
+ *   2. auto-published — already live, but no human has confirmed it yet. This
+ *      is the safety net on the auto-publish band: an admin can still pull a bad
+ *      job. Once reviewedAt is stamped it leaves the queue.
+ *
+ * Exported because the dashboard's counter used to carry its own, narrower
+ * definition (`Status: 'pending_review'` alone). That made the badge disagree
+ * with the page it linked to — the dashboard reported 216 while the queue held
+ * 316, the difference being exactly the unconfirmed auto-published jobs. Both
+ * now read this.
+ *
+ * @returns {object} a MongoDB filter
+ */
+export function buildReviewQueueQuery() {
+    return {
         $or: [
             { Status: 'pending_review' },
             // `reviewedAt: null` matches both a missing field and an explicit
@@ -28,6 +36,53 @@ export async function getJobsForReview(page = 1, limit = 50) {
             { Status: 'active', approvalMethod: 'ai_auto', reviewedAt: null },
         ],
     };
+}
+
+/** Count of everything awaiting review. Used by the admin dashboard badge. */
+export async function countJobsForReview() {
+    const db = await connectToDb();
+    return db.collection('jobs').countDocuments(buildReviewQueueQuery());
+}
+
+/**
+ * The review queue split into its two halves, because they mean different
+ * things and only one of them is a backlog:
+ *
+ *   pendingDecision      — NOT live. The AI was not confident enough to publish,
+ *                          so the job is blocked until an admin accepts or
+ *                          rejects it. This is the number that matters.
+ *   awaitingConfirmation — ALREADY live. Auto-published on high confidence, but
+ *                          unconfirmed by a human. Nothing is blocked; this is
+ *                          the audit trail on the auto-publish band.
+ *
+ * Reporting only the first made the dashboard disagree with the review page,
+ * which lists both. Reporting only the sum implies 346 jobs are waiting on you
+ * when in truth 130 of them are already published.
+ *
+ * @returns {Promise<{total:number, pendingDecision:number, awaitingConfirmation:number}>}
+ */
+export async function getReviewQueueBreakdown() {
+    const db = await connectToDb();
+    const jobs = db.collection('jobs');
+
+    const [pendingDecision, awaitingConfirmation] = await Promise.all([
+        jobs.countDocuments({ Status: 'pending_review' }),
+        jobs.countDocuments({ Status: 'active', approvalMethod: 'ai_auto', reviewedAt: null }),
+    ]);
+
+    return {
+        total: pendingDecision + awaitingConfirmation,
+        pendingDecision,
+        awaitingConfirmation,
+    };
+}
+
+export async function getJobsForReview(page = 1, limit = 50) {
+    const db = await connectToDb();
+    const jobsCollection = db.collection('jobs');
+    const skip = (page - 1) * limit;
+
+    const query = buildReviewQueueQuery();
 
     const totalJobs = await jobsCollection.countDocuments(query);
     // reviewGroup sorts pending_review (0) above auto-published (1) — the first

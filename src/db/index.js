@@ -18,6 +18,8 @@ export {
     getCategoryCounts,
     getRejectedJobs,
     getJobsForReview,
+    countJobsForReview,
+    getReviewQueueBreakdown,
     reviewJobDecision,
     trackApplyClick,
     confirmApplied,
