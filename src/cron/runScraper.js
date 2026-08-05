@@ -1,7 +1,7 @@
 import { SITES_CONFIG } from '../config.js';
 import { loadAllExistingIDs, deleteOldJobs } from '../db/index.js';
 import { scrapeSite } from '../core/scraperEngine.js';
-import { refreshJobsCache } from '../cache/index.js';
+import { refreshJobsCache, refreshRemoteJobsCache } from '../cache/index.js';
 import { Analytics } from '../models/analyticsModel.js';
 
 let isScraping = false;
@@ -46,6 +46,15 @@ export const runScraper = async function () {
             await refreshJobsCache();
         } catch (cacheErr) {
             console.warn('[Cache] refresh failed after scrape:', cacheErr.message);
+        }
+
+        // The remote vertical has its own cache over the "remoteJobs"
+        // collection. Refreshed independently — a failure on either side
+        // must not affect the other.
+        try {
+            await refreshRemoteJobsCache();
+        } catch (remoteCacheErr) {
+            console.warn('[RemoteCache] refresh failed after scrape:', remoteCacheErr.message);
         }
     } catch (error) {
         console.error("An error occurred during the scheduled scrape:", error);

@@ -7,6 +7,7 @@ import { workableConfig } from './company-configs/workableConfig.js';
 import { recruiteeConfig } from './company-configs/recruiteeConfig.js';
 import{personioConfig} from './company-configs/personioConfig.js';
 import smartRecruitersConfig from './company-configs/smartRecruitersConfig.js';
+import { teamtailorConfig } from './company-configs/teamtailorConfig.js';
 
 export const SITES_CONFIG = [
 
@@ -20,8 +21,9 @@ export const SITES_CONFIG = [
   workableConfig,
   recruiteeConfig,
   personioConfig,
-  smartRecruitersConfig
-  
+  smartRecruitersConfig,
+  teamtailorConfig
+
 
 
 

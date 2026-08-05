@@ -26,3 +26,25 @@ export {
     getCategoryCountsFromCache,
     getPublicBaitJobsFromCache,
 } from './jobsQuery.js';
+
+// ── Remote jobs vertical (/api/remote-jobs) ────────────────────────────────
+// A fully independent cache over the "remoteJobs" collection: separate Map,
+// separate inverted indexes, separate refresh cycle. Nothing here touches the
+// German cache above.
+export {
+    initRemoteJobsCache,
+    refreshRemoteJobsCache,
+    getAllRemoteJobs,
+    getRemoteJobById,
+    upsertRemoteJob,
+    removeRemoteJob,
+    getRemoteCacheStats,
+} from './remoteJobsCache.js';
+
+export {
+    getRemoteJobsPaginatedFromCache,
+    getRemoteFilterCountsFromCache,
+    getRemoteCompanyNamesFromCache,
+    getRemoteCategoryCountsFromCache,
+    getRemotePublicBaitJobsFromCache,
+} from './remoteJobsQuery.js';

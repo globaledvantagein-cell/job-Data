@@ -16,6 +16,34 @@ const companySiteNames = [
   'agicap',
   'coupa', 'qonto', 'pipedrive', 'brevo', 'spotify', 'contentsquare', 'bazaarvoice', 'didomi', 'sophos',
   // --- END APPENDED ENTRIES ---
+  // --- GERMAN EXPANSION 2026-08-04 ---
+  // Verified: board reachable AND >=1 job located in Germany.
+  'finn',  // 34 DE / 36 total
+  'justwatch',  // 8 DE / 11 total
+  'ppro',  // 8 DE / 29 total
+  'sila',  // 7 DE / 199 total
+  'aircall',  // 6 DE / 77 total
+  'lyrahealth',  // 5 DE / 515 total
+  'researchgate',  // 4 DE / 5 total
+  'kolibrigames',  // 4 DE / 4 total
+  'emburse',  // 1 DE / 36 total
+  'gopuff',  // 1 DE / 809 total
+  'deliverect',  // 1 DE / 26 total
+  'loftorbital',  // 1 DE / 56 total
+  // --- GERMAN EXPANSION 2026-08-05 ---
+  // Verified: board reachable AND >=1 job located in Germany.
+  'malt',  // 5 DE / 36 total
+  'pigment',  // 5 DE / 99 total
+  'ajax',  // 3 DE / 210 total
+  'fresha',  // 2 DE / 153 total
+  'kepler',  // 1 DE / 36 total
+  'azul',  // 1 DE / 14 total
+  'mindy',  // 1 DE / 4 total
+  // --- GERMAN EXPANSION 2026-08-05 ---
+  // Verified: board reachable AND >=1 job located in Germany.
+  'jobgether',  // 114 DE / 2991 total
+  'extremenetworks',  // 3 DE / 92 total
+  'storiogroup',  // 2 DE / 7 total
 ];
 
 /**

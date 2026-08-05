@@ -23,6 +23,8 @@ const analyticsSchema = new mongoose.Schema({
   // undeclared counter would no-op forever.
   pageViews_jobs: { type: Number, default: 0 },        // GET /api/jobs list
   pageViews_jobDetail: { type: Number, default: 0 },   // GET /api/jobs/:id/full
+  pageViews_remoteJobs: { type: Number, default: 0 },      // GET /api/remote-jobs list
+  pageViews_remoteJobDetail: { type: Number, default: 0 }, // GET /api/remote-jobs/:id/full
   pageViews_smartMatch: { type: Number, default: 0 },  // Smart Match GET + POST
   pageViews_todayMatches: { type: Number, default: 0 },// GET /skill-matches
   signups: { type: Number, default: 0 },               // new users (any method)

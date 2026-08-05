@@ -125,7 +125,123 @@ export const greenhouseConfig = {
         // --- BEGIN APPENDED ENTRIES ---
         'doctolib', 'sumup', 'flix', 'jetbrains', 'ionos', 'helsing', 'isaraerospace', 'staffbase', 'moia', 'freenow', 'scout24', 'parloa', 'autoscout24', 'trustpilot', 'finanzcheck', 'nice', 'grafanalabs', 'catawiki', 'navvis', 'clickhouse', 'flaconi', 'moonfare', 'trivago', 'adyen', 'zscaler', 'anaplan', 'think-cell', 'commercetools', 'grover', 'pleo', 'apaleo', 'idnow', 'typeform', 'dataiku', 'workato', 'mirakl', 'bitpanda', 'tanium', 'smartsheet', 'anydesk', 'spryker', 'strato', 'fivetran', 'tripadvisor', 'fireblocks', 'bitgo', 'beyondtrust', 'tekla', 'adahealth', 'qualtrics', 'sofi', 'riotgames', 'udemy', 'klaviyo', 'cultureamp', 'planradar', 'five9', 'wooga', 'braze', 'bloomreach', 'konux', 'jfrog', 'cockroachlabs', 'scaleai', 'algolia', 'veracode', 'wrike', 'zuora', 'propstack', 'pendo',
         // --- END APPENDED ENTRIES ---
-    ],
+        // --- GERMAN EXPANSION 2026-08-04 ---
+        // Verified: board reachable AND >=1 job located in Germany.
+        'hellofresh',  // 59 DE / 333 total
+        'getyourguide',  // 39 DE / 55 total
+        'solarisbank',  // 34 DE / 34 total
+        'dept',  // 23 DE / 229 total
+        'remotecom',  // 23 DE / 193 total
+        'formlabs',  // 17 DE / 191 total
+        'caronsale',  // 16 DE / 16 total
+        'hubspotjobs',  // 15 DE / 163 total
+        'talonone',  // 13 DE / 19 total
+        'superchat',  // 12 DE / 12 total
+        'mozilla',  // 11 DE / 85 total
+        'hive',  // 10 DE / 18 total
+        'linkedinjobs',  // 10 DE / 16 total
+        'ebury',  // 10 DE / 164 total
+        'valtech',  // 10 DE / 135 total
+        'marvelfusion',  // 10 DE / 12 total
+        'toogoodtogo',  // 10 DE / 77 total
+        'tide',  // 8 DE / 102 total
+        'gigs',  // 7 DE / 39 total
+        'spire',  // 7 DE / 48 total
+        'flatironhealth',  // 6 DE / 36 total
+        'ivalua',  // 5 DE / 40 total
+        'cognite',  // 5 DE / 48 total
+        'pandadoc',  // 5 DE / 55 total
+        'ledgy',  // 4 DE / 22 total
+        'samsara',  // 4 DE / 298 total
+        'flexport',  // 4 DE / 153 total
+        'forter',  // 4 DE / 40 total
+        'rubrik',  // 4 DE / 106 total
+        'vay',  // 4 DE / 11 total
+        'relex',  // 3 DE / 36 total
+        'gostudent',  // 3 DE / 24 total
+        'chainguard',  // 3 DE / 71 total
+        'wunderflats',  // 3 DE / 3 total
+        'prophet',  // 3 DE / 27 total
+        'agency',  // 2 DE / 821 total
+        'newrelic',  // 2 DE / 51 total
+        'temporaltechnologies',  // 2 DE / 56 total
+        'sumologic',  // 2 DE / 21 total
+        'anthropic',  // 2 DE / 393 total
+        'urbansportsclub',  // 2 DE / 4 total
+        'blacklane',  // 2 DE / 8 total
+        'ecoworks',  // 2 DE / 2 total
+        'oliver',  // 2 DE / 53 total
+        'coalition',  // 2 DE / 30 total
+        'singlestore',  // 1 DE / 37 total
+        'shifttechnology',  // 1 DE / 29 total
+        'mentimeter',  // 1 DE / 22 total
+        'scandit',  // 1 DE / 15 total
+        'mattermost',  // 1 DE / 12 total
+        'traderepublic',  // 1 DE / 1 total
+        'project44',  // 1 DE / 34 total
+        'descope',  // 1 DE / 6 total
+        'storyblok',  // 1 DE / 12 total
+        'jamf',  // 1 DE / 39 total
+        'postman',  // 1 DE / 106 total
+        'solarwinds',  // 1 DE / 94 total
+        'kayak',  // 1 DE / 1 total
+        'playlist',  // 1 DE / 33 total
+        'ireland',  // 1 DE / 12 total
+        // --- GERMAN EXPANSION 2026-08-05 ---
+        // Verified: board reachable AND >=1 job located in Germany.
+        'artefact',  // 7 DE / 126 total
+        'gallup',  // 6 DE / 54 total
+        'goodman',  // 6 DE / 35 total
+        'onemedical',  // 6 DE / 333 total
+        'quince',  // 5 DE / 148 total
+        'mullins',  // 5 DE / 82 total
+        'tulip',  // 5 DE / 68 total
+        'braineffectjobs',  // 5 DE / 5 total
+        'eucalyptus',  // 4 DE / 109 total
+        'asm',  // 3 DE / 425 total
+        'octagon',  // 2 DE / 12 total
+        'berlinbrands',  // 2 DE / 12 total
+        'equipmentsharecom',  // 2 DE / 993 total
+        'monks',  // 1 DE / 349 total
+        'fetch',  // 1 DE / 53 total
+        'fender',  // 1 DE / 37 total
+        'airship',  // 1 DE / 18 total
+        'staged',  // 1 DE / 5 total
+        // --- GERMAN EXPANSION 2026-08-05 ---
+        // Verified: board reachable AND >=1 job located in Germany.
+        'spektrum',  // 3 DE / 173 total
+        'flipp',  // 2 DE / 11 total
+        'janes',  // 1 DE / 10 total
+        // --- GERMAN EXPANSION 2026-08-05 ---
+        // Verified: board reachable AND >=1 job located in Germany.
+        'teampicnic',  // 154 DE / 313 total
+        'wppmedia',  // 132 DE / 1202 total
+        'speechify',  // 30 DE / 1302 total
+        'alixpartners',  // 25 DE / 112 total
+        'cfoinsights',  // 20 DE / 303 total
+        'ionos2',  // 20 DE / 33 total
+        'veeamsoftware',  // 15 DE / 232 total
+        'blackforestlabs',  // 12 DE / 13 total
+        'emnify',  // 11 DE / 14 total
+        'auterion',  // 9 DE / 20 total
+        'atolls',  // 9 DE / 21 total
+        'dkbcodefactory',  // 7 DE / 22 total
+        'headborneai',  // 4 DE / 5 total
+        'verifone',  // 3 DE / 44 total
+        'airup',  // 3 DE / 3 total
+        'stackadapt',  // 3 DE / 92 total
+        'boxinc',  // 1 DE / 128 total
+        'unframe',  // 1 DE / 34 total
+        // --- GERMAN EXPANSION 2026-08-05 ---
+        // Verified: board reachable AND >=1 job located in Germany.
+        'forvismazars',  // 334 DE / 336 total
+        // --- GERMAN EXPANSION 2026-08-05 ---
+        // Verified: board reachable AND >=1 job located in Germany.
+        'andurilindustries',  // 1 DE / 2171 total
+        // --- GERMAN EXPANSION 2026-08-05 ---
+        // Verified: board reachable AND >=1 job located in Germany.
+        'intersystems',  // 4 DE / 143 total
+],
 
     // Internal state
     _currentBoardIndex: 0,

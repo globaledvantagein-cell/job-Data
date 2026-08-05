@@ -9,6 +9,7 @@ import { runValidator } from './cron/runValidator.js';
 import { runWeeklyDigest } from './cron/runWeeklyDigest.js';
 import { runWeeklyReset } from './cron/runWeeklyReset.js';
 import { jobsApiRouter } from './api/jobs.routes.js';
+import { remoteJobsRouter } from './api/jobs/remoteRead.routes.js';
 import { authRouter } from './api/auth.routes.js';
 import { analyticsRouter } from './api/analytics.routes.js';
 import { feedbackRouter } from './api/feedback.routes.js';
@@ -18,7 +19,7 @@ import { adminCompanyProfilesRouter } from './api/admin/companyProfiles.routes.j
 import { adminHealthRouter } from './api/admin/health.routes.js';
 import { attachVisitor } from './middleware/visitorMiddleware.js';
 import { FRONTEND_ORIGIN } from './env.js';
-import { initJobsCache } from './cache/index.js';
+import { initJobsCache, initRemoteJobsCache } from './cache/index.js';
 
 // --- Setup ---
 const app = express();
@@ -43,6 +44,7 @@ app.use(attachVisitor); // adds lazy req.resolveVisitor() to every request
 // --- API Routes ---
 app.use('/api/auth', authRouter);
 app.use('/api/jobs', jobsApiRouter);
+app.use('/api/remote-jobs', remoteJobsRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/feedback', feedbackRouter);
 app.use('/api/career-guide', careerGuideRouter);
@@ -66,10 +68,19 @@ app.listen(PORT, async () => {
 
         // const { initJobsCache } = await import('./cache/index.js');
         // await initJobsCache();
+            // runScraper();
 
 
         // const {initJobsCache}=await import('./cache/index.js');
         await initJobsCache()
+        // The remote vertical loads its own independent cache from the
+        // "remoteJobs" collection. A failure here must not take down the
+        // German product, so it's warned-and-continued rather than fatal.
+        try {
+            await initRemoteJobsCache();
+        } catch (remoteErr) {
+            console.warn('[remoteJobsCache] init failed:', remoteErr.message);
+        }
         console.log(`✅ API Server is running on http://localhost:${PORT}`);
         console.log("Setting up scheduled tasks...");
 

@@ -135,6 +135,51 @@ const companySubdomains = [
     // 'effectory',                   // Effectory � 2 DE / 8 total
     // 'personio',                    // FD Sandbox � 1 DE / 1 total
     // 'jobs',                        // Tellent � 1 DE / 7 total
+    // --- GERMAN EXPANSION 2026-08-04 ---
+    // Verified: board reachable AND >=1 job located in Germany.
+    'eleqtron',  // 17 DE / 17 total
+    'forwardearth',  // 3 DE / 3 total
+    'formo',  // 2 DE / 2 total
+    // --- GERMAN EXPANSION 2026-08-05 ---
+    // Verified: board reachable AND >=1 job located in Germany.
+    'bego',  // 17 DE / 18 total
+    // --- GERMAN EXPANSION 2026-08-05 ---
+    // Verified: board reachable AND >=1 job located in Germany.
+    'represent',  // 8 DE / 8 total
+    'gateway',  // 6 DE / 11 total
+    'impact',  // 2 DE / 2 total
+    'share',  // 1 DE / 1 total
+    // --- GERMAN EXPANSION 2026-08-05 ---
+    // Verified: board reachable AND >=1 job located in Germany.
+    'testimonials',  // 5 DE / 5 total
+    // --- GERMAN EXPANSION 2026-08-05 ---
+    // Verified: board reachable AND >=1 job located in Germany.
+    'steamulationjobs',  // 13 DE / 13 total
+    'valuezon',  // 5 DE / 5 total
+    // --- GERMAN EXPANSION 2026-08-05 ---
+    // Verified: board reachable AND >=1 job located in Germany.
+    'sicherheitnord',  // 137 DE / 138 total
+    'bettybarclaygroup',  // 20 DE / 20 total
+    'haaszeitarbeit',  // 2 DE / 2 total
+    // --- GERMAN EXPANSION 2026-08-05 ---
+    // Verified: board reachable AND >=1 job located in Germany.
+    'bernardgruppe',  // 15 DE / 30 total
+    'spiegltec',  // 5 DE / 17 total
+    // --- GERMAN EXPANSION 2026-08-05 ---
+    // Verified: board reachable AND >=1 job located in Germany.
+    '60secondstonapoli',  // 106 DE / 118 total
+    'cigusgmbh',  // 49 DE / 54 total
+    'connectpeople',  // 26 DE / 26 total
+    'accso',  // 18 DE / 22 total
+    '8advisory',  // 17 DE / 77 total
+    'ahcgmbh',  // 9 DE / 9 total
+    'bonial',  // 7 DE / 7 total
+    'constellr',  // 5 DE / 9 total
+    'cmcom',  // 1 DE / 22 total
+    // --- GERMAN EXPANSION 2026-08-05 ---
+    // Verified: board reachable AND >=1 job located in Germany.
+    'simpex',  // 6 DE / 7 total
+    'hrworks',  // 1 DE / 1 total
 ];
 
 // --- Config export -------------------------------------------------------------

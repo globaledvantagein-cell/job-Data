@@ -1,0 +1,8703 @@
+{
+  "greenhouse": [
+    {
+      "slug": "getyourguide",
+      "ats": "greenhouse",
+      "germanJobCount": 39,
+      "totalJobCount": 55,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "hellofresh",
+      "ats": "greenhouse",
+      "germanJobCount": 59,
+      "totalJobCount": 333,
+      "sampleLocations": [
+        "Berlin, Berlin, Germany",
+        "Magdeburg, Saxony-Anhalt, Germany",
+        "Verden, Niedersachsen, Germany"
+      ]
+    },
+    {
+      "slug": "agency",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 821,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "gigs",
+      "ats": "greenhouse",
+      "germanJobCount": 7,
+      "totalJobCount": 39,
+      "sampleLocations": [
+        "Berlin, London, New York",
+        "London, Paris, Berlin, Amsterdam",
+        "Berlin, London"
+      ]
+    },
+    {
+      "slug": "relex",
+      "ats": "greenhouse",
+      "germanJobCount": 3,
+      "totalJobCount": 36,
+      "sampleLocations": [
+        "Wiesbaden, Germany"
+      ]
+    },
+    {
+      "slug": "ivalua",
+      "ats": "greenhouse",
+      "germanJobCount": 5,
+      "totalJobCount": 40,
+      "sampleLocations": [
+        "Frankfurt- Germany",
+        "Frankfurt - Germany"
+      ]
+    },
+    {
+      "slug": "singlestore",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 37,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "cognite",
+      "ats": "greenhouse",
+      "germanJobCount": 5,
+      "totalJobCount": 48,
+      "sampleLocations": [
+        "Germany",
+        "Amsterdam, North Holland, Netherlands; England, United Kingdom; Germany",
+        "England, United Kingdom; Germany; Norway (Oslo)"
+      ]
+    },
+    {
+      "slug": "shifttechnology",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 29,
+      "sampleLocations": [
+        "Germany - Remote"
+      ]
+    },
+    {
+      "slug": "gostudent",
+      "ats": "greenhouse",
+      "germanJobCount": 3,
+      "totalJobCount": 24,
+      "sampleLocations": [
+        "Berlin, Germany",
+        "Germany Remote"
+      ]
+    },
+    {
+      "slug": "ledgy",
+      "ats": "greenhouse",
+      "germanJobCount": 4,
+      "totalJobCount": 22,
+      "sampleLocations": [
+        "Germany (Remote)"
+      ]
+    },
+    {
+      "slug": "hive",
+      "ats": "greenhouse",
+      "germanJobCount": 10,
+      "totalJobCount": 18,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "mentimeter",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 22,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "scandit",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 15,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "mattermost",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 12,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "traderepublic",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "samsara",
+      "ats": "greenhouse",
+      "germanJobCount": 4,
+      "totalJobCount": 298,
+      "sampleLocations": [
+        "Remote - Germany",
+        "London, England, United Kingdom; Remote - Germany; Remote - UK",
+        "London, England, United Kingdom; Remote - Germany"
+      ]
+    },
+    {
+      "slug": "flexport",
+      "ats": "greenhouse",
+      "germanJobCount": 4,
+      "totalJobCount": 153,
+      "sampleLocations": [
+        "Frankfurt, Germany; Hamburg, Germany",
+        "Germany Remote",
+        "Hamburg, Germany"
+      ]
+    },
+    {
+      "slug": "hubspotjobs",
+      "ats": "greenhouse",
+      "germanJobCount": 15,
+      "totalJobCount": 163,
+      "sampleLocations": [
+        "Berlin, Germany",
+        "Remote - Germany"
+      ]
+    },
+    {
+      "slug": "chainguard",
+      "ats": "greenhouse",
+      "germanJobCount": 3,
+      "totalJobCount": 71,
+      "sampleLocations": [
+        "Germany - Remote"
+      ]
+    },
+    {
+      "slug": "forter",
+      "ats": "greenhouse",
+      "germanJobCount": 4,
+      "totalJobCount": 40,
+      "sampleLocations": [
+        "Germany - Remote",
+        "Germany - Berlin",
+        "Germany - Berlin; Germany - Remote"
+      ]
+    },
+    {
+      "slug": "newrelic",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 51,
+      "sampleLocations": [
+        "Munich, Germany"
+      ]
+    },
+    {
+      "slug": "pandadoc",
+      "ats": "greenhouse",
+      "germanJobCount": 5,
+      "totalJobCount": 55,
+      "sampleLocations": [
+        "Remote (Germany)"
+      ]
+    },
+    {
+      "slug": "linkedinjobs",
+      "ats": "greenhouse",
+      "germanJobCount": 10,
+      "totalJobCount": 16,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "flatironhealth",
+      "ats": "greenhouse",
+      "germanJobCount": 6,
+      "totalJobCount": 36,
+      "sampleLocations": [
+        "Berlin office ",
+        "Berlin office",
+        "Remote (Deutschland)"
+      ]
+    },
+    {
+      "slug": "project44",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 34,
+      "sampleLocations": [
+        "Germany - remote"
+      ]
+    },
+    {
+      "slug": "descope",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "storyblok",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 12,
+      "sampleLocations": [
+        "Remote - Poland/Germany/Brazil"
+      ]
+    },
+    {
+      "slug": "spire",
+      "ats": "greenhouse",
+      "germanJobCount": 7,
+      "totalJobCount": 48,
+      "sampleLocations": [
+        "Munich",
+        "Munich, Bavaria, Germany"
+      ]
+    },
+    {
+      "slug": "dept",
+      "ats": "greenhouse",
+      "germanJobCount": 23,
+      "totalJobCount": 229,
+      "sampleLocations": [
+        "Berlin",
+        "Hamburg, Berlin",
+        "Berlin, Hamburg"
+      ]
+    },
+    {
+      "slug": "ebury",
+      "ats": "greenhouse",
+      "germanJobCount": 10,
+      "totalJobCount": 164,
+      "sampleLocations": [
+        "Hamburg",
+        "Düsseldorf",
+        "Frankfurt"
+      ]
+    },
+    {
+      "slug": "valtech",
+      "ats": "greenhouse",
+      "germanJobCount": 10,
+      "totalJobCount": 135,
+      "sampleLocations": [
+        "Munich",
+        "Cologne",
+        "Dusseldorf"
+      ]
+    },
+    {
+      "slug": "doctolib",
+      "ats": "greenhouse",
+      "germanJobCount": 86,
+      "totalJobCount": 158,
+      "sampleLocations": [
+        "Berlin, Berlin, Germany",
+        "Frankfurt",
+        "Münster; Osnabrück"
+      ]
+    },
+    {
+      "slug": "airbnb",
+      "ats": "greenhouse",
+      "germanJobCount": 6,
+      "totalJobCount": 187,
+      "sampleLocations": [
+        "Berlin, Germany ",
+        "Berlin, Germany",
+        "Italy or France or Germany"
+      ]
+    },
+    {
+      "slug": "staffbase",
+      "ats": "greenhouse",
+      "germanJobCount": 29,
+      "totalJobCount": 32,
+      "sampleLocations": [
+        "Berlin, Brandenburg, Germany",
+        "Chemnitz, Sachsen, Germany",
+        "Dresden, Sachsen, Germany"
+      ]
+    },
+    {
+      "slug": "celonis",
+      "ats": "greenhouse",
+      "germanJobCount": 57,
+      "totalJobCount": 249,
+      "sampleLocations": [
+        "Munich, Germany",
+        "Remote, Germany, Cologne",
+        "Remote, Germany, Duesseldorf"
+      ]
+    },
+    {
+      "slug": "konux",
+      "ats": "greenhouse",
+      "germanJobCount": 4,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Munich"
+      ]
+    },
+    {
+      "slug": "trustpilot",
+      "ats": "greenhouse",
+      "germanJobCount": 4,
+      "totalJobCount": 48,
+      "sampleLocations": [
+        "Hamburg"
+      ]
+    },
+    {
+      "slug": "think-cell",
+      "ats": "greenhouse",
+      "germanJobCount": 8,
+      "totalJobCount": 26,
+      "sampleLocations": [
+        "Berlin (Germany)",
+        "Berlin (Germany), Munich (Germany)"
+      ]
+    },
+    {
+      "slug": "temporaltechnologies",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 56,
+      "sampleLocations": [
+        "Berlin, Germany",
+        "Berlin, Berlin, Germany - Remote Opportunity"
+      ]
+    },
+    {
+      "slug": "clickhouse",
+      "ats": "greenhouse",
+      "germanJobCount": 14,
+      "totalJobCount": 167,
+      "sampleLocations": [
+        "Germany (remote)",
+        "Germany",
+        "Germany (Remote)"
+      ]
+    },
+    {
+      "slug": "remotecom",
+      "ats": "greenhouse",
+      "germanJobCount": 23,
+      "totalJobCount": 193,
+      "sampleLocations": [
+        "Germany Remote",
+        "Remote - DACH",
+        "Remote-Germany"
+      ]
+    },
+    {
+      "slug": "dataiku",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 20,
+      "sampleLocations": [
+        "Germany, Remote",
+        "Europe, Middle East, and Africa; France, Paris; France, Remote; Germany, Berlin - Munzstrasse 12; Germany, Remote; Netherlands, Amsterdam; Netherlands, Remote; Spain, Remote; United Kingdom, London; United Kingdom, Remote"
+      ]
+    },
+    {
+      "slug": "spryker",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "Germany - Berlin; Remote - Europe"
+      ]
+    },
+    {
+      "slug": "beyondtrust",
+      "ats": "greenhouse",
+      "germanJobCount": 3,
+      "totalJobCount": 55,
+      "sampleLocations": [
+        "Remote North Rhine-Westphalia, Germany ",
+        "Hybrid Frankfurt, Germany"
+      ]
+    },
+    {
+      "slug": "sumologic",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 21,
+      "sampleLocations": [
+        "Frankfurt, Hesse, Germany",
+        "Germany"
+      ]
+    },
+    {
+      "slug": "scout24",
+      "ats": "greenhouse",
+      "germanJobCount": 21,
+      "totalJobCount": 25,
+      "sampleLocations": [
+        "Berlin",
+        "Bonn",
+        "Bad Neuenahr-Ahrweiler, Bonn"
+      ]
+    },
+    {
+      "slug": "algolia",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 40,
+      "sampleLocations": [
+        "Remote - Germany"
+      ]
+    },
+    {
+      "slug": "asana",
+      "ats": "greenhouse",
+      "germanJobCount": 4,
+      "totalJobCount": 146,
+      "sampleLocations": [
+        "Munich"
+      ]
+    },
+    {
+      "slug": "anaplan",
+      "ats": "greenhouse",
+      "germanJobCount": 4,
+      "totalJobCount": 165,
+      "sampleLocations": [
+        "Remote-Germany, Germany ",
+        "Munich, Germany",
+        "Remote-Germany, Germany"
+      ]
+    },
+    {
+      "slug": "braze",
+      "ats": "greenhouse",
+      "germanJobCount": 4,
+      "totalJobCount": 250,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "anthropic",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 393,
+      "sampleLocations": [
+        "Munich, Germany"
+      ]
+    },
+    {
+      "slug": "databricks",
+      "ats": "greenhouse",
+      "germanJobCount": 23,
+      "totalJobCount": 805,
+      "sampleLocations": [
+        "Berlin, Germany; Munich, Germany",
+        "Munich, Germany",
+        "Hesse, Germany"
+      ]
+    },
+    {
+      "slug": "datadog",
+      "ats": "greenhouse",
+      "germanJobCount": 4,
+      "totalJobCount": 433,
+      "sampleLocations": [
+        "Amsterdam, The Netherlands; Germany, Remote",
+        "Amsterdam, The Netherlands; Germany, Remote; Italy, Remote; London, United Kingdom; Madrid, Spain; Stockholm, Sweden",
+        "France, Remote; Germany, Remote; Italy, Remote; Spain, Remote; Switzerland, Remote; United Kingdom, Remote"
+      ]
+    },
+    {
+      "slug": "elastic",
+      "ats": "greenhouse",
+      "germanJobCount": 8,
+      "totalJobCount": 228,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "figma",
+      "ats": "greenhouse",
+      "germanJobCount": 7,
+      "totalJobCount": 177,
+      "sampleLocations": [
+        "Berlin, Germany"
+      ]
+    },
+    {
+      "slug": "gitlab",
+      "ats": "greenhouse",
+      "germanJobCount": 13,
+      "totalJobCount": 185,
+      "sampleLocations": [
+        "Remote, EMEA; Remote, Germany; Remote, Ireland; Remote, Netherlands; Remote, United Kingdom",
+        "Remote Ireland; Remote, France; Remote, Germany; Remote, Italy; Remote, Spain; Remote, United Kingdom",
+        "Remote, France; Remote, Germany; Remote, Ireland; Remote, Italy; Remote, Spain; Remote, United Kingdom"
+      ]
+    },
+    {
+      "slug": "grafanalabs",
+      "ats": "greenhouse",
+      "germanJobCount": 12,
+      "totalJobCount": 140,
+      "sampleLocations": [
+        "Germany (Remote)"
+      ]
+    },
+    {
+      "slug": "fivetran",
+      "ats": "greenhouse",
+      "germanJobCount": 3,
+      "totalJobCount": 199,
+      "sampleLocations": [
+        "Remote, Germany, EMEA"
+      ]
+    },
+    {
+      "slug": "intercom",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 124,
+      "sampleLocations": [
+        "Berlin, Germany; Dublin, Ireland; London, England",
+        "Berlin, Germany"
+      ]
+    },
+    {
+      "slug": "jamf",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 39,
+      "sampleLocations": [
+        "Germany - Remote"
+      ]
+    },
+    {
+      "slug": "jfrog",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 35,
+      "sampleLocations": [
+        "germany",
+        "Remote, Germany"
+      ]
+    },
+    {
+      "slug": "launchdarkly",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 35,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "mozilla",
+      "ats": "greenhouse",
+      "germanJobCount": 11,
+      "totalJobCount": 85,
+      "sampleLocations": [
+        "Remote Germany",
+        "Remote Canada; Remote Germany; Remote UK; Remote US"
+      ]
+    },
+    {
+      "slug": "mongodb",
+      "ats": "greenhouse",
+      "germanJobCount": 10,
+      "totalJobCount": 403,
+      "sampleLocations": [
+        "Frankfurt",
+        "Munich",
+        "Germany"
+      ]
+    },
+    {
+      "slug": "okta",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 343,
+      "sampleLocations": [
+        "Germany",
+        "Munich, Germany"
+      ]
+    },
+    {
+      "slug": "qualtrics",
+      "ats": "greenhouse",
+      "germanJobCount": 5,
+      "totalJobCount": 53,
+      "sampleLocations": [
+        "Munich, Germany",
+        "Germany (Remote)"
+      ]
+    },
+    {
+      "slug": "postman",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 106,
+      "sampleLocations": [
+        "Remote, Germany"
+      ]
+    },
+    {
+      "slug": "rubrik",
+      "ats": "greenhouse",
+      "germanJobCount": 4,
+      "totalJobCount": 106,
+      "sampleLocations": [
+        "Germany, Remote",
+        "Germany",
+        "Munich, Germany"
+      ]
+    },
+    {
+      "slug": "pinterest",
+      "ats": "greenhouse",
+      "germanJobCount": 7,
+      "totalJobCount": 223,
+      "sampleLocations": [
+        "Berlin, DE",
+        "Hamburg, DE",
+        "Berlin, DE; Hamburg, DE; Munich, DE"
+      ]
+    },
+    {
+      "slug": "reddit",
+      "ats": "greenhouse",
+      "germanJobCount": 4,
+      "totalJobCount": 188,
+      "sampleLocations": [
+        "Berlin, Germany",
+        "Remote - Germany"
+      ]
+    },
+    {
+      "slug": "tanium",
+      "ats": "greenhouse",
+      "germanJobCount": 3,
+      "totalJobCount": 39,
+      "sampleLocations": [
+        "Remote, Germany",
+        "Munich, Germany; Paris, France (Hybrid)"
+      ]
+    },
+    {
+      "slug": "solarwinds",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 94,
+      "sampleLocations": [
+        "Germany Remote"
+      ]
+    },
+    {
+      "slug": "stripe",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 546,
+      "sampleLocations": [
+        "Berlin, Munich "
+      ]
+    },
+    {
+      "slug": "workato",
+      "ats": "greenhouse",
+      "germanJobCount": 11,
+      "totalJobCount": 159,
+      "sampleLocations": [
+        "Berlin, Germany; Frankfurt, Germany; Munich, Germany",
+        "Munich, Germany",
+        "Frankfurt, Germany"
+      ]
+    },
+    {
+      "slug": "tripadvisor",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 91,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "zscaler",
+      "ats": "greenhouse",
+      "germanJobCount": 11,
+      "totalJobCount": 302,
+      "sampleLocations": [
+        "Landeshauptstadt München, DEU",
+        "Remote - Germany"
+      ]
+    },
+    {
+      "slug": "adyen",
+      "ats": "greenhouse",
+      "germanJobCount": 4,
+      "totalJobCount": 219,
+      "sampleLocations": [
+        "Berlin",
+        "Munich"
+      ]
+    },
+    {
+      "slug": "grover",
+      "ats": "greenhouse",
+      "germanJobCount": 9,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "Berlin HQ"
+      ]
+    },
+    {
+      "slug": "n26",
+      "ats": "greenhouse",
+      "germanJobCount": 46,
+      "totalJobCount": 76,
+      "sampleLocations": [
+        "Berlin",
+        "Berlin, Barcelona"
+      ]
+    },
+    {
+      "slug": "tide",
+      "ats": "greenhouse",
+      "germanJobCount": 8,
+      "totalJobCount": 102,
+      "sampleLocations": [
+        "Berlin, Germany",
+        "Berlin, Germany; Bulgaria; India, Bengaluru; India, Delhi NCR; India, Hyderabad; Lithuania; Serbia; United Kingdom"
+      ]
+    },
+    {
+      "slug": "typeform",
+      "ats": "greenhouse",
+      "germanJobCount": 4,
+      "totalJobCount": 12,
+      "sampleLocations": [
+        "Germany (Remote) ; Ireland (Remote); Netherlands (Remote) ; Portugal (Remote) ; Spain (Remote) ; United Kingdom (Remote) ",
+        "Germany (Remote) ; Ireland (Remote); Netherlands (Remote) ; Portugal (Remote) ; Spain (Remote) ; United Kingdom (Remote) ; United States (Remote) "
+      ]
+    },
+    {
+      "slug": "wolt",
+      "ats": "greenhouse",
+      "germanJobCount": 42,
+      "totalJobCount": 249,
+      "sampleLocations": [
+        "Frankfurt am Main, Germany",
+        "Cologne, Germany",
+        "Berlin, Germany; Helsinki, Finland; Stockholm, Sweden"
+      ]
+    },
+    {
+      "slug": "moia",
+      "ats": "greenhouse",
+      "germanJobCount": 23,
+      "totalJobCount": 23,
+      "sampleLocations": [
+        "Wolfsburg, Germany",
+        "Munich, Germany",
+        "Berlin, Germany; Hamburg, Germany; Hannover, Germany; Munich, Germany; Wolfsburg, Germany"
+      ]
+    },
+    {
+      "slug": "raisin",
+      "ats": "greenhouse",
+      "germanJobCount": 29,
+      "totalJobCount": 35,
+      "sampleLocations": [
+        "Berlin, Berlin, Germany",
+        "Berlin, Berlin, Germany; Frankfurt a. M.; Hamburg; Munich",
+        "Germany; Spain; U.S.A; United Kingdom"
+      ]
+    },
+    {
+      "slug": "urbansportsclub",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "vay",
+      "ats": "greenhouse",
+      "germanJobCount": 4,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "Berlin, Germany (Hybrid)",
+        "Berlin, Germany"
+      ]
+    },
+    {
+      "slug": "sumup",
+      "ats": "greenhouse",
+      "germanJobCount": 58,
+      "totalJobCount": 371,
+      "sampleLocations": [
+        "Berlin, Germany",
+        "Cologne, Germany",
+        "Berlin, Germany; Paris, Paris, France"
+      ]
+    },
+    {
+      "slug": "commercetools",
+      "ats": "greenhouse",
+      "germanJobCount": 8,
+      "totalJobCount": 19,
+      "sampleLocations": [
+        "München, Bayern, Germany (Hybrid)",
+        "Berlin, Germany (Hybrid)"
+      ]
+    },
+    {
+      "slug": "isaraerospace",
+      "ats": "greenhouse",
+      "germanJobCount": 76,
+      "totalJobCount": 90,
+      "sampleLocations": [
+        "Ottobrunn, Bavaria, Germany",
+        "Parsdorf, Bavaria, Germany",
+        "Ottobrunn, Bavaria, Germany; Parsdorf, Bavaria, Germany"
+      ]
+    },
+    {
+      "slug": "marvelfusion",
+      "ats": "greenhouse",
+      "germanJobCount": 10,
+      "totalJobCount": 12,
+      "sampleLocations": [
+        "Munich"
+      ]
+    },
+    {
+      "slug": "navvis",
+      "ats": "greenhouse",
+      "germanJobCount": 22,
+      "totalJobCount": 32,
+      "sampleLocations": [
+        "Munich Hybrid (NavVis GmbH)",
+        "Germany Remote / Hybrid (NavVis GmbH)",
+        "Munich Onsite (NavVis GmbH)"
+      ]
+    },
+    {
+      "slug": "riotgames",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 163,
+      "sampleLocations": [
+        "Berlin, Germany"
+      ]
+    },
+    {
+      "slug": "flaconi",
+      "ats": "greenhouse",
+      "germanJobCount": 8,
+      "totalJobCount": 8,
+      "sampleLocations": [
+        "Munich, Bavaria, Germany",
+        "Berlin, Berlin, Germany"
+      ]
+    },
+    {
+      "slug": "formlabs",
+      "ats": "greenhouse",
+      "germanJobCount": 17,
+      "totalJobCount": 191,
+      "sampleLocations": [
+        "Frankfurt, Germany",
+        "Berlin, Germany"
+      ]
+    },
+    {
+      "slug": "parloa",
+      "ats": "greenhouse",
+      "germanJobCount": 23,
+      "totalJobCount": 59,
+      "sampleLocations": [
+        "Berlin Office",
+        "Berlin Office; Remotely in Germany",
+        "Berlin Office; Munich Office"
+      ]
+    },
+    {
+      "slug": "talonone",
+      "ats": "greenhouse",
+      "germanJobCount": 13,
+      "totalJobCount": 19,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "solarisbank",
+      "ats": "greenhouse",
+      "germanJobCount": 34,
+      "totalJobCount": 34,
+      "sampleLocations": [
+        "Frankfurt",
+        "Berlin",
+        "Frankfurt; Berlin"
+      ]
+    },
+    {
+      "slug": "autoscout24",
+      "ats": "greenhouse",
+      "germanJobCount": 31,
+      "totalJobCount": 48,
+      "sampleLocations": [
+        "Munich (Germany)",
+        "Berlin (Germany)",
+        "Amsterdam (Netherlands); Berlin (Germany); Düsseldorf (Germany); Munich (Germany)"
+      ]
+    },
+    {
+      "slug": "blacklane",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 8,
+      "sampleLocations": [
+        "Berlin, Munich",
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "caronsale",
+      "ats": "greenhouse",
+      "germanJobCount": 16,
+      "totalJobCount": 16,
+      "sampleLocations": [
+        "Berlin, Germany",
+        "Deutschland",
+        "Region: Hamburg, Bremen, Hannover"
+      ]
+    },
+    {
+      "slug": "ecoworks",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Berlin oder remote"
+      ]
+    },
+    {
+      "slug": "flix",
+      "ats": "greenhouse",
+      "germanJobCount": 74,
+      "totalJobCount": 147,
+      "sampleLocations": [
+        "Stuttgart",
+        "Berlin",
+        "Hamburg"
+      ]
+    },
+    {
+      "slug": "freenow",
+      "ats": "greenhouse",
+      "germanJobCount": 26,
+      "totalJobCount": 44,
+      "sampleLocations": [
+        "Berlin, Germany; Hamburg, Germany",
+        "Hamburg, Germany",
+        "Berlin, Germany"
+      ]
+    },
+    {
+      "slug": "helsing",
+      "ats": "greenhouse",
+      "germanJobCount": 111,
+      "totalJobCount": 135,
+      "sampleLocations": [
+        "Munich",
+        "Berlin; London; Munich; Paris",
+        "Berlin; London; Munich"
+      ]
+    },
+    {
+      "slug": "jetbrains",
+      "ats": "greenhouse",
+      "germanJobCount": 63,
+      "totalJobCount": 92,
+      "sampleLocations": [
+        "Amsterdam, Netherlands; Belgrade, Serbia; Berlin, Germany; Limassol, Cyprus; London, United Kingdom; Madrid, Spain; Munich, Germany; Paphos, Cyprus; Prague, Czech Republic; Remote, Germany; Warsaw, Poland; Yerevan, Armenia",
+        "Berlin, Germany; Munich, Germany; Remote, Germany",
+        "Belgrade, Serbia; Berlin, Germany; Limassol, Cyprus; Madrid, Spain; Munich, Germany; Paphos, Cyprus; Prague, Czech Republic; Warsaw, Poland; Yerevan, Armenia"
+      ]
+    },
+    {
+      "slug": "kayak",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "Berlin, Germany"
+      ]
+    },
+    {
+      "slug": "moonfare",
+      "ats": "greenhouse",
+      "germanJobCount": 11,
+      "totalJobCount": 13,
+      "sampleLocations": [
+        "Berlin, Germany",
+        "Frankfurt, Hesse, Germany",
+        "Munich, Germany"
+      ]
+    },
+    {
+      "slug": "superchat",
+      "ats": "greenhouse",
+      "germanJobCount": 12,
+      "totalJobCount": 12,
+      "sampleLocations": [
+        "Berlin, Berlin, Germany"
+      ]
+    },
+    {
+      "slug": "toogoodtogo",
+      "ats": "greenhouse",
+      "germanJobCount": 10,
+      "totalJobCount": 77,
+      "sampleLocations": [
+        "Berlin, Berlin, Germany",
+        "Berlin, Berlin, Germany; København, Hovedstaden, Denmark",
+        "Germany"
+      ]
+    },
+    {
+      "slug": "wunderflats",
+      "ats": "greenhouse",
+      "germanJobCount": 3,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "oliver",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 53,
+      "sampleLocations": [
+        "Hamburg, Germany"
+      ]
+    },
+    {
+      "slug": "coalition",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 30,
+      "sampleLocations": [
+        "Any location, Germany"
+      ]
+    },
+    {
+      "slug": "playlist",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 33,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "prophet",
+      "ats": "greenhouse",
+      "germanJobCount": 3,
+      "totalJobCount": 27,
+      "sampleLocations": [
+        "Munich, Berlin",
+        "Berlin, Munich"
+      ]
+    },
+    {
+      "slug": "ireland",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 12,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "catawiki",
+      "ats": "greenhouse",
+      "germanJobCount": 6,
+      "totalJobCount": 51,
+      "sampleLocations": [
+        "Amsterdam, Netherlands; Berlin, Germany; France",
+        "Belgium; France; Germany; Italy; Netherlands; Portugal; Spain",
+        "Belgium; France; Germany; Italy; Netherlands; Poland; Portugal; Spain"
+      ]
+    },
+    {
+      "slug": "trivago",
+      "ats": "greenhouse",
+      "germanJobCount": 10,
+      "totalJobCount": 10,
+      "sampleLocations": [
+        "Düsseldorf"
+      ]
+    },
+    {
+      "slug": "anydesk",
+      "ats": "greenhouse",
+      "germanJobCount": 3,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "Stuttgart, Baden-Württemberg, Germany",
+        "Bengaluru, India; Hong Kong; Lisbon, Lisbon, Portugal; Stuttgart, Baden-Württemberg, Germany; Tampa, Florida, United States"
+      ]
+    },
+    {
+      "slug": "apaleo",
+      "ats": "greenhouse",
+      "germanJobCount": 8,
+      "totalJobCount": 8,
+      "sampleLocations": [
+        "Munich",
+        "Munich / Remote",
+        "Munich/ remote"
+      ]
+    },
+    {
+      "slug": "fireblocks",
+      "ats": "greenhouse",
+      "germanJobCount": 4,
+      "totalJobCount": 69,
+      "sampleLocations": [
+        "Berlin, Berlin, Germany",
+        "Berlin, Berlin, Germany; Netherlands, Netherlands; United Kingdom; Zürich, Switzerland",
+        "Belgrade, Belgrade, Serbia; Berlin, Berlin, Germany; Georgia; Praha, Prague, Czech Republic; United Kingdom; Warszawa, Masovian Voivodeship, Poland"
+      ]
+    },
+    {
+      "slug": "idnow",
+      "ats": "greenhouse",
+      "germanJobCount": 6,
+      "totalJobCount": 14,
+      "sampleLocations": [
+        "Berlin, Berlin, Germany; München, Bavaria, Germany"
+      ]
+    },
+    {
+      "slug": "sofi",
+      "ats": "greenhouse",
+      "germanJobCount": 4,
+      "totalJobCount": 65,
+      "sampleLocations": [
+        "UT - Cottonwood Heights; FL - Jacksonville, TX - Frisco; CA - San Francisco; NY - New York; DE - Greenville; NC - Charlotte; WA - Seattle; US - Remote ",
+        "UT - Cottonwood Heights; FL - Jacksonville; CA - San Francisco; NY - New York; WA - Seattle; NC -Charlotte; TX - Frisco; DE - Greenville",
+        "NY-New York, SF-San Francisco. TX-Frisco, FL-Jacksonville, DE-Greenville, UT-Cottonwood Heights, NC-Charlotte"
+      ]
+    },
+    {
+      "slug": "bitpanda",
+      "ats": "greenhouse",
+      "germanJobCount": 5,
+      "totalJobCount": 46,
+      "sampleLocations": [
+        "Barcelona, Spain; Berlin, Berlin, Germany; București, Bucharest, Romania; Vienna, Vienna, Austria",
+        "Berlin, Berlin, Germany; Vienna, Vienna, Austria",
+        "Berlin, Berlin, Germany"
+      ]
+    },
+    {
+      "slug": "strato",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Otto-Ostrowski-Straße 7, 10249 Berlin"
+      ]
+    },
+    {
+      "slug": "nice",
+      "ats": "greenhouse",
+      "germanJobCount": 12,
+      "totalJobCount": 312,
+      "sampleLocations": [
+        "Germany - Remote",
+        "Germany - Düsseldorf",
+        "Germany - Berlin"
+      ]
+    },
+    {
+      "slug": "smartsheet",
+      "ats": "greenhouse",
+      "germanJobCount": 5,
+      "totalJobCount": 97,
+      "sampleLocations": [
+        "Munich, DE"
+      ]
+    },
+    {
+      "slug": "mirakl",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "München, Bavaria, Germany"
+      ]
+    },
+    {
+      "slug": "five9",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 154,
+      "sampleLocations": [
+        "Germany (Remote)"
+      ]
+    },
+    {
+      "slug": "wrike",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 78,
+      "sampleLocations": [
+        "Germany - Remote"
+      ]
+    },
+    {
+      "slug": "bloomreach",
+      "ats": "greenhouse",
+      "germanJobCount": 3,
+      "totalJobCount": 76,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "propstack",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "pendo",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 36,
+      "sampleLocations": [
+        "Munich, Germany"
+      ]
+    },
+    {
+      "slug": "cultureamp",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 28,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "quince",
+      "ats": "greenhouse",
+      "germanJobCount": 5,
+      "totalJobCount": 148,
+      "sampleLocations": [
+        "London, Madrid, or Berlin",
+        "London, Madrid, Berlin",
+        "Spain, UK, or Berlin "
+      ]
+    },
+    {
+      "slug": "eucalyptus",
+      "ats": "greenhouse",
+      "germanJobCount": 4,
+      "totalJobCount": 109,
+      "sampleLocations": [
+        "Berlin, Berlin, Germany",
+        "DE - HQ - Berlin"
+      ]
+    },
+    {
+      "slug": "monks",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 349,
+      "sampleLocations": [
+        "Stuttgart"
+      ]
+    },
+    {
+      "slug": "mullins",
+      "ats": "greenhouse",
+      "germanJobCount": 5,
+      "totalJobCount": 82,
+      "sampleLocations": [
+        "Atlanta, GA; Birmingham, AL; Bremen, GA; Carrollton, GA; Conyers, GA; Covington, GA; Cumming, GA; Douglasville, GA; Franklin, GA",
+        "Abernathy, TX; Atlanta, GA; Bremen, GA; Charlotte, NC; Conyers, GA; Covington, GA; Dallas, TX; Duncan, SC; Durham, NC; Fort Worth, TX; Franklin, GA; Mount Airy, NC; Raleigh, NC; San Antonio, TX",
+        "Atlanta, GA; Bardstown, KY; Birmingham, AL; Bowling Green, KY; Brandon, MS; Bremen, GA; Carrollton, GA; Charleston, SC; Columbia, SC; Covington, GA; Dallas, TX; Dallas-Fort Worth, TX; Denver, CO; Duncan, SC; Durham, NC; Fort Worth, TX; Remote"
+      ]
+    },
+    {
+      "slug": "artefact",
+      "ats": "greenhouse",
+      "germanJobCount": 7,
+      "totalJobCount": 126,
+      "sampleLocations": [
+        "Berlin, Berlin, Germany; München, Bavaria, Germany",
+        "Essen, North Rhine-Westphalia, Germany; Hamburg, Hamburg, Germany",
+        "Berlin, Berlin, Germany; Hamburg, Hamburg, Germany; München, Bavaria, Germany"
+      ]
+    },
+    {
+      "slug": "fetch",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 53,
+      "sampleLocations": [
+        "New Castle, DE"
+      ]
+    },
+    {
+      "slug": "gallup",
+      "ats": "greenhouse",
+      "germanJobCount": 6,
+      "totalJobCount": 54,
+      "sampleLocations": [
+        "Australia; Germany; India; Japan; Mexico; New Zealand; Singapore; Thailand; United Arab Emirates; United Kingdom; United States",
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "goodman",
+      "ats": "greenhouse",
+      "germanJobCount": 6,
+      "totalJobCount": 35,
+      "sampleLocations": [
+        "Frankfurt",
+        "Vilvoorde, Amsterdam, Paris, Düsseldorf",
+        "Dusseldorf"
+      ]
+    },
+    {
+      "slug": "tulip",
+      "ats": "greenhouse",
+      "germanJobCount": 5,
+      "totalJobCount": 68,
+      "sampleLocations": [
+        "Munich, Germany",
+        "Munich, Germany; München, Deutschland"
+      ]
+    },
+    {
+      "slug": "fender",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 37,
+      "sampleLocations": [
+        "Hamburg, Germany"
+      ]
+    },
+    {
+      "slug": "airship",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 18,
+      "sampleLocations": [
+        "Remote - Germany"
+      ]
+    },
+    {
+      "slug": "octagon",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 12,
+      "sampleLocations": [
+        "München, Germany"
+      ]
+    },
+    {
+      "slug": "staged",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Frankfurt Am Main"
+      ]
+    },
+    {
+      "slug": "berlinbrands",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 12,
+      "sampleLocations": [
+        "Berlin, Germany"
+      ]
+    },
+    {
+      "slug": "braineffectjobs",
+      "ats": "greenhouse",
+      "germanJobCount": 5,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "equipmentsharecom",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 993,
+      "sampleLocations": [
+        "Wilmington, DE "
+      ]
+    },
+    {
+      "slug": "asm",
+      "ats": "greenhouse",
+      "germanJobCount": 3,
+      "totalJobCount": 425,
+      "sampleLocations": [
+        "Germany > Dresden"
+      ]
+    },
+    {
+      "slug": "onemedical",
+      "ats": "greenhouse",
+      "germanJobCount": 6,
+      "totalJobCount": 333,
+      "sampleLocations": [
+        "Hanover, NH",
+        "Hanover, New Hampshire"
+      ]
+    },
+    {
+      "slug": "janes",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 10,
+      "sampleLocations": [
+        "Americas; APAC; Arlington, Virginia, United States; Australia; Bengaluru, Karnataka, India; Canberra, Australian Capital Territory, Australia; Croydon, England, United Kingdom; Dubai, United Arab Emirates; EMEA; France; France- remote; Germany; Germany - remote; India; Italy; Italy- remote; Japan; Manchester, England, United Kingdom; Netherlands; Netherlands- remote; North America; North America- Remote; Singapore; Singapore- remote; Tampa, Florida, United States; UAE; United Kingdom; 港区, Tokyo Prefecture, Japan"
+      ]
+    },
+    {
+      "slug": "flipp",
+      "ats": "greenhouse",
+      "germanJobCount": 2,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "Canada; Germany; Italy; Spain",
+        "Canada; Germany; Italy; Netherlands; Spain"
+      ]
+    },
+    {
+      "slug": "spektrum",
+      "ats": "greenhouse",
+      "germanJobCount": 3,
+      "totalJobCount": 173,
+      "sampleLocations": [
+        "Uedem, Germany",
+        "Ramstein, Germany"
+      ]
+    },
+    {
+      "slug": "veeamsoftware",
+      "ats": "greenhouse",
+      "germanJobCount": 15,
+      "totalJobCount": 232,
+      "sampleLocations": [
+        "Remote, Germany",
+        "Munich, Germany",
+        "Hamburg, Germany"
+      ]
+    },
+    {
+      "slug": "verifone",
+      "ats": "greenhouse",
+      "germanJobCount": 3,
+      "totalJobCount": 44,
+      "sampleLocations": [
+        "Bad Hersfeld, Hesse, Germany; Bucharest, Bucharest, Romania; Helsinki, Uusimaa, Finland; München, Bavaria, Germany",
+        "Bad Hersfeld, Hesse, Germany; München, Bavaria, Germany"
+      ]
+    },
+    {
+      "slug": "boxinc",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 128,
+      "sampleLocations": [
+        "Munich, Germany"
+      ]
+    },
+    {
+      "slug": "cfoinsights",
+      "ats": "greenhouse",
+      "germanJobCount": 20,
+      "totalJobCount": 303,
+      "sampleLocations": [
+        "Frankfurt, Germany",
+        "Munich, Germany"
+      ]
+    },
+    {
+      "slug": "airup",
+      "ats": "greenhouse",
+      "germanJobCount": 3,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "Munich; South Bavaria",
+        "Munich; Remote Germany "
+      ]
+    },
+    {
+      "slug": "blackforestlabs",
+      "ats": "greenhouse",
+      "germanJobCount": 12,
+      "totalJobCount": 13,
+      "sampleLocations": [
+        "Freiburg (Germany)",
+        "San Francisco (USA), Freiburg (Germany)",
+        "Freiburg (Germany), San Francisco (USA)"
+      ]
+    },
+    {
+      "slug": "speechify",
+      "ats": "greenhouse",
+      "germanJobCount": 30,
+      "totalJobCount": 1302,
+      "sampleLocations": [
+        "Berlin, Germany",
+        "Cologne, Germany",
+        "Hamburg, Germany"
+      ]
+    },
+    {
+      "slug": "ionos2",
+      "ats": "greenhouse",
+      "germanJobCount": 20,
+      "totalJobCount": 33,
+      "sampleLocations": [
+        "Hinterm Hauptbahnhof 3-5, 76137 Karlsruhe",
+        "Im Mediapark 6a/b, 50670 Cologne",
+        "Revaler Straße 28-31, 10245 Berlin"
+      ]
+    },
+    {
+      "slug": "wppmedia",
+      "ats": "greenhouse",
+      "germanJobCount": 132,
+      "totalJobCount": 1202,
+      "sampleLocations": [
+        "Frankfurt, Germany",
+        "Dusseldorf, Germany",
+        "Düsseldorf, Germany"
+      ]
+    },
+    {
+      "slug": "headborneai",
+      "ats": "greenhouse",
+      "germanJobCount": 4,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Jena, Germany"
+      ]
+    },
+    {
+      "slug": "unframe",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 34,
+      "sampleLocations": [
+        "Brussels, Brussels-Capital, Belgium; Germany Remote; Stockholm, Stockholm, Sweden"
+      ]
+    },
+    {
+      "slug": "emnify",
+      "ats": "greenhouse",
+      "germanJobCount": 11,
+      "totalJobCount": 14,
+      "sampleLocations": [
+        "Berlin",
+        "Berlin, Germany",
+        "Germany"
+      ]
+    },
+    {
+      "slug": "auterion",
+      "ats": "greenhouse",
+      "germanJobCount": 9,
+      "totalJobCount": 20,
+      "sampleLocations": [
+        "Munich, Germany",
+        "Munich, Germany "
+      ]
+    },
+    {
+      "slug": "dkbcodefactory",
+      "ats": "greenhouse",
+      "germanJobCount": 7,
+      "totalJobCount": 22,
+      "sampleLocations": [
+        "Berlin, Germany",
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "stackadapt",
+      "ats": "greenhouse",
+      "germanJobCount": 3,
+      "totalJobCount": 92,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "teampicnic",
+      "ats": "greenhouse",
+      "germanJobCount": 154,
+      "totalJobCount": 313,
+      "sampleLocations": [
+        "Hamburg, Hamburg, Germany",
+        "Düsseldorf, North Rhine-Westphalia, Germany",
+        "Magdeburg, Saxony-Anhalt, Germany"
+      ]
+    },
+    {
+      "slug": "alixpartners",
+      "ats": "greenhouse",
+      "germanJobCount": 25,
+      "totalJobCount": 112,
+      "sampleLocations": [
+        "Munich",
+        "Dusseldorf; EMEA; Frankfurt; London; Milan; Munich; Paris",
+        "Dusseldorf; Munich"
+      ]
+    },
+    {
+      "slug": "atolls",
+      "ats": "greenhouse",
+      "germanJobCount": 9,
+      "totalJobCount": 21,
+      "sampleLocations": [
+        "Berlin",
+        "Munich",
+        "Germany"
+      ]
+    },
+    {
+      "slug": "forvismazars",
+      "ats": "greenhouse",
+      "germanJobCount": 334,
+      "totalJobCount": 336,
+      "sampleLocations": [
+        "Hamburg",
+        "Düsseldorf",
+        "München"
+      ]
+    },
+    {
+      "slug": "andurilindustries",
+      "ats": "greenhouse",
+      "germanJobCount": 1,
+      "totalJobCount": 2171,
+      "sampleLocations": [
+        "Berlin, Berlin, Germany"
+      ]
+    },
+    {
+      "slug": "intersystems",
+      "ats": "greenhouse",
+      "germanJobCount": 4,
+      "totalJobCount": 143,
+      "sampleLocations": [
+        "Darmstadt",
+        "Germany"
+      ]
+    }
+  ],
+  "ashby": [
+    {
+      "slug": "taktile",
+      "ats": "ashby",
+      "germanJobCount": 20,
+      "totalJobCount": 46,
+      "sampleLocations": [
+        "Berlin Office "
+      ]
+    },
+    {
+      "slug": "overview",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 43,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "snowflake",
+      "ats": "ashby",
+      "germanJobCount": 9,
+      "totalJobCount": 395,
+      "sampleLocations": [
+        "DE-Berlin-Trion Building",
+        "DE-Germany-Remote",
+        "Fins Only-DE-Munich-MSO"
+      ]
+    },
+    {
+      "slug": "satispay",
+      "ats": "ashby",
+      "germanJobCount": 3,
+      "totalJobCount": 88,
+      "sampleLocations": [
+        "Germany, Berlin"
+      ]
+    },
+    {
+      "slug": "doctolib",
+      "ats": "ashby",
+      "germanJobCount": 83,
+      "totalJobCount": 155,
+      "sampleLocations": [
+        "Hannover",
+        "Berlin",
+        "Hamburg"
+      ]
+    },
+    {
+      "slug": "legora",
+      "ats": "ashby",
+      "germanJobCount": 6,
+      "totalJobCount": 279,
+      "sampleLocations": [
+        "Munich"
+      ]
+    },
+    {
+      "slug": "voize",
+      "ats": "ashby",
+      "germanJobCount": 36,
+      "totalJobCount": 41,
+      "sampleLocations": [
+        "Berlin",
+        "Dortmund",
+        "Hamburg"
+      ]
+    },
+    {
+      "slug": "qonto",
+      "ats": "ashby",
+      "germanJobCount": 3,
+      "totalJobCount": 36,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "supercell",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 38,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "litmus",
+      "ats": "ashby",
+      "germanJobCount": 3,
+      "totalJobCount": 34,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "onebrief",
+      "ats": "ashby",
+      "germanJobCount": 2,
+      "totalJobCount": 26,
+      "sampleLocations": [
+        "Wiesbaden, Germany",
+        "Stuttgart, Germany"
+      ]
+    },
+    {
+      "slug": "bynder",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 23,
+      "sampleLocations": [
+        "Dusseldorf"
+      ]
+    },
+    {
+      "slug": "epidemic-sound",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 16,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "rescale",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 17,
+      "sampleLocations": [
+        "DACH Region"
+      ]
+    },
+    {
+      "slug": "odys-aviation",
+      "ats": "ashby",
+      "germanJobCount": 2,
+      "totalJobCount": 12,
+      "sampleLocations": [
+        "Munich, Germany"
+      ]
+    },
+    {
+      "slug": "choco",
+      "ats": "ashby",
+      "germanJobCount": 4,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "flip",
+      "ats": "ashby",
+      "germanJobCount": 4,
+      "totalJobCount": 7,
+      "sampleLocations": [
+        "Stuttgart & Remote"
+      ]
+    },
+    {
+      "slug": "uplane",
+      "ats": "ashby",
+      "germanJobCount": 4,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "complir",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "Berlin, Germany"
+      ]
+    },
+    {
+      "slug": "dataleap",
+      "ats": "ashby",
+      "germanJobCount": 3,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Munich"
+      ]
+    },
+    {
+      "slug": "zeit-ai",
+      "ats": "ashby",
+      "germanJobCount": 5,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Munich"
+      ]
+    },
+    {
+      "slug": "powerus",
+      "ats": "ashby",
+      "germanJobCount": 4,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Berlin Office"
+      ]
+    },
+    {
+      "slug": "synthesia",
+      "ats": "ashby",
+      "germanJobCount": 5,
+      "totalJobCount": 74,
+      "sampleLocations": [
+        "Germany",
+        "Munich"
+      ]
+    },
+    {
+      "slug": "docebo",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 51,
+      "sampleLocations": [
+        "Remote Germany"
+      ]
+    },
+    {
+      "slug": "temporal",
+      "ats": "ashby",
+      "germanJobCount": 2,
+      "totalJobCount": 56,
+      "sampleLocations": [
+        "Berlin, Germany"
+      ]
+    },
+    {
+      "slug": "benchling",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 50,
+      "sampleLocations": [
+        "Berlin, Germany"
+      ]
+    },
+    {
+      "slug": "kong",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 91,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "zip",
+      "ats": "ashby",
+      "germanJobCount": 4,
+      "totalJobCount": 124,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "chainalysis-careers",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 45,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "constructor",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 47,
+      "sampleLocations": [
+        "Remote - Germany"
+      ]
+    },
+    {
+      "slug": "sanity",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 25,
+      "sampleLocations": [
+        "Remote in Germany"
+      ]
+    },
+    {
+      "slug": "quantexa",
+      "ats": "ashby",
+      "germanJobCount": 2,
+      "totalJobCount": 32,
+      "sampleLocations": [
+        "Munich"
+      ]
+    },
+    {
+      "slug": "trading212",
+      "ats": "ashby",
+      "germanJobCount": 11,
+      "totalJobCount": 39,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "sardine",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 39,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "wayflyer",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 18,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "mural",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 10,
+      "sampleLocations": [
+        "Germany Remote"
+      ]
+    },
+    {
+      "slug": "mollie",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 34,
+      "sampleLocations": [
+        "Munich"
+      ]
+    },
+    {
+      "slug": "pleo",
+      "ats": "ashby",
+      "germanJobCount": 2,
+      "totalJobCount": 41,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "moss",
+      "ats": "ashby",
+      "germanJobCount": 27,
+      "totalJobCount": 35,
+      "sampleLocations": [
+        "Berlin",
+        "Munich"
+      ]
+    },
+    {
+      "slug": "ashby",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 56,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "harvey",
+      "ats": "ashby",
+      "germanJobCount": 6,
+      "totalJobCount": 364,
+      "sampleLocations": [
+        "Munich"
+      ]
+    },
+    {
+      "slug": "viessmann",
+      "ats": "ashby",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Munich Office"
+      ]
+    },
+    {
+      "slug": "illumio",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 65,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "mapbox",
+      "ats": "ashby",
+      "germanJobCount": 10,
+      "totalJobCount": 63,
+      "sampleLocations": [
+        "Mapbox Germany"
+      ]
+    },
+    {
+      "slug": "openai",
+      "ats": "ashby",
+      "germanJobCount": 7,
+      "totalJobCount": 734,
+      "sampleLocations": [
+        "Munich, Germany"
+      ]
+    },
+    {
+      "slug": "redis",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 26,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "miro",
+      "ats": "ashby",
+      "germanJobCount": 2,
+      "totalJobCount": 47,
+      "sampleLocations": [
+        "Munich"
+      ]
+    },
+    {
+      "slug": "amboss",
+      "ats": "ashby",
+      "germanJobCount": 11,
+      "totalJobCount": 17,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "billie",
+      "ats": "ashby",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "bunch",
+      "ats": "ashby",
+      "germanJobCount": 16,
+      "totalJobCount": 22,
+      "sampleLocations": [
+        "Berlin",
+        "Germany "
+      ]
+    },
+    {
+      "slug": "babbel",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "enpal",
+      "ats": "ashby",
+      "germanJobCount": 192,
+      "totalJobCount": 231,
+      "sampleLocations": [
+        "Berlin",
+        "München",
+        "Essen"
+      ]
+    },
+    {
+      "slug": "forto",
+      "ats": "ashby",
+      "germanJobCount": 10,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "Remote Germany",
+        "Berlin",
+        "Hamburg"
+      ]
+    },
+    {
+      "slug": "plancraft",
+      "ats": "ashby",
+      "germanJobCount": 12,
+      "totalJobCount": 20,
+      "sampleLocations": [
+        "Remote (within Germany)",
+        "Hamburg (hybrid)"
+      ]
+    },
+    {
+      "slug": "tourlane",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 9,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "zenjob",
+      "ats": "ashby",
+      "germanJobCount": 15,
+      "totalJobCount": 15,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "egym",
+      "ats": "ashby",
+      "germanJobCount": 5,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "EGYM Munich",
+        "Munich",
+        "EGYM Berlin"
+      ]
+    },
+    {
+      "slug": "luminovo",
+      "ats": "ashby",
+      "germanJobCount": 2,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "🇩🇪 Berlin (hybrid)",
+        "🇩🇪 Munich (hybrid)"
+      ]
+    },
+    {
+      "slug": "statista",
+      "ats": "ashby",
+      "germanJobCount": 41,
+      "totalJobCount": 48,
+      "sampleLocations": [
+        "Hamburg or Berlin",
+        "Hamburg"
+      ]
+    },
+    {
+      "slug": "deepl",
+      "ats": "ashby",
+      "germanJobCount": 2,
+      "totalJobCount": 48,
+      "sampleLocations": [
+        "Germany - Remote",
+        "Cologne"
+      ]
+    },
+    {
+      "slug": "cognition",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 79,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "airwallex",
+      "ats": "ashby",
+      "germanJobCount": 6,
+      "totalJobCount": 634,
+      "sampleLocations": [
+        "DE - Berlin"
+      ]
+    },
+    {
+      "slug": "almedia",
+      "ats": "ashby",
+      "germanJobCount": 37,
+      "totalJobCount": 54,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "andercore",
+      "ats": "ashby",
+      "germanJobCount": 38,
+      "totalJobCount": 39,
+      "sampleLocations": [
+        "Berlin",
+        "Düsseldorf",
+        "Frankfurt am Main"
+      ]
+    },
+    {
+      "slug": "bettermile",
+      "ats": "ashby",
+      "germanJobCount": 6,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "Better Place, Oranienstraße 183, Berlin"
+      ]
+    },
+    {
+      "slug": "buena",
+      "ats": "ashby",
+      "germanJobCount": 15,
+      "totalJobCount": 15,
+      "sampleLocations": [
+        "Berlin",
+        "Köln"
+      ]
+    },
+    {
+      "slug": "climatiq",
+      "ats": "ashby",
+      "germanJobCount": 3,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "doinstruct",
+      "ats": "ashby",
+      "germanJobCount": 10,
+      "totalJobCount": 12,
+      "sampleLocations": [
+        "Remote within Germany",
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "eye-security",
+      "ats": "ashby",
+      "germanJobCount": 9,
+      "totalJobCount": 24,
+      "sampleLocations": [
+        "Germany",
+        "Berlin - hybrid"
+      ]
+    },
+    {
+      "slug": "ideals",
+      "ats": "ashby",
+      "germanJobCount": 7,
+      "totalJobCount": 50,
+      "sampleLocations": [
+        "Frankfurt, Germany",
+        "Berlin, Germany",
+        "Munich, Germany"
+      ]
+    },
+    {
+      "slug": "jupus",
+      "ats": "ashby",
+      "germanJobCount": 14,
+      "totalJobCount": 15,
+      "sampleLocations": [
+        "Cologne",
+        "Germany",
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "kittl",
+      "ats": "ashby",
+      "germanJobCount": 5,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "klim",
+      "ats": "ashby",
+      "germanJobCount": 13,
+      "totalJobCount": 15,
+      "sampleLocations": [
+        "Berlin, Germany"
+      ]
+    },
+    {
+      "slug": "langdock",
+      "ats": "ashby",
+      "germanJobCount": 19,
+      "totalJobCount": 19,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "kayak",
+      "ats": "ashby",
+      "germanJobCount": 10,
+      "totalJobCount": 44,
+      "sampleLocations": [
+        "Berlin Office",
+        "Remote Location - Germany"
+      ]
+    },
+    {
+      "slug": "knowunity",
+      "ats": "ashby",
+      "germanJobCount": 11,
+      "totalJobCount": 13,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "lemon-markets",
+      "ats": "ashby",
+      "germanJobCount": 15,
+      "totalJobCount": 16,
+      "sampleLocations": [
+        "Berlin (Hybrid)",
+        "Berlin Office",
+        "Germany  (Hybrid)"
+      ]
+    },
+    {
+      "slug": "n8n",
+      "ats": "ashby",
+      "germanJobCount": 24,
+      "totalJobCount": 39,
+      "sampleLocations": [
+        "Germany",
+        "Berlin Office"
+      ]
+    },
+    {
+      "slug": "nelly",
+      "ats": "ashby",
+      "germanJobCount": 17,
+      "totalJobCount": 17,
+      "sampleLocations": [
+        "Köln",
+        "Berlin",
+        "Hamburg"
+      ]
+    },
+    {
+      "slug": "ostrom",
+      "ats": "ashby",
+      "germanJobCount": 4,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Berlin / Remote"
+      ]
+    },
+    {
+      "slug": "passionfroot",
+      "ats": "ashby",
+      "germanJobCount": 3,
+      "totalJobCount": 10,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "pplwise",
+      "ats": "ashby",
+      "germanJobCount": 9,
+      "totalJobCount": 10,
+      "sampleLocations": [
+        "Germany",
+        "Munich"
+      ]
+    },
+    {
+      "slug": "praxipal",
+      "ats": "ashby",
+      "germanJobCount": 9,
+      "totalJobCount": 9,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "pliant",
+      "ats": "ashby",
+      "germanJobCount": 17,
+      "totalJobCount": 43,
+      "sampleLocations": [
+        "Berlin, Berlin (Hybrid)",
+        "Germany (Remote)"
+      ]
+    },
+    {
+      "slug": "pennylane",
+      "ats": "ashby",
+      "germanJobCount": 8,
+      "totalJobCount": 116,
+      "sampleLocations": [
+        "Germany",
+        "Germany (remote)",
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "reonic",
+      "ats": "ashby",
+      "germanJobCount": 27,
+      "totalJobCount": 32,
+      "sampleLocations": [
+        "Augsburg",
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "secfix",
+      "ats": "ashby",
+      "germanJobCount": 5,
+      "totalJobCount": 14,
+      "sampleLocations": [
+        "Munich",
+        "Remote-Munich"
+      ]
+    },
+    {
+      "slug": "sereact",
+      "ats": "ashby",
+      "germanJobCount": 36,
+      "totalJobCount": 44,
+      "sampleLocations": [
+        "Stuttgart Schockenriedstr. 17",
+        "Germany"
+      ]
+    },
+    {
+      "slug": "taxforce",
+      "ats": "ashby",
+      "germanJobCount": 4,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "telli",
+      "ats": "ashby",
+      "germanJobCount": 16,
+      "totalJobCount": 16,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "toogoodtogo",
+      "ats": "ashby",
+      "germanJobCount": 9,
+      "totalJobCount": 78,
+      "sampleLocations": [
+        "Germany, Berlin",
+        "Germany"
+      ]
+    },
+    {
+      "slug": "trawa",
+      "ats": "ashby",
+      "germanJobCount": 11,
+      "totalJobCount": 12,
+      "sampleLocations": [
+        "Berlin HQ"
+      ]
+    },
+    {
+      "slug": "upvest",
+      "ats": "ashby",
+      "germanJobCount": 31,
+      "totalJobCount": 31,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "vrey",
+      "ats": "ashby",
+      "germanJobCount": 34,
+      "totalJobCount": 34,
+      "sampleLocations": [
+        "Berlin HQ"
+      ]
+    },
+    {
+      "slug": "ygo",
+      "ats": "ashby",
+      "germanJobCount": 2,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Berlin, Germany"
+      ]
+    },
+    {
+      "slug": "yepoda",
+      "ats": "ashby",
+      "germanJobCount": 7,
+      "totalJobCount": 8,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "barnes",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 88,
+      "sampleLocations": [
+        "Wilmington, DE"
+      ]
+    },
+    {
+      "slug": "applied",
+      "ats": "ashby",
+      "germanJobCount": 22,
+      "totalJobCount": 261,
+      "sampleLocations": [
+        "Munich",
+        "Stuttgart"
+      ]
+    },
+    {
+      "slug": "focused",
+      "ats": "ashby",
+      "germanJobCount": 28,
+      "totalJobCount": 31,
+      "sampleLocations": [
+        "Darmstadt, DE",
+        "Germany",
+        "Berlin, DE"
+      ]
+    },
+    {
+      "slug": "notion",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 111,
+      "sampleLocations": [
+        "Munich, Germany"
+      ]
+    },
+    {
+      "slug": "cohere",
+      "ats": "ashby",
+      "germanJobCount": 5,
+      "totalJobCount": 141,
+      "sampleLocations": [
+        "Berlin",
+        "Germany"
+      ]
+    },
+    {
+      "slug": "cursor",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 114,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "carwow",
+      "ats": "ashby",
+      "germanJobCount": 9,
+      "totalJobCount": 29,
+      "sampleLocations": [
+        "Munich"
+      ]
+    },
+    {
+      "slug": "rohlik",
+      "ats": "ashby",
+      "germanJobCount": 17,
+      "totalJobCount": 86,
+      "sampleLocations": [
+        "Bischofsheim bei Frankfurt, Germany",
+        "Garching bei München, Germany",
+        "München, Germany"
+      ]
+    },
+    {
+      "slug": "leapsome",
+      "ats": "ashby",
+      "germanJobCount": 15,
+      "totalJobCount": 19,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "kestra",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 13,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "mercura",
+      "ats": "ashby",
+      "germanJobCount": 11,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "Munich"
+      ]
+    },
+    {
+      "slug": "comena",
+      "ats": "ashby",
+      "germanJobCount": 6,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "Munich"
+      ]
+    },
+    {
+      "slug": "industrious",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 69,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "dandy",
+      "ats": "ashby",
+      "germanJobCount": 3,
+      "totalJobCount": 79,
+      "sampleLocations": [
+        "Germany - Berlin"
+      ]
+    },
+    {
+      "slug": "perk",
+      "ats": "ashby",
+      "germanJobCount": 15,
+      "totalJobCount": 139,
+      "sampleLocations": [
+        "Munich",
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "vogel",
+      "ats": "ashby",
+      "germanJobCount": 34,
+      "totalJobCount": 47,
+      "sampleLocations": [
+        "München"
+      ]
+    },
+    {
+      "slug": "hiya",
+      "ats": "ashby",
+      "germanJobCount": 2,
+      "totalJobCount": 19,
+      "sampleLocations": [
+        "Munich, DE",
+        "Germany"
+      ]
+    },
+    {
+      "slug": "augustus",
+      "ats": "ashby",
+      "germanJobCount": 5,
+      "totalJobCount": 13,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "artsy",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "kuro",
+      "ats": "ashby",
+      "germanJobCount": 8,
+      "totalJobCount": 8,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "cello",
+      "ats": "ashby",
+      "germanJobCount": 4,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "molecule",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "gorilla",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "Germany (remote)"
+      ]
+    },
+    {
+      "slug": "zeno",
+      "ats": "ashby",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "peec",
+      "ats": "ashby",
+      "germanJobCount": 28,
+      "totalJobCount": 38,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "synthflow",
+      "ats": "ashby",
+      "germanJobCount": 4,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "reteam",
+      "ats": "ashby",
+      "germanJobCount": 5,
+      "totalJobCount": 90,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "lio",
+      "ats": "ashby",
+      "germanJobCount": 18,
+      "totalJobCount": 20,
+      "sampleLocations": [
+        "Munich Office"
+      ]
+    },
+    {
+      "slug": "zauber",
+      "ats": "ashby",
+      "germanJobCount": 8,
+      "totalJobCount": 8,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "zuru",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 75,
+      "sampleLocations": [
+        "Remote | Germany"
+      ]
+    },
+    {
+      "slug": "adjoe",
+      "ats": "ashby",
+      "germanJobCount": 30,
+      "totalJobCount": 43,
+      "sampleLocations": [
+        "Hamburg"
+      ]
+    },
+    {
+      "slug": "rhoda-ai",
+      "ats": "ashby",
+      "germanJobCount": 3,
+      "totalJobCount": 55,
+      "sampleLocations": [
+        "Munich, Germany"
+      ]
+    },
+    {
+      "slug": "clera",
+      "ats": "ashby",
+      "germanJobCount": 74,
+      "totalJobCount": 317,
+      "sampleLocations": [
+        "Berlin",
+        "Munich",
+        "Karlsruhe"
+      ]
+    },
+    {
+      "slug": "sensmore",
+      "ats": "ashby",
+      "germanJobCount": 10,
+      "totalJobCount": 10,
+      "sampleLocations": [
+        "Berlin Office",
+        "Berlin / Potsdam",
+        "Potsdam Office"
+      ]
+    },
+    {
+      "slug": "engflow",
+      "ats": "ashby",
+      "germanJobCount": 3,
+      "totalJobCount": 9,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "bowatt",
+      "ats": "ashby",
+      "germanJobCount": 5,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Germany",
+        "Munich"
+      ]
+    },
+    {
+      "slug": "omaze",
+      "ats": "ashby",
+      "germanJobCount": 4,
+      "totalJobCount": 13,
+      "sampleLocations": [
+        "Munich"
+      ]
+    },
+    {
+      "slug": "3e",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 13,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "linro",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 7,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "anyone-ai",
+      "ats": "ashby",
+      "germanJobCount": 11,
+      "totalJobCount": 200,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "founders-factory",
+      "ats": "ashby",
+      "germanJobCount": 5,
+      "totalJobCount": 21,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "orbem",
+      "ats": "ashby",
+      "germanJobCount": 5,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Munich"
+      ]
+    },
+    {
+      "slug": "dash0",
+      "ats": "ashby",
+      "germanJobCount": 6,
+      "totalJobCount": 47,
+      "sampleLocations": [
+        "Germany - remote",
+        "Munich - Office",
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "sunday-natural",
+      "ats": "ashby",
+      "germanJobCount": 18,
+      "totalJobCount": 24,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "sosafe",
+      "ats": "ashby",
+      "germanJobCount": 16,
+      "totalJobCount": 23,
+      "sampleLocations": [
+        "Cologne",
+        "Germany Remote",
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "workerbase",
+      "ats": "ashby",
+      "germanJobCount": 5,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Germany",
+        "Munich"
+      ]
+    },
+    {
+      "slug": "the-exploration-company",
+      "ats": "ashby",
+      "germanJobCount": 53,
+      "totalJobCount": 111,
+      "sampleLocations": [
+        "Munich, Germany",
+        "Düsseldorf"
+      ]
+    },
+    {
+      "slug": "omegga",
+      "ats": "ashby",
+      "germanJobCount": 5,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Munich"
+      ]
+    },
+    {
+      "slug": "yazio",
+      "ats": "ashby",
+      "germanJobCount": 7,
+      "totalJobCount": 7,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "blp-digital",
+      "ats": "ashby",
+      "germanJobCount": 10,
+      "totalJobCount": 27,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "skalar",
+      "ats": "ashby",
+      "germanJobCount": 17,
+      "totalJobCount": 17,
+      "sampleLocations": [
+        "München"
+      ]
+    },
+    {
+      "slug": "alta-ares",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 28,
+      "sampleLocations": [
+        "Munich"
+      ]
+    },
+    {
+      "slug": "almetra",
+      "ats": "ashby",
+      "germanJobCount": 13,
+      "totalJobCount": 13,
+      "sampleLocations": [
+        "Onsite Berlin",
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "siteminder",
+      "ats": "ashby",
+      "germanJobCount": 6,
+      "totalJobCount": 44,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "deepslate",
+      "ats": "ashby",
+      "germanJobCount": 5,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Germany",
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "liqid-lam",
+      "ats": "ashby",
+      "germanJobCount": 3,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "proxima-fusion",
+      "ats": "ashby",
+      "germanJobCount": 40,
+      "totalJobCount": 48,
+      "sampleLocations": [
+        "Munich"
+      ]
+    },
+    {
+      "slug": "gotphoto",
+      "ats": "ashby",
+      "germanJobCount": 5,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Berlin, Hybrid"
+      ]
+    },
+    {
+      "slug": "lyceum",
+      "ats": "ashby",
+      "germanJobCount": 9,
+      "totalJobCount": 13,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "netbird",
+      "ats": "ashby",
+      "germanJobCount": 10,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "Berlin/Remote",
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "lupapets",
+      "ats": "ashby",
+      "germanJobCount": 1,
+      "totalJobCount": 12,
+      "sampleLocations": [
+        "Munich"
+      ]
+    },
+    {
+      "slug": "pergolux",
+      "ats": "ashby",
+      "germanJobCount": 8,
+      "totalJobCount": 19,
+      "sampleLocations": [
+        "Berlin | Global Team",
+        "Berlin | DACH Team"
+      ]
+    },
+    {
+      "slug": "munich-electrification",
+      "ats": "ashby",
+      "germanJobCount": 35,
+      "totalJobCount": 35,
+      "sampleLocations": [
+        "Munich"
+      ]
+    },
+    {
+      "slug": "thrivo-wealth",
+      "ats": "ashby",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "angi",
+      "ats": "ashby",
+      "germanJobCount": 4,
+      "totalJobCount": 43,
+      "sampleLocations": [
+        "Hybrid - Germany - Berlin"
+      ]
+    },
+    {
+      "slug": "atira",
+      "ats": "ashby",
+      "germanJobCount": 10,
+      "totalJobCount": 10,
+      "sampleLocations": [
+        "Munich"
+      ]
+    },
+    {
+      "slug": "dataguard",
+      "ats": "ashby",
+      "germanJobCount": 15,
+      "totalJobCount": 15,
+      "sampleLocations": [
+        "Munich",
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "phlair",
+      "ats": "ashby",
+      "germanJobCount": 6,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "München"
+      ]
+    },
+    {
+      "slug": "integral-de",
+      "ats": "ashby",
+      "germanJobCount": 17,
+      "totalJobCount": 19,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "publiccloudgroup",
+      "ats": "ashby",
+      "germanJobCount": 8,
+      "totalJobCount": 18,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "buildlinx",
+      "ats": "ashby",
+      "germanJobCount": 4,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Hamburg"
+      ]
+    },
+    {
+      "slug": "emagine",
+      "ats": "ashby",
+      "germanJobCount": 2,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Düsseldorf",
+        "München"
+      ]
+    }
+  ],
+  "lever": [
+    {
+      "slug": "emburse",
+      "ats": "lever",
+      "germanJobCount": 1,
+      "totalJobCount": 36,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "sila",
+      "ats": "lever",
+      "germanJobCount": 7,
+      "totalJobCount": 199,
+      "sampleLocations": [
+        "New Berlin, WI",
+        "Hanover, MA",
+        "New Castle, DE"
+      ]
+    },
+    {
+      "slug": "lyrahealth",
+      "ats": "lever",
+      "germanJobCount": 5,
+      "totalJobCount": 515,
+      "sampleLocations": [
+        "Hanover, Pennsylvania",
+        "East Berlin, Pennsylvania"
+      ]
+    },
+    {
+      "slug": "gopuff",
+      "ats": "lever",
+      "germanJobCount": 1,
+      "totalJobCount": 809,
+      "sampleLocations": [
+        "Wilmington, DE"
+      ]
+    },
+    {
+      "slug": "deliverect",
+      "ats": "lever",
+      "germanJobCount": 1,
+      "totalJobCount": 26,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "agicap",
+      "ats": "lever",
+      "germanJobCount": 13,
+      "totalJobCount": 35,
+      "sampleLocations": [
+        "Düsseldorf 🇩🇪",
+        "Berlin 🇩🇪"
+      ]
+    },
+    {
+      "slug": "crytek",
+      "ats": "lever",
+      "germanJobCount": 7,
+      "totalJobCount": 7,
+      "sampleLocations": [
+        "Frankfurt"
+      ]
+    },
+    {
+      "slug": "bazaarvoice",
+      "ats": "lever",
+      "germanJobCount": 3,
+      "totalJobCount": 23,
+      "sampleLocations": [
+        "Munich"
+      ]
+    },
+    {
+      "slug": "sonarsource",
+      "ats": "lever",
+      "germanJobCount": 8,
+      "totalJobCount": 118,
+      "sampleLocations": [
+        "Bochum"
+      ]
+    },
+    {
+      "slug": "coupa",
+      "ats": "lever",
+      "germanJobCount": 4,
+      "totalJobCount": 92,
+      "sampleLocations": [
+        "Frankfurt, Germany",
+        "Germany"
+      ]
+    },
+    {
+      "slug": "veeva",
+      "ats": "lever",
+      "germanJobCount": 40,
+      "totalJobCount": 786,
+      "sampleLocations": [
+        "Germany - Frankfurt",
+        "Germany - Berlin"
+      ]
+    },
+    {
+      "slug": "aircall",
+      "ats": "lever",
+      "germanJobCount": 6,
+      "totalJobCount": 77,
+      "sampleLocations": [
+        "Berlin Office"
+      ]
+    },
+    {
+      "slug": "pipedrive",
+      "ats": "lever",
+      "germanJobCount": 3,
+      "totalJobCount": 17,
+      "sampleLocations": [
+        "Germany, Berlin"
+      ]
+    },
+    {
+      "slug": "qonto",
+      "ats": "lever",
+      "germanJobCount": 3,
+      "totalJobCount": 36,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "researchgate",
+      "ats": "lever",
+      "germanJobCount": 4,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "loftorbital",
+      "ats": "lever",
+      "germanJobCount": 1,
+      "totalJobCount": 56,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "kolibrigames",
+      "ats": "lever",
+      "germanJobCount": 4,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Berlin, Germany"
+      ]
+    },
+    {
+      "slug": "finn",
+      "ats": "lever",
+      "germanJobCount": 34,
+      "totalJobCount": 36,
+      "sampleLocations": [
+        "Germany",
+        "Munich",
+        "Cologne"
+      ]
+    },
+    {
+      "slug": "justwatch",
+      "ats": "lever",
+      "germanJobCount": 8,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "ppro",
+      "ats": "lever",
+      "germanJobCount": 8,
+      "totalJobCount": 29,
+      "sampleLocations": [
+        "Munich",
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "fresha",
+      "ats": "lever",
+      "germanJobCount": 2,
+      "totalJobCount": 153,
+      "sampleLocations": [
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "malt",
+      "ats": "lever",
+      "germanJobCount": 5,
+      "totalJobCount": 36,
+      "sampleLocations": [
+        "Berlin",
+        "Munich"
+      ]
+    },
+    {
+      "slug": "kepler",
+      "ats": "lever",
+      "germanJobCount": 1,
+      "totalJobCount": 36,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "ajax",
+      "ats": "lever",
+      "germanJobCount": 3,
+      "totalJobCount": 210,
+      "sampleLocations": [
+        "Stuttgart",
+        "Berlin"
+      ]
+    },
+    {
+      "slug": "pigment",
+      "ats": "lever",
+      "germanJobCount": 5,
+      "totalJobCount": 99,
+      "sampleLocations": [
+        "Frankfurt"
+      ]
+    },
+    {
+      "slug": "azul",
+      "ats": "lever",
+      "germanJobCount": 1,
+      "totalJobCount": 14,
+      "sampleLocations": [
+        "Munich"
+      ]
+    },
+    {
+      "slug": "mindy",
+      "ats": "lever",
+      "germanJobCount": 1,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Remote (DE)"
+      ]
+    },
+    {
+      "slug": "jobgether",
+      "ats": "lever",
+      "germanJobCount": 114,
+      "totalJobCount": 2991,
+      "sampleLocations": [
+        "Germany"
+      ]
+    },
+    {
+      "slug": "storiogroup",
+      "ats": "lever",
+      "germanJobCount": 2,
+      "totalJobCount": 7,
+      "sampleLocations": [
+        "Kirchheim bei München"
+      ]
+    },
+    {
+      "slug": "extremenetworks",
+      "ats": "lever",
+      "germanJobCount": 3,
+      "totalJobCount": 92,
+      "sampleLocations": [
+        "Germany"
+      ]
+    }
+  ],
+  "recruitee": [
+    {
+      "slug": "eleqtron",
+      "ats": "recruitee",
+      "germanJobCount": 17,
+      "totalJobCount": 17,
+      "sampleLocations": [
+        "Hamburg, Hamburg, Germany",
+        "Siegen, Nordrhein-Westfalen, Germany"
+      ]
+    },
+    {
+      "slug": "forwardearth",
+      "ats": "recruitee",
+      "germanJobCount": 3,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "Berlin, Berlin, Germany"
+      ]
+    },
+    {
+      "slug": "formo",
+      "ats": "recruitee",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Frankfurt am Main, Hessen, Germany"
+      ]
+    },
+    {
+      "slug": "masterplan",
+      "ats": "recruitee",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Berlin, Berlin, Deutschland"
+      ]
+    },
+    {
+      "slug": "rebuy",
+      "ats": "recruitee",
+      "germanJobCount": 7,
+      "totalJobCount": 7,
+      "sampleLocations": [
+        "Berlin, Berlin, Germany",
+        "Rudow, Berlin, Germany"
+      ]
+    },
+    {
+      "slug": "ginmon",
+      "ats": "recruitee",
+      "germanJobCount": 6,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "Frankfurt, Hessen, Deutschland",
+        "Frankfurt am Main, Hessen, Deutschland"
+      ]
+    },
+    {
+      "slug": "sharpist",
+      "ats": "recruitee",
+      "germanJobCount": 8,
+      "totalJobCount": 10,
+      "sampleLocations": [
+        "Berlin, Berlin, Germany"
+      ]
+    },
+    {
+      "slug": "bego",
+      "ats": "recruitee",
+      "germanJobCount": 17,
+      "totalJobCount": 18,
+      "sampleLocations": [
+        "Bremen, Bremen, Deutschland"
+      ]
+    },
+    {
+      "slug": "share",
+      "ats": "recruitee",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "Berlin, Berlin, Germany"
+      ]
+    },
+    {
+      "slug": "impact",
+      "ats": "recruitee",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Sindelfingen, Baden-Württemberg, Deutschland"
+      ]
+    },
+    {
+      "slug": "represent",
+      "ats": "recruitee",
+      "germanJobCount": 8,
+      "totalJobCount": 8,
+      "sampleLocations": [
+        "München, Bayern, Deutschland"
+      ]
+    },
+    {
+      "slug": "gateway",
+      "ats": "recruitee",
+      "germanJobCount": 6,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "Westdeutschland, Nordrhein-Westfalen, Deutschland",
+        "Mitte-/ Süddeutschland, Bayern, Deutschland",
+        "Lüneburg, Niedersachsen, Deutschland"
+      ]
+    },
+    {
+      "slug": "testimonials",
+      "ats": "recruitee",
+      "germanJobCount": 5,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Hannover, Niedersachsen, Deutschland"
+      ]
+    },
+    {
+      "slug": "steamulationjobs",
+      "ats": "recruitee",
+      "germanJobCount": 13,
+      "totalJobCount": 13,
+      "sampleLocations": [
+        "Lohr am Main, Bayern, Deutschland"
+      ]
+    },
+    {
+      "slug": "valuezon",
+      "ats": "recruitee",
+      "germanJobCount": 5,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "München, Bayern, Deutschland"
+      ]
+    },
+    {
+      "slug": "bettybarclaygroup",
+      "ats": "recruitee",
+      "germanJobCount": 20,
+      "totalJobCount": 20,
+      "sampleLocations": [
+        "Zweibrücken, Rheinland-Pfalz, Deutschland",
+        "Schwarzheide, Brandenburg, Deutschland",
+        "München, Bayern, Deutschland"
+      ]
+    },
+    {
+      "slug": "haaszeitarbeit",
+      "ats": "recruitee",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Kirchheim-Heimstetten, Bayern, Deutschland"
+      ]
+    },
+    {
+      "slug": "sicherheitnord",
+      "ats": "recruitee",
+      "germanJobCount": 137,
+      "totalJobCount": 138,
+      "sampleLocations": [
+        "Ostfriesland, Niedersachsen, Deutschland",
+        "Konstanz , Baden-Württemberg, Deutschland",
+        "Karlsruhe, Baden-Württemberg, Deutschland"
+      ]
+    },
+    {
+      "slug": "bernardgruppe",
+      "ats": "recruitee",
+      "germanJobCount": 15,
+      "totalJobCount": 30,
+      "sampleLocations": [
+        "Aalen, Baden-Württemberg, Deutschland",
+        "Berlin, Berlin, Deutschland",
+        "Dresden, Sachsen, Deutschland"
+      ]
+    },
+    {
+      "slug": "spiegltec",
+      "ats": "recruitee",
+      "germanJobCount": 5,
+      "totalJobCount": 17,
+      "sampleLocations": [
+        "Penzberg, Bayern, Deutschland",
+        "Berlin, Berlin, Deutschland",
+        "Mannheim, Baden-Württemberg, Deutschland"
+      ]
+    },
+    {
+      "slug": "8advisory",
+      "ats": "recruitee",
+      "germanJobCount": 17,
+      "totalJobCount": 77,
+      "sampleLocations": [
+        "Frankfurt am Main, Hesse, Allemagne",
+        "Cologne, Rhénanie du Nord-Westfalie, Allemagne",
+        "Hamburg, Hambourg, Allemagne"
+      ]
+    },
+    {
+      "slug": "accso",
+      "ats": "recruitee",
+      "germanJobCount": 18,
+      "totalJobCount": 22,
+      "sampleLocations": [
+        "Frankfurt am Main, Hessen, Deutschland",
+        "Darmstadt, Hessen, Deutschland",
+        "München, Bayern, Deutschland"
+      ]
+    },
+    {
+      "slug": "60secondstonapoli",
+      "ats": "recruitee",
+      "germanJobCount": 106,
+      "totalJobCount": 118,
+      "sampleLocations": [
+        "Augsburg, Bayern, Deutschland",
+        "Nürnberg, Bayern, Deutschland",
+        "Freiburg, Baden-Württemberg, Deutschland"
+      ]
+    },
+    {
+      "slug": "ahcgmbh",
+      "ats": "recruitee",
+      "germanJobCount": 9,
+      "totalJobCount": 9,
+      "sampleLocations": [
+        "Stuttgart, Baden-Württemberg, Deutschland",
+        "Frankfurt am Main, Hessen, Deutschland",
+        "Darmstadt, Hessen, Deutschland"
+      ]
+    },
+    {
+      "slug": "cmcom",
+      "ats": "recruitee",
+      "germanJobCount": 1,
+      "totalJobCount": 22,
+      "sampleLocations": [
+        "Volkach, Bayern, Germany"
+      ]
+    },
+    {
+      "slug": "constellr",
+      "ats": "recruitee",
+      "germanJobCount": 5,
+      "totalJobCount": 9,
+      "sampleLocations": [
+        "Munich , Bayern, Germany"
+      ]
+    },
+    {
+      "slug": "bonial",
+      "ats": "recruitee",
+      "germanJobCount": 7,
+      "totalJobCount": 7,
+      "sampleLocations": [
+        "Berlin, Berlin, Germany"
+      ]
+    },
+    {
+      "slug": "cigusgmbh",
+      "ats": "recruitee",
+      "germanJobCount": 49,
+      "totalJobCount": 54,
+      "sampleLocations": [
+        "Lampoldshausen, Baden-Württemberg, Deutschland",
+        "Neuhausen a.d.F, Baden-Württemberg, Deutschland",
+        "Ulm, Baden-Württemberg, Deutschland"
+      ]
+    },
+    {
+      "slug": "connectpeople",
+      "ats": "recruitee",
+      "germanJobCount": 26,
+      "totalJobCount": 26,
+      "sampleLocations": [
+        "Steinfeld, Niedersachsen, Deutschland",
+        "Osnabrück, Niedersachsen, Deutschland",
+        "Melle, Niedersachsen, Deutschland"
+      ]
+    },
+    {
+      "slug": "hrworks",
+      "ats": "recruitee",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "Berlin, Berlin, Deutschland"
+      ]
+    },
+    {
+      "slug": "simpex",
+      "ats": "recruitee",
+      "germanJobCount": 6,
+      "totalJobCount": 7,
+      "sampleLocations": [
+        "Wahlstedt, Schleswig-Holstein, Deutschland"
+      ]
+    }
+  ],
+  "smartrecruiters": [
+    {
+      "slug": "nexthink",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 91,
+      "sampleLocations": [
+        "Munich, BY, de"
+      ]
+    },
+    {
+      "slug": "beamery",
+      "ats": "smartrecruiters",
+      "germanJobCount": 3,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Berlin, Berlin, de",
+        "Hamburg, HH, de"
+      ]
+    },
+    {
+      "slug": "tomra",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Potsdam, NY, us"
+      ]
+    },
+    {
+      "slug": "deliveryhero",
+      "ats": "smartrecruiters",
+      "germanJobCount": 5,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Berlin, de"
+      ]
+    },
+    {
+      "slug": "manara",
+      "ats": "smartrecruiters",
+      "germanJobCount": 4,
+      "totalJobCount": 8,
+      "sampleLocations": [
+        "Berlin, BE, de"
+      ]
+    },
+    {
+      "slug": "altagramgmbh",
+      "ats": "smartrecruiters",
+      "germanJobCount": 5,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Berlin, BE, de"
+      ]
+    },
+    {
+      "slug": "stepstonegroup",
+      "ats": "smartrecruiters",
+      "germanJobCount": 28,
+      "totalJobCount": 84,
+      "sampleLocations": [
+        "Dusseldorf, EUROPE, de",
+        "Düsseldorf, de",
+        "Münster, de"
+      ]
+    },
+    {
+      "slug": "flink3",
+      "ats": "smartrecruiters",
+      "germanJobCount": 24,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Berlin, BE, de",
+        "Freiburg im Breisgau, BW, de",
+        "Aachen, NRW, de"
+      ]
+    },
+    {
+      "slug": "endava",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Berlin, State of Berlin, de"
+      ]
+    },
+    {
+      "slug": "sixt",
+      "ats": "smartrecruiters",
+      "germanJobCount": 16,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Munich, BY, de",
+        "Hamburg, HH, de",
+        "Berlin, BE, de"
+      ]
+    },
+    {
+      "slug": "scalablegmbh",
+      "ats": "smartrecruiters",
+      "germanJobCount": 97,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "München, BY, de",
+        "Berlin, BE, de"
+      ]
+    },
+    {
+      "slug": "aboutyougmbh",
+      "ats": "smartrecruiters",
+      "germanJobCount": 97,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Hamburg oder Berlin, de",
+        "Hamburg or Berlin, de",
+        "Hamburg, HH, de"
+      ]
+    },
+    {
+      "slug": "ifs1",
+      "ats": "smartrecruiters",
+      "germanJobCount": 6,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Düsseldorf, North Rhine-Westphalia, de"
+      ]
+    },
+    {
+      "slug": "alten",
+      "ats": "smartrecruiters",
+      "germanJobCount": 2,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Frankfurt am Main, HE, de",
+        "Nürnberg, BY, de"
+      ]
+    },
+    {
+      "slug": "servicenow",
+      "ats": "smartrecruiters",
+      "germanJobCount": 4,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Frankfurt, de",
+        "Munich, de"
+      ]
+    },
+    {
+      "slug": "boschgroup",
+      "ats": "smartrecruiters",
+      "germanJobCount": 20,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "CDMX, CIUDAD DE MEXICO, mx",
+        "Dresden, SN, de",
+        "Dresden, SACHSEN, de"
+      ]
+    },
+    {
+      "slug": "smartrecruiters",
+      "ats": "smartrecruiters",
+      "germanJobCount": 2,
+      "totalJobCount": 8,
+      "sampleLocations": [
+        "Germany, REMOTE, de",
+        "Germany, Remote, de"
+      ]
+    },
+    {
+      "slug": "ecovadis",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 31,
+      "sampleLocations": [
+        "Berlin, BE, de"
+      ]
+    },
+    {
+      "slug": "continental",
+      "ats": "smartrecruiters",
+      "germanJobCount": 12,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Hannover, NDS, de"
+      ]
+    },
+    {
+      "slug": "auto1",
+      "ats": "smartrecruiters",
+      "germanJobCount": 7,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Berlin, BE, de",
+        "Hamburg, HH, de",
+        "Berlin, de"
+      ]
+    },
+    {
+      "slug": "gerresheimer",
+      "ats": "smartrecruiters",
+      "germanJobCount": 11,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Regensburg, Bavaria, de",
+        "Essen, North Rhine-Westphalia, de",
+        "Düsseldorf, North Rhine-Westphalia, de"
+      ]
+    },
+    {
+      "slug": "redcarepharmacy",
+      "ats": "smartrecruiters",
+      "germanJobCount": 8,
+      "totalJobCount": 16,
+      "sampleLocations": [
+        "Köln, NRW, de",
+        "Cologne, de",
+        "Berlin, BE, de"
+      ]
+    },
+    {
+      "slug": "redcare-pharmacy",
+      "ats": "smartrecruiters",
+      "germanJobCount": 52,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Aachen, NRW, de",
+        "Bonn, NRW, de",
+        "Dortmund, NRW, de"
+      ]
+    },
+    {
+      "slug": "bundesdruckerei",
+      "ats": "smartrecruiters",
+      "germanJobCount": 3,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "Berlin, Berlin, de"
+      ]
+    },
+    {
+      "slug": "omio",
+      "ats": "smartrecruiters",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Berlin, Berlin, de"
+      ]
+    },
+    {
+      "slug": "wundermobility",
+      "ats": "smartrecruiters",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Hamburg, HH, de",
+        "Dortmund, NRW, de"
+      ]
+    },
+    {
+      "slug": "check24",
+      "ats": "smartrecruiters",
+      "germanJobCount": 87,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "München, Bayern, de",
+        "Augsburg, Bayern, de",
+        "Dortmund, Nordrhein-Westfalen, de"
+      ]
+    },
+    {
+      "slug": "rolandberger",
+      "ats": "smartrecruiters",
+      "germanJobCount": 15,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Munich, BY, de",
+        "Germany, de",
+        "München, de"
+      ]
+    },
+    {
+      "slug": "abbvie",
+      "ats": "smartrecruiters",
+      "germanJobCount": 3,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Wiesbaden, HE, de",
+        "Hamburg, HH, de"
+      ]
+    },
+    {
+      "slug": "brainlab",
+      "ats": "smartrecruiters",
+      "germanJobCount": 22,
+      "totalJobCount": 49,
+      "sampleLocations": [
+        "Munich, BY, de",
+        "Stuttgart, BW, de"
+      ]
+    },
+    {
+      "slug": "home24",
+      "ats": "smartrecruiters",
+      "germanJobCount": 9,
+      "totalJobCount": 9,
+      "sampleLocations": [
+        "Berlin, Berlin, de",
+        "Hamburg, HH, de",
+        "Munich, BY, de"
+      ]
+    },
+    {
+      "slug": "freshworks",
+      "ats": "smartrecruiters",
+      "germanJobCount": 2,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Berlin, de"
+      ]
+    },
+    {
+      "slug": "sevensenders",
+      "ats": "smartrecruiters",
+      "germanJobCount": 16,
+      "totalJobCount": 16,
+      "sampleLocations": [
+        "Berlin, BE, de"
+      ]
+    },
+    {
+      "slug": "mirantis",
+      "ats": "smartrecruiters",
+      "germanJobCount": 2,
+      "totalJobCount": 54,
+      "sampleLocations": [
+        "Berlin, BE, de"
+      ]
+    },
+    {
+      "slug": "coolblue",
+      "ats": "smartrecruiters",
+      "germanJobCount": 30,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Hannover, NDS, de",
+        "Frankfurt am Main, HE, de",
+        "Düsseldorf, NRW, de"
+      ]
+    },
+    {
+      "slug": "yassir",
+      "ats": "smartrecruiters",
+      "germanJobCount": 6,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "Berlin, BE, de"
+      ]
+    },
+    {
+      "slug": "kombo",
+      "ats": "smartrecruiters",
+      "germanJobCount": 7,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Berlin, BE, de"
+      ]
+    },
+    {
+      "slug": "believe",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 30,
+      "sampleLocations": [
+        "Berlin, de"
+      ]
+    },
+    {
+      "slug": "fella",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 7,
+      "sampleLocations": [
+        "Berlin, Berlin, de"
+      ]
+    },
+    {
+      "slug": "electry",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "Berlin, Berlin, de"
+      ]
+    },
+    {
+      "slug": "celia",
+      "ats": "smartrecruiters",
+      "germanJobCount": 2,
+      "totalJobCount": 71,
+      "sampleLocations": [
+        "Hamburg, HH, de",
+        "Bremen, HB, de"
+      ]
+    },
+    {
+      "slug": "ktronik",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "Ingolstadt, BY, de"
+      ]
+    },
+    {
+      "slug": "matterhorn",
+      "ats": "smartrecruiters",
+      "germanJobCount": 2,
+      "totalJobCount": 10,
+      "sampleLocations": [
+        "Berlin, BE, de"
+      ]
+    },
+    {
+      "slug": "haufegroup",
+      "ats": "smartrecruiters",
+      "germanJobCount": 42,
+      "totalJobCount": 43,
+      "sampleLocations": [
+        "Freiburg im Breisgau, Baden-Württemberg, de",
+        "Stuttgart, Baden-Württemberg, de",
+        "Berlin, Berlin, de"
+      ]
+    },
+    {
+      "slug": "motelone",
+      "ats": "smartrecruiters",
+      "germanJobCount": 51,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Hamburg, HH, de",
+        "Mannheim, BW, de",
+        "München, BY, de"
+      ]
+    },
+    {
+      "slug": "wheregroup",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "Bonn, NRW, de"
+      ]
+    },
+    {
+      "slug": "swarco",
+      "ats": "smartrecruiters",
+      "germanJobCount": 23,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Berlin, BE, de",
+        "Bochum, de",
+        "Kiel, SH, de"
+      ]
+    },
+    {
+      "slug": "devoteam",
+      "ats": "smartrecruiters",
+      "germanJobCount": 26,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Frankfurt am Main, HE, de",
+        "Hamburg, HH, de",
+        "Bremen, HB, de"
+      ]
+    },
+    {
+      "slug": "hubertburdamedia",
+      "ats": "smartrecruiters",
+      "germanJobCount": 16,
+      "totalJobCount": 22,
+      "sampleLocations": [
+        "München, BY, de",
+        "Hamburg, HH, de",
+        "München, de"
+      ]
+    },
+    {
+      "slug": "jysk",
+      "ats": "smartrecruiters",
+      "germanJobCount": 9,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Ulm, BW, de",
+        "Hamburg, HH, de",
+        "Neu-Ulm, BY, de"
+      ]
+    },
+    {
+      "slug": "advens",
+      "ats": "smartrecruiters",
+      "germanJobCount": 2,
+      "totalJobCount": 27,
+      "sampleLocations": [
+        "München, BY, de"
+      ]
+    },
+    {
+      "slug": "2ntelekomunikaceas",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 16,
+      "sampleLocations": [
+        "Berlin, State of Berlin, de"
+      ]
+    },
+    {
+      "slug": "atparchitekteningenieure",
+      "ats": "smartrecruiters",
+      "germanJobCount": 47,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Frankfurt am Main, HE, de",
+        "Hamburg, HH, de",
+        "München, BY, de"
+      ]
+    },
+    {
+      "slug": "applusidiada1",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Ingolstadt, de"
+      ]
+    },
+    {
+      "slug": "avivgroup",
+      "ats": "smartrecruiters",
+      "germanJobCount": 20,
+      "totalJobCount": 32,
+      "sampleLocations": [
+        "Berlin, BE, de",
+        "Nürnberg, BY, de",
+        "Nuremberg, BY, de"
+      ]
+    },
+    {
+      "slug": "baywaag",
+      "ats": "smartrecruiters",
+      "germanJobCount": 6,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "München, BY, de",
+        "Augsburg, BY, de",
+        "Stuttgart, Baden-Württemberg, de"
+      ]
+    },
+    {
+      "slug": "ayming",
+      "ats": "smartrecruiters",
+      "germanJobCount": 7,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Düsseldorf, NRW, de"
+      ]
+    },
+    {
+      "slug": "blend360",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Wilmington, DE, us"
+      ]
+    },
+    {
+      "slug": "californiaclosets",
+      "ats": "smartrecruiters",
+      "germanJobCount": 2,
+      "totalJobCount": 80,
+      "sampleLocations": [
+        "Lewes, DE, us"
+      ]
+    },
+    {
+      "slug": "cint",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 37,
+      "sampleLocations": [
+        "Berlin, BE, de"
+      ]
+    },
+    {
+      "slug": "coface",
+      "ats": "smartrecruiters",
+      "germanJobCount": 12,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Karlsruhe, de",
+        "Hannover, de",
+        "Berlin, de"
+      ]
+    },
+    {
+      "slug": "coliseefrance",
+      "ats": "smartrecruiters",
+      "germanJobCount": 7,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Bonnétage, Bourgogne-Franche-Comté, fr"
+      ]
+    },
+    {
+      "slug": "contilia1",
+      "ats": "smartrecruiters",
+      "germanJobCount": 80,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Essen, Nordrhein-Westfalen, de"
+      ]
+    },
+    {
+      "slug": "deltaelectronics",
+      "ats": "smartrecruiters",
+      "germanJobCount": 5,
+      "totalJobCount": 53,
+      "sampleLocations": [
+        "Frankfurt am Main, HE, de"
+      ]
+    },
+    {
+      "slug": "easyvista",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "Frankfurt am Main, HE, de"
+      ]
+    },
+    {
+      "slug": "everience",
+      "ats": "smartrecruiters",
+      "germanJobCount": 2,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Munich, BY, de",
+        "Cologne, NRW, de"
+      ]
+    },
+    {
+      "slug": "firevanderrwthaachen",
+      "ats": "smartrecruiters",
+      "germanJobCount": 70,
+      "totalJobCount": 70,
+      "sampleLocations": [
+        "Aachen, NRW, de"
+      ]
+    },
+    {
+      "slug": "enero",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 20,
+      "sampleLocations": [
+        "Munich, de"
+      ]
+    },
+    {
+      "slug": "heimstaden",
+      "ats": "smartrecruiters",
+      "germanJobCount": 9,
+      "totalJobCount": 34,
+      "sampleLocations": [
+        "Berlin, de",
+        "Berlin, BE, de",
+        "München, de"
+      ]
+    },
+    {
+      "slug": "hmgroup",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Hamburg, HH, de"
+      ]
+    },
+    {
+      "slug": "ib-vogt-gmbh",
+      "ats": "smartrecruiters",
+      "germanJobCount": 7,
+      "totalJobCount": 35,
+      "sampleLocations": [
+        "Berlin, BE, de",
+        "Berlin, Berlin, de"
+      ]
+    },
+    {
+      "slug": "ikanoretail",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "MEXICO, CIUDAD DE MEXICO, mx"
+      ]
+    },
+    {
+      "slug": "jacklinksproteinsnacks",
+      "ats": "smartrecruiters",
+      "germanJobCount": 4,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Düsseldorf, NRW, de",
+        "Stuttgart, BW, de",
+        "München, MUNICH, de"
+      ]
+    },
+    {
+      "slug": "keenfinity",
+      "ats": "smartrecruiters",
+      "germanJobCount": 5,
+      "totalJobCount": 73,
+      "sampleLocations": [
+        "Nürnberg, BY, de",
+        "München, BY, de"
+      ]
+    },
+    {
+      "slug": "iomaxisllc",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 12,
+      "sampleLocations": [
+        "Hanover, Maryland, us"
+      ]
+    },
+    {
+      "slug": "krombacher",
+      "ats": "smartrecruiters",
+      "germanJobCount": 14,
+      "totalJobCount": 57,
+      "sampleLocations": [
+        "Darmstadt, HE, de",
+        "Hamburg, HH, de",
+        "Münster, NRW, de"
+      ]
+    },
+    {
+      "slug": "lendigroup1",
+      "ats": "smartrecruiters",
+      "germanJobCount": 3,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Heidelberg, VIC, au"
+      ]
+    },
+    {
+      "slug": "lgcgroup",
+      "ats": "smartrecruiters",
+      "germanJobCount": 22,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Berlin, BE, de",
+        "Germany, de",
+        "Augsburg, BY, de"
+      ]
+    },
+    {
+      "slug": "locinox",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 8,
+      "sampleLocations": [
+        "Berlin, BE, de"
+      ]
+    },
+    {
+      "slug": "medmix",
+      "ats": "smartrecruiters",
+      "germanJobCount": 6,
+      "totalJobCount": 46,
+      "sampleLocations": [
+        "Stuttgart, BW, de",
+        "Kiel, SH, de"
+      ]
+    },
+    {
+      "slug": "o-i",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Los Reyes, La Paz, ESTADO DE MÉXICO, mx"
+      ]
+    },
+    {
+      "slug": "rentokilinitial1",
+      "ats": "smartrecruiters",
+      "germanJobCount": 8,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Hamburg, HH, de",
+        "Mannheim, BW, de",
+        "Heidelberg, BW, de"
+      ]
+    },
+    {
+      "slug": "securitas",
+      "ats": "smartrecruiters",
+      "germanJobCount": 15,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Bonn, NRW, de",
+        "München, Nürnberg, BY, de",
+        "Nordost Deutschland, de"
+      ]
+    },
+    {
+      "slug": "sectigo",
+      "ats": "smartrecruiters",
+      "germanJobCount": 4,
+      "totalJobCount": 43,
+      "sampleLocations": [
+        "Frankfurt am Main, HE, de",
+        "Hamburg, HH, de",
+        "Berlin, BE, de"
+      ]
+    },
+    {
+      "slug": "streemenergy",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 9,
+      "sampleLocations": [
+        "Germany, de"
+      ]
+    },
+    {
+      "slug": "staubligroup",
+      "ats": "smartrecruiters",
+      "germanJobCount": 6,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Essen, de"
+      ]
+    },
+    {
+      "slug": "sosi1",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Wiesbaden, HE, de"
+      ]
+    },
+    {
+      "slug": "teamworkcorporate",
+      "ats": "smartrecruiters",
+      "germanJobCount": 2,
+      "totalJobCount": 81,
+      "sampleLocations": [
+        "München, BY, de"
+      ]
+    },
+    {
+      "slug": "thenielsencompany",
+      "ats": "smartrecruiters",
+      "germanJobCount": 2,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Hamburg, HH, de",
+        "Hanover, Maryland, us"
+      ]
+    },
+    {
+      "slug": "trupanion1",
+      "ats": "smartrecruiters",
+      "germanJobCount": 3,
+      "totalJobCount": 47,
+      "sampleLocations": [
+        "Berlin, BE, de",
+        "Cologne, NRW, de"
+      ]
+    },
+    {
+      "slug": "ubisoft2",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Düsseldorf, NRW, de"
+      ]
+    },
+    {
+      "slug": "vonq",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Düsseldorf, NRW, de"
+      ]
+    },
+    {
+      "slug": "vusiongroupsa",
+      "ats": "smartrecruiters",
+      "germanJobCount": 7,
+      "totalJobCount": 71,
+      "sampleLocations": [
+        "Frankfurt am Main, HE, de",
+        "Köln, NRW, de"
+      ]
+    },
+    {
+      "slug": "wuestpartner",
+      "ats": "smartrecruiters",
+      "germanJobCount": 6,
+      "totalJobCount": 12,
+      "sampleLocations": [
+        "München, BY, de",
+        "Düsseldorf, NRW, de",
+        "Berlin, BE, de"
+      ]
+    },
+    {
+      "slug": "accorcorpo",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Munich, BY, de"
+      ]
+    },
+    {
+      "slug": "accorhotel",
+      "ats": "smartrecruiters",
+      "germanJobCount": 3,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Düsseldorf, NRW, de",
+        "Frankfurt, de"
+      ]
+    },
+    {
+      "slug": "afry",
+      "ats": "smartrecruiters",
+      "germanJobCount": 36,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Hamburg, HH, de",
+        "Hanover, NDS, de",
+        "Essen, NRW, de"
+      ]
+    },
+    {
+      "slug": "antonpaar1",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Berlin, BE, de"
+      ]
+    },
+    {
+      "slug": "aristanetworks",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Düsseldorf, NRW, de"
+      ]
+    },
+    {
+      "slug": "artemedse",
+      "ats": "smartrecruiters",
+      "germanJobCount": 39,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Freiburg im Breisgau, BW, de",
+        "Augsburg, BY, de",
+        "Freiburg i.B., de"
+      ]
+    },
+    {
+      "slug": "asburycommunities",
+      "ats": "smartrecruiters",
+      "germanJobCount": 10,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Wilmington, DE, us"
+      ]
+    },
+    {
+      "slug": "assent",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 26,
+      "sampleLocations": [
+        "Berlin, BE, de"
+      ]
+    },
+    {
+      "slug": "audiinteractiongmbh",
+      "ats": "smartrecruiters",
+      "germanJobCount": 7,
+      "totalJobCount": 7,
+      "sampleLocations": [
+        "Ingolstadt, BY, de",
+        "Potsdam, BB, de"
+      ]
+    },
+    {
+      "slug": "avaloq1",
+      "ats": "smartrecruiters",
+      "germanJobCount": 30,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Berlin, de",
+        "Düsseldorf, North Rhine-Westphalia, de"
+      ]
+    },
+    {
+      "slug": "aumovio",
+      "ats": "smartrecruiters",
+      "germanJobCount": 6,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Frankfurt am Main, HE, de",
+        "Regensburg, BY, de"
+      ]
+    },
+    {
+      "slug": "analysysmason1",
+      "ats": "smartrecruiters",
+      "germanJobCount": 20,
+      "totalJobCount": 33,
+      "sampleLocations": [
+        "Munich, de",
+        "Frankfurt am Main, de",
+        "Bonn, de"
+      ]
+    },
+    {
+      "slug": "bew",
+      "ats": "smartrecruiters",
+      "germanJobCount": 27,
+      "totalJobCount": 27,
+      "sampleLocations": [
+        "Berlin, BE, de"
+      ]
+    },
+    {
+      "slug": "apmgroup",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Heidelberg, VIC, au"
+      ]
+    },
+    {
+      "slug": "expeditors",
+      "ats": "smartrecruiters",
+      "germanJobCount": 10,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Nürnberg, de",
+        "Nürnberg, BY, de",
+        "Hamburg, de"
+      ]
+    },
+    {
+      "slug": "formelsconsulting",
+      "ats": "smartrecruiters",
+      "germanJobCount": 10,
+      "totalJobCount": 10,
+      "sampleLocations": [
+        "Berlin, Berlin, de"
+      ]
+    },
+    {
+      "slug": "hitachisolutions",
+      "ats": "smartrecruiters",
+      "germanJobCount": 4,
+      "totalJobCount": 56,
+      "sampleLocations": [
+        "Nuremberg, BY, de",
+        "Nürnberg, Braunschweig, de",
+        "Nürnberg, Hamburg, Braunschweig, Frankfurt a. M., de"
+      ]
+    },
+    {
+      "slug": "jacobsdouweegberts",
+      "ats": "smartrecruiters",
+      "germanJobCount": 4,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Bremen, HB, de",
+        "Berlin, BE, de"
+      ]
+    },
+    {
+      "slug": "metromakro",
+      "ats": "smartrecruiters",
+      "germanJobCount": 8,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Düsseldorf, NRW, de",
+        "Hannover, NDS, de",
+        "Köln, NRW, de"
+      ]
+    },
+    {
+      "slug": "rrdonnelley",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Newark, DE, us"
+      ]
+    },
+    {
+      "slug": "thetileshop1",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Wilmington, DE, us"
+      ]
+    },
+    {
+      "slug": "waremarenkhoffse",
+      "ats": "smartrecruiters",
+      "germanJobCount": 5,
+      "totalJobCount": 60,
+      "sampleLocations": [
+        "Düsseldorf, de",
+        "Kirchheim bei München, BY, de"
+      ]
+    },
+    {
+      "slug": "worldwidetechservices",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "New Castle, DE, us"
+      ]
+    },
+    {
+      "slug": "acetate",
+      "ats": "smartrecruiters",
+      "germanJobCount": 24,
+      "totalJobCount": 42,
+      "sampleLocations": [
+        "Bonn, NRW, de",
+        "Mannheim, BW, de",
+        "Hamburg, HH, de"
+      ]
+    },
+    {
+      "slug": "beckersgroup",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 16,
+      "sampleLocations": [
+        "Berlin, BE, de"
+      ]
+    },
+    {
+      "slug": "axelspringernewsmedianational",
+      "ats": "smartrecruiters",
+      "germanJobCount": 72,
+      "totalJobCount": 74,
+      "sampleLocations": [
+        "Berlin, BE, de",
+        "München, BY, de",
+        "Düsseldorf, NRW, de"
+      ]
+    },
+    {
+      "slug": "beumergroup1",
+      "ats": "smartrecruiters",
+      "germanJobCount": 7,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Dortmund, NRW, de",
+        "Hamburg, HH, de",
+        "Berlin, BE, de"
+      ]
+    },
+    {
+      "slug": "bitlane",
+      "ats": "smartrecruiters",
+      "germanJobCount": 5,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Berlin, Berlin, de"
+      ]
+    },
+    {
+      "slug": "colliersinternationalemea",
+      "ats": "smartrecruiters",
+      "germanJobCount": 23,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "München, BY, de",
+        "Hamburg, HH, de",
+        "Frankfurt am Main, HE, de"
+      ]
+    },
+    {
+      "slug": "crealogix",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Stuttgart, Baden-Wurttemberg, de"
+      ]
+    },
+    {
+      "slug": "courir",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "SAN SEBASTIAN DE LOS REYES, es"
+      ]
+    },
+    {
+      "slug": "deindentaledg",
+      "ats": "smartrecruiters",
+      "germanJobCount": 28,
+      "totalJobCount": 72,
+      "sampleLocations": [
+        "Neu-Ulm, Bayern, de",
+        "Berlin, Land Berlin, de",
+        "Hannover (Lister Platz), Niedersachsen, de"
+      ]
+    },
+    {
+      "slug": "doco1",
+      "ats": "smartrecruiters",
+      "germanJobCount": 35,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Munich, BY, de",
+        "Stuttgart, BW, de",
+        "Frankfurt am Main, HE, de"
+      ]
+    },
+    {
+      "slug": "deutschepruefservicegmbh",
+      "ats": "smartrecruiters",
+      "germanJobCount": 35,
+      "totalJobCount": 53,
+      "sampleLocations": [
+        "Freiburg im Breisgau, de",
+        "Bielefeld, NRW, de",
+        "Bremen, HB, de"
+      ]
+    },
+    {
+      "slug": "drreddyslaboratorieslimited",
+      "ats": "smartrecruiters",
+      "germanJobCount": 4,
+      "totalJobCount": 81,
+      "sampleLocations": [
+        "Augsburg, BY, de"
+      ]
+    },
+    {
+      "slug": "dreessommerse",
+      "ats": "smartrecruiters",
+      "germanJobCount": 71,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Stuttgart, BW, de",
+        "München, BY, de",
+        "Ulm, BW, de"
+      ]
+    },
+    {
+      "slug": "ebreuningergmbhco",
+      "ats": "smartrecruiters",
+      "germanJobCount": 73,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Hamburg, HH, de",
+        "Stuttgart, BW, de",
+        "Stuttgart, de"
+      ]
+    },
+    {
+      "slug": "enertrag",
+      "ats": "smartrecruiters",
+      "germanJobCount": 29,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Berlin, BE, de",
+        "Hamburg, HH, de"
+      ]
+    },
+    {
+      "slug": "europeanhomecaregmbh",
+      "ats": "smartrecruiters",
+      "germanJobCount": 14,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Köln, NRW, de",
+        "Hannover, NDS, de",
+        "Darmstadt, HE, de"
+      ]
+    },
+    {
+      "slug": "epro360",
+      "ats": "smartrecruiters",
+      "germanJobCount": 5,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Potsdam, BB, de"
+      ]
+    },
+    {
+      "slug": "linkedin3",
+      "ats": "smartrecruiters",
+      "germanJobCount": 2,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Munich, BY, de"
+      ]
+    },
+    {
+      "slug": "northroprealty",
+      "ats": "smartrecruiters",
+      "germanJobCount": 2,
+      "totalJobCount": 7,
+      "sampleLocations": [
+        "Bethany Beach, DE, us",
+        "Newark, DE, us"
+      ]
+    },
+    {
+      "slug": "msxinternational",
+      "ats": "smartrecruiters",
+      "germanJobCount": 9,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Cologne, de",
+        "Hanover, NDS, de",
+        "Stuttgart, BW, de"
+      ]
+    },
+    {
+      "slug": "umdaschgroup",
+      "ats": "smartrecruiters",
+      "germanJobCount": 3,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Cuautitlán Izcalli, ESTADO DE MÉXICO, mx",
+        "München, de",
+        "Waibstadt, Heidelberg, Mannheim, Stuttgart, de"
+      ]
+    },
+    {
+      "slug": "brainnest",
+      "ats": "smartrecruiters",
+      "germanJobCount": 10,
+      "totalJobCount": 10,
+      "sampleLocations": [
+        "Bremen, HB, de",
+        "Bremen, de"
+      ]
+    },
+    {
+      "slug": "nochmall",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "Berlin, BE, de"
+      ]
+    },
+    {
+      "slug": "robertbosch",
+      "ats": "smartrecruiters",
+      "germanJobCount": 1,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "Berlin, BE, de"
+      ]
+    },
+    {
+      "slug": "deutscheglasfaser",
+      "ats": "smartrecruiters",
+      "germanJobCount": 31,
+      "totalJobCount": 72,
+      "sampleLocations": [
+        "Düsseldorf, de",
+        "Düsseldorf, NRW, de",
+        "Mannheim, de"
+      ]
+    },
+    {
+      "slug": "konecranes",
+      "ats": "smartrecruiters",
+      "germanJobCount": 16,
+      "totalJobCount": 100,
+      "sampleLocations": [
+        "Mannheim, de",
+        "Düsseldorf, de",
+        "New Berlin, Wisconsin, us"
+      ]
+    },
+    {
+      "slug": "akpowerlogistics",
+      "ats": "smartrecruiters",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "Essen, NRW, de"
+      ]
+    },
+    {
+      "slug": "schnelleckelogistics",
+      "ats": "smartrecruiters",
+      "germanJobCount": 24,
+      "totalJobCount": 40,
+      "sampleLocations": [
+        "Wolfsburg, NDS, de",
+        "Wolfsburg, DE-NI, de",
+        "Wolfsburg, de"
+      ]
+    },
+    {
+      "slug": "rzteversorgungniedersachsen",
+      "ats": "smartrecruiters",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Hannover, NDS, de"
+      ]
+    }
+  ],
+  "teamtailor": [
+    {
+      "slug": "replika",
+      "ats": "teamtailor",
+      "germanJobCount": 4,
+      "totalJobCount": 91,
+      "sampleLocations": [
+        "Berlin, EMEA, DE"
+      ]
+    },
+    {
+      "slug": "podimo",
+      "ats": "teamtailor",
+      "germanJobCount": 2,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Cologne, DE"
+      ]
+    },
+    {
+      "slug": "esker",
+      "ats": "teamtailor",
+      "germanJobCount": 2,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "Ratingen, Germany, DE",
+        "Feldkirchen, Germany, DE"
+      ]
+    },
+    {
+      "slug": "grouponede",
+      "ats": "teamtailor",
+      "germanJobCount": 15,
+      "totalJobCount": 15,
+      "sampleLocations": [
+        "Dortmund, Dortmund, DE",
+        "München, München, DE",
+        "Berlin, Berlin, DE"
+      ]
+    },
+    {
+      "slug": "cacustomeralliancegmbh",
+      "ats": "teamtailor",
+      "germanJobCount": 4,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Berlin, DE"
+      ]
+    },
+    {
+      "slug": "tibber",
+      "ats": "teamtailor",
+      "germanJobCount": 4,
+      "totalJobCount": 18,
+      "sampleLocations": [
+        "Berlin, Berlin, DE"
+      ]
+    },
+    {
+      "slug": "bryter",
+      "ats": "teamtailor",
+      "germanJobCount": 4,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Legal Engineer - AI (DACH)",
+        "Frankfurt am Main, Germany, DE"
+      ]
+    },
+    {
+      "slug": "roccofortehotelsgermany",
+      "ats": "teamtailor",
+      "germanJobCount": 9,
+      "totalJobCount": 9,
+      "sampleLocations": [
+        "München, GERMANY, DE"
+      ]
+    },
+    {
+      "slug": "polestar",
+      "ats": "teamtailor",
+      "germanJobCount": 3,
+      "totalJobCount": 29,
+      "sampleLocations": [
+        "Cologne, Central Europe, DE"
+      ]
+    },
+    {
+      "slug": "mintos",
+      "ats": "teamtailor",
+      "germanJobCount": 3,
+      "totalJobCount": 25,
+      "sampleLocations": [
+        "Germany, DE",
+        "Berlin, DE"
+      ]
+    },
+    {
+      "slug": "teamlewis",
+      "ats": "teamtailor",
+      "germanJobCount": 3,
+      "totalJobCount": 45,
+      "sampleLocations": [
+        "München, Germany, DE"
+      ]
+    },
+    {
+      "slug": "oatly",
+      "ats": "teamtailor",
+      "germanJobCount": 2,
+      "totalJobCount": 13,
+      "sampleLocations": [
+        "Munich, Germany, DE",
+        "Berlin, Germany, DE"
+      ]
+    },
+    {
+      "slug": "securitas",
+      "ats": "teamtailor",
+      "germanJobCount": 5,
+      "totalJobCount": 56,
+      "sampleLocations": [
+        "Berlin, Europe - countries, DE",
+        "Berlin, Europe - specific cities, DE",
+        "Mannheim, Europe - specific cities, DE"
+      ]
+    },
+    {
+      "slug": "teamviewer",
+      "ats": "teamtailor",
+      "germanJobCount": 60,
+      "totalJobCount": 177,
+      "sampleLocations": [
+        "Göppingen, EMEA, DE",
+        "Stuttgart, EMEA, DE",
+        "München, EMEA, DE"
+      ]
+    },
+    {
+      "slug": "leaseweb",
+      "ats": "teamtailor",
+      "germanJobCount": 8,
+      "totalJobCount": 27,
+      "sampleLocations": [
+        "Frankfurt am Main, Germany, DE"
+      ]
+    },
+    {
+      "slug": "raidboxes",
+      "ats": "teamtailor",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "Münster, DE"
+      ]
+    },
+    {
+      "slug": "fresha",
+      "ats": "teamtailor",
+      "germanJobCount": 3,
+      "totalJobCount": 101,
+      "sampleLocations": [
+        "Berlin, Western Europe, DE"
+      ]
+    },
+    {
+      "slug": "sigmaai",
+      "ats": "teamtailor",
+      "germanJobCount": 12,
+      "totalJobCount": 431,
+      "sampleLocations": [
+        "Germany, Europe, DE",
+        "Berlin, Europe, DE"
+      ]
+    }
+  ],
+  "personio": [
+    {
+      "slug": "personio",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Munich",
+        "Berlin"
+      ],
+      "tld": "com"
+    },
+    {
+      "slug": "clark",
+      "ats": "personio",
+      "germanJobCount": 3,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Berlin",
+        "Frankfurt am Main"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "everphone",
+      "ats": "personio",
+      "germanJobCount": 4,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Berlin Köpenicker Straße 154, 10997 Berlin",
+        "Berlin Zimmerstraße 79/80, 10117 Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "homeday",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "ottonova",
+      "ats": "personio",
+      "germanJobCount": 6,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "München",
+        "Köln"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "pitch",
+      "ats": "personio",
+      "germanJobCount": 10,
+      "totalJobCount": 10,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "thermondo",
+      "ats": "personio",
+      "germanJobCount": 84,
+      "totalJobCount": 231,
+      "sampleLocations": [
+        "Bremen",
+        "Hamburg",
+        "Ulm"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "wandelbots",
+      "ats": "personio",
+      "germanJobCount": 4,
+      "totalJobCount": 7,
+      "sampleLocations": [
+        "Dresden"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "alasco",
+      "ats": "personio",
+      "germanJobCount": 11,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "blickfeld",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Munich"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "finoa",
+      "ats": "personio",
+      "germanJobCount": 3,
+      "totalJobCount": 7,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "holidu",
+      "ats": "personio",
+      "germanJobCount": 36,
+      "totalJobCount": 67,
+      "sampleLocations": [
+        "Munich, Germany",
+        "Friedrichshafen, Germany",
+        "Freiburg, Germany"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "proglove",
+      "ats": "personio",
+      "germanJobCount": 4,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "Munich Office",
+        "Germany - remote"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "scalablecapital",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "Munich"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "tanso",
+      "ats": "personio",
+      "germanJobCount": 8,
+      "totalJobCount": 8,
+      "sampleLocations": [
+        "Munich"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "bigpoint",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Hamburg"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "userlane",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "Munich HQ"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "westwing",
+      "ats": "personio",
+      "germanJobCount": 64,
+      "totalJobCount": 75,
+      "sampleLocations": [
+        "Munich Office",
+        "Munich Store",
+        "Frankfurt Store"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "webasto",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "traviangames",
+      "ats": "personio",
+      "germanJobCount": 3,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "chrono24",
+      "ats": "personio",
+      "germanJobCount": 30,
+      "totalJobCount": 36,
+      "sampleLocations": [
+        "Remote-DE",
+        "Karlsruhe",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "jedox",
+      "ats": "personio",
+      "germanJobCount": 34,
+      "totalJobCount": 40,
+      "sampleLocations": [
+        "Germany remote",
+        "Frankfurt am Main",
+        "Freiburg im Breisgau"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "retresco",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "workpath",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "7learnings",
+      "ats": "personio",
+      "germanJobCount": 3,
+      "totalJobCount": 7,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "assistme",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "banxware",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "atmosfair",
+      "ats": "personio",
+      "germanJobCount": 15,
+      "totalJobCount": 16,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "bounti",
+      "ats": "personio",
+      "germanJobCount": 4,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Berlin - Mitte"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "buildingminds",
+      "ats": "personio",
+      "germanJobCount": 3,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "cloover",
+      "ats": "personio",
+      "germanJobCount": 16,
+      "totalJobCount": 16,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "deeploi",
+      "ats": "personio",
+      "germanJobCount": 3,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "edgeless-systems",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Bochum",
+        "Remote (Berlin)"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "elearnio",
+      "ats": "personio",
+      "germanJobCount": 3,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "Potsdam"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "entrix",
+      "ats": "personio",
+      "germanJobCount": 9,
+      "totalJobCount": 16,
+      "sampleLocations": [
+        "Munich"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "foodforecast",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Köln"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "forward-earth",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "freshflow",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "friendsurance",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "gematik",
+      "ats": "personio",
+      "germanJobCount": 11,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "goodcarbon",
+      "ats": "personio",
+      "germanJobCount": 3,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "gocomo",
+      "ats": "personio",
+      "germanJobCount": 11,
+      "totalJobCount": 19,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "holy",
+      "ats": "personio",
+      "germanJobCount": 19,
+      "totalJobCount": 40,
+      "sampleLocations": [
+        "Berlin",
+        "Bremen",
+        "Berlin/Remote"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "humanoo",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 7,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "juna-ai",
+      "ats": "personio",
+      "germanJobCount": 3,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "knime",
+      "ats": "personio",
+      "germanJobCount": 7,
+      "totalJobCount": 24,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "latana",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "kertos",
+      "ats": "personio",
+      "germanJobCount": 21,
+      "totalJobCount": 23,
+      "sampleLocations": [
+        "München",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "lanch",
+      "ats": "personio",
+      "germanJobCount": 10,
+      "totalJobCount": 20,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "lumoview",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Cologne / Berlin / Remote (EU)",
+        "Cologne / Berlin / Germany-wide"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "mbition",
+      "ats": "personio",
+      "germanJobCount": 43,
+      "totalJobCount": 50,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "mercanis",
+      "ats": "personio",
+      "germanJobCount": 14,
+      "totalJobCount": 20,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "merantix",
+      "ats": "personio",
+      "germanJobCount": 23,
+      "totalJobCount": 38,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "peeriot",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "Office Leipzig"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "quantica",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "ratepay",
+      "ats": "personio",
+      "germanJobCount": 3,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "Berlin Hybrid"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "silvernova",
+      "ats": "personio",
+      "germanJobCount": 4,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "shyftplan",
+      "ats": "personio",
+      "germanJobCount": 12,
+      "totalJobCount": 12,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "stark",
+      "ats": "personio",
+      "germanJobCount": 135,
+      "totalJobCount": 185,
+      "sampleLocations": [
+        "Berlin",
+        "Munich"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "tandem",
+      "ats": "personio",
+      "germanJobCount": 3,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "vara",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Berlin, Germany"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "vivira",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "München",
+        "Hamburg",
+        "Frankfurt am Main"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "varm",
+      "ats": "personio",
+      "germanJobCount": 15,
+      "totalJobCount": 19,
+      "sampleLocations": [
+        "Berlin",
+        "Darmstadt",
+        "Hannover"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "voiio",
+      "ats": "personio",
+      "germanJobCount": 11,
+      "totalJobCount": 12,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "xolife",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 7,
+      "sampleLocations": [
+        "München",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "buena",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "doinstruct",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "Office Berlin"
+      ],
+      "tld": "com"
+    },
+    {
+      "slug": "egym",
+      "ats": "personio",
+      "germanJobCount": 37,
+      "totalJobCount": 44,
+      "sampleLocations": [
+        "Germany, Munich",
+        "Germany, Berlin",
+        "Germany, remote"
+      ],
+      "tld": "com"
+    },
+    {
+      "slug": "voize",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "com"
+    },
+    {
+      "slug": "ygo",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "urbansportsclub",
+      "ats": "personio",
+      "germanJobCount": 25,
+      "totalJobCount": 33,
+      "sampleLocations": [
+        "Berlin",
+        "Munich",
+        "Cologne"
+      ],
+      "tld": "com"
+    },
+    {
+      "slug": "wunderflats",
+      "ats": "personio",
+      "germanJobCount": 9,
+      "totalJobCount": 9,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "exec",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "München",
+        "Berlin"
+      ],
+      "tld": "com"
+    },
+    {
+      "slug": "resolve",
+      "ats": "personio",
+      "germanJobCount": 4,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Monheim am Rhein, NRW, Germany"
+      ],
+      "tld": "com"
+    },
+    {
+      "slug": "yoshi",
+      "ats": "personio",
+      "germanJobCount": 6,
+      "totalJobCount": 7,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "wos",
+      "ats": "personio",
+      "germanJobCount": 6,
+      "totalJobCount": 40,
+      "sampleLocations": [
+        "Bielefeld",
+        "Düsseldorf"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "yuma",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Köln"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "ten",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "sam",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "München",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "verso",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "Hamburg"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "beglaubigt",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "q-energy",
+      "ats": "personio",
+      "germanJobCount": 15,
+      "totalJobCount": 16,
+      "sampleLocations": [
+        "Berlin, Hamburg, Wiesbaden, Stuttgart",
+        "Hamburg",
+        "Berlin, Wiesbaden, Stuttgart"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "gus-germany",
+      "ats": "personio",
+      "germanJobCount": 115,
+      "totalJobCount": 144,
+      "sampleLocations": [
+        "Potsdam",
+        "Hamburg",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "maltego",
+      "ats": "personio",
+      "germanJobCount": 7,
+      "totalJobCount": 9,
+      "sampleLocations": [
+        "Munich Headquarters"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "deltavision",
+      "ats": "personio",
+      "germanJobCount": 25,
+      "totalJobCount": 25,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "klickpiloten",
+      "ats": "personio",
+      "germanJobCount": 12,
+      "totalJobCount": 13,
+      "sampleLocations": [
+        "Stuttgart",
+        "Berlin",
+        "Hamburg"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "kalo-vor-ort",
+      "ats": "personio",
+      "germanJobCount": 8,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "Bremen",
+        "Hamburg",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "deepslate",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "cipsoft",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "München",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "hygh",
+      "ats": "personio",
+      "germanJobCount": 12,
+      "totalJobCount": 13,
+      "sampleLocations": [
+        "Berlin",
+        "Hamburg",
+        "Frankfurt am Main"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "lrz",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Garching bei München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "aleno",
+      "ats": "personio",
+      "germanJobCount": 3,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "tonies",
+      "ats": "personio",
+      "germanJobCount": 17,
+      "totalJobCount": 19,
+      "sampleLocations": [
+        "Düsseldorf",
+        "Hybrid (Düsseldorf + Home Office)",
+        "UK / Germany Remote"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "homeserve",
+      "ats": "personio",
+      "germanJobCount": 19,
+      "totalJobCount": 184,
+      "sampleLocations": [
+        "Frankfurt am Main"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "pergolux",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "DE - Remote"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "limehome",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "DE | Bavaria | Munich"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "dampsoft",
+      "ats": "personio",
+      "germanJobCount": 8,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "Mobil (Deutschland)",
+        "Berlin (Berlin)"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "nexia",
+      "ats": "personio",
+      "germanJobCount": 86,
+      "totalJobCount": 105,
+      "sampleLocations": [
+        "Dresden",
+        "Frankfurt am Main",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "krankenhaus-waldfriede",
+      "ats": "personio",
+      "germanJobCount": 35,
+      "totalJobCount": 39,
+      "sampleLocations": [
+        "Berlin",
+        "Argentinische Allee 40, 14163 Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "orderbird",
+      "ats": "personio",
+      "germanJobCount": 14,
+      "totalJobCount": 19,
+      "sampleLocations": [
+        "Berlin",
+        "Deutschland",
+        "Hamburg"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "ijgd",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "München",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "anextour",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Düsseldorf"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "aok-connect",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Berlin bzw. Remote"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "bettercallpaul",
+      "ats": "personio",
+      "germanJobCount": 6,
+      "totalJobCount": 12,
+      "sampleLocations": [
+        "Berlin",
+        "Stuttgart",
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "eam-trusted-advisor",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "dornier-group",
+      "ats": "personio",
+      "germanJobCount": 36,
+      "totalJobCount": 57,
+      "sampleLocations": [
+        "Stuttgart",
+        "München",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "policum-berlin",
+      "ats": "personio",
+      "germanJobCount": 15,
+      "totalJobCount": 15,
+      "sampleLocations": [
+        "Berlin - Friedenau",
+        "Berlin - Fennpfuhl/Friedenau",
+        "Berlin - Fennpfuhl"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "rebike-mobility",
+      "ats": "personio",
+      "germanJobCount": 4,
+      "totalJobCount": 20,
+      "sampleLocations": [
+        "München HC",
+        "Berlin Store"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "smartbroker",
+      "ats": "personio",
+      "germanJobCount": 9,
+      "totalJobCount": 14,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "forum-berufsbildung",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 25,
+      "sampleLocations": [
+        "UBB Umwelt-Bildungszentrum Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "lush",
+      "ats": "personio",
+      "germanJobCount": 35,
+      "totalJobCount": 49,
+      "sampleLocations": [
+        "Bremen",
+        "Dresden",
+        "Essen"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "remind-me",
+      "ats": "personio",
+      "germanJobCount": 4,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "xitaso",
+      "ats": "personio",
+      "germanJobCount": 103,
+      "totalJobCount": 118,
+      "sampleLocations": [
+        "Augsburg",
+        "Berlin",
+        "Erlangen"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "eon-home",
+      "ats": "personio",
+      "germanJobCount": 4,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "Heidelberg"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "dnsnet",
+      "ats": "personio",
+      "germanJobCount": 11,
+      "totalJobCount": 17,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "demecan",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "München",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "conet",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "bring-labs",
+      "ats": "personio",
+      "germanJobCount": 3,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "DE - Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "ckm-group",
+      "ats": "personio",
+      "germanJobCount": 8,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "Berlin",
+        "Frankfurt am Main",
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "konfetti",
+      "ats": "personio",
+      "germanJobCount": 21,
+      "totalJobCount": 21,
+      "sampleLocations": [
+        "Berlin",
+        "Köln"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "stiftung-spi",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "odonnell-moonshine",
+      "ats": "personio",
+      "germanJobCount": 13,
+      "totalJobCount": 15,
+      "sampleLocations": [
+        "Berlin-Kreuzberg",
+        "Berlin-Spandau",
+        "Flagship Store Berlin Alexa"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "airmo",
+      "ats": "personio",
+      "germanJobCount": 10,
+      "totalJobCount": 14,
+      "sampleLocations": [
+        "Berlin",
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "zollsoft",
+      "ats": "personio",
+      "germanJobCount": 174,
+      "totalJobCount": 903,
+      "sampleLocations": [
+        "Hamburg",
+        "Berlin",
+        "Bremen"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "legalhero",
+      "ats": "personio",
+      "germanJobCount": 15,
+      "totalJobCount": 28,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "dpa",
+      "ats": "personio",
+      "germanJobCount": 20,
+      "totalJobCount": 22,
+      "sampleLocations": [
+        "Hamburg",
+        "Berlin",
+        "Frankfurt am Main"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "nordsee",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "München",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "doctarigroup",
+      "ats": "personio",
+      "germanJobCount": 16,
+      "totalJobCount": 18,
+      "sampleLocations": [
+        "München",
+        "Berlin",
+        "Hamburg"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "urari",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "Berlin-Tempelhof"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "aer-group",
+      "ats": "personio",
+      "germanJobCount": 11,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "Berlin Boppstr.",
+        "Frankfurt"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "vantis",
+      "ats": "personio",
+      "germanJobCount": 35,
+      "totalJobCount": 37,
+      "sampleLocations": [
+        "München",
+        "Köln - Lindlar",
+        "Hamburg - Finkenwerder"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "hedikitas",
+      "ats": "personio",
+      "germanJobCount": 23,
+      "totalJobCount": 26,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "scalian-germany",
+      "ats": "personio",
+      "germanJobCount": 131,
+      "totalJobCount": 163,
+      "sampleLocations": [
+        "Hamburg",
+        "Kiel",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "funkeworks",
+      "ats": "personio",
+      "germanJobCount": 9,
+      "totalJobCount": 9,
+      "sampleLocations": [
+        "München",
+        "Köln",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "meierhofer",
+      "ats": "personio",
+      "germanJobCount": 30,
+      "totalJobCount": 44,
+      "sampleLocations": [
+        "München",
+        "Berlin",
+        "Leipzig"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "aroundhome",
+      "ats": "personio",
+      "germanJobCount": 4,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "publiccloudgroup",
+      "ats": "personio",
+      "germanJobCount": 3,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "Munich"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "cybercurriculum",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "carbyte",
+      "ats": "personio",
+      "germanJobCount": 22,
+      "totalJobCount": 52,
+      "sampleLocations": [
+        "Ingolstadt",
+        "Berlin",
+        "Nürnberg"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "secida",
+      "ats": "personio",
+      "germanJobCount": 21,
+      "totalJobCount": 31,
+      "sampleLocations": [
+        "Essen",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "mindeight",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "nscon",
+      "ats": "personio",
+      "germanJobCount": 12,
+      "totalJobCount": 19,
+      "sampleLocations": [
+        "München",
+        "Berlin",
+        "Hamburg"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "syseleven",
+      "ats": "personio",
+      "germanJobCount": 8,
+      "totalJobCount": 8,
+      "sampleLocations": [
+        "Berlin",
+        "Deutschland / remote",
+        "Berlin / 100% remote möglich"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "solactive",
+      "ats": "personio",
+      "germanJobCount": 24,
+      "totalJobCount": 31,
+      "sampleLocations": [
+        "Frankfurt am Main",
+        "Berlin",
+        "Dresden"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "meindentist",
+      "ats": "personio",
+      "germanJobCount": 28,
+      "totalJobCount": 28,
+      "sampleLocations": [
+        "Berlin-Adlershof | Franz-Ehrlich-Str. 9",
+        "Berlin-Neukölln | Karl-Marx-Str. 188",
+        "Potsdam | Friedrich-Engels-Str. 80"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "1sp-agency",
+      "ats": "personio",
+      "germanJobCount": 80,
+      "totalJobCount": 190,
+      "sampleLocations": [
+        "Hamburg",
+        "Berlin",
+        "ANKER Store, Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "kompetenz-jugendhilfe",
+      "ats": "personio",
+      "germanJobCount": 7,
+      "totalJobCount": 9,
+      "sampleLocations": [
+        "Berlin Main Office",
+        "Berlin Ambulant"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "seniovo",
+      "ats": "personio",
+      "germanJobCount": 10,
+      "totalJobCount": 14,
+      "sampleLocations": [
+        "Berlin",
+        "Hannover",
+        "Leipzig"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "dataciders",
+      "ats": "personio",
+      "germanJobCount": 50,
+      "totalJobCount": 83,
+      "sampleLocations": [
+        "Dortmund",
+        "Berlin",
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "wbg-friedrichshain",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "gustavepple",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "lautsprecherteufel",
+      "ats": "personio",
+      "germanJobCount": 14,
+      "totalJobCount": 15,
+      "sampleLocations": [
+        "Berlin",
+        "Hamburg",
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "pta",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "Köln"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "entroservice",
+      "ats": "personio",
+      "germanJobCount": 17,
+      "totalJobCount": 28,
+      "sampleLocations": [
+        "Hamburg",
+        "Nürnberg",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "acture-germany",
+      "ats": "personio",
+      "germanJobCount": 80,
+      "totalJobCount": 80,
+      "sampleLocations": [
+        "Berlin",
+        "Hamburg",
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "tauw",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "München",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "peak-one",
+      "ats": "personio",
+      "germanJobCount": 11,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "Frankfurt am Main",
+        "Hamburg"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "communardo",
+      "ats": "personio",
+      "germanJobCount": 44,
+      "totalJobCount": 107,
+      "sampleLocations": [
+        "Dresden",
+        "Bonn",
+        "Hannover"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "encoviva",
+      "ats": "personio",
+      "germanJobCount": 26,
+      "totalJobCount": 32,
+      "sampleLocations": [
+        "Berlin",
+        "München",
+        "Frankfurt am Main"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "dgf",
+      "ats": "personio",
+      "germanJobCount": 9,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "München",
+        "Berlin",
+        "Köln"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "greenit",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "timify",
+      "ats": "personio",
+      "germanJobCount": 4,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "München",
+        "München oder remote"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "saeki",
+      "ats": "personio",
+      "germanJobCount": 8,
+      "totalJobCount": 12,
+      "sampleLocations": [
+        "Munich (Factory ONE)"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "euro-trainings-centre-etc-ggmbh",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "ETC München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "invia",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "München",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "bidt",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "ftapi",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "codecentric",
+      "ats": "personio",
+      "germanJobCount": 205,
+      "totalJobCount": 267,
+      "sampleLocations": [
+        "München",
+        "Berlin",
+        "Hamburg"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "pramlgroup",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 26,
+      "sampleLocations": [
+        "Ismaning (bei München)"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "vdwbayern",
+      "ats": "personio",
+      "germanJobCount": 6,
+      "totalJobCount": 9,
+      "sampleLocations": [
+        "München, Nürnberg",
+        "München",
+        "Dresden"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "attempto",
+      "ats": "personio",
+      "germanJobCount": 18,
+      "totalJobCount": 19,
+      "sampleLocations": [
+        "München",
+        "Münster",
+        "Karlsruhe"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "univativ-group",
+      "ats": "personio",
+      "germanJobCount": 4,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Hamburg",
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "darkside",
+      "ats": "personio",
+      "germanJobCount": 4,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Berlin",
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "allane",
+      "ats": "personio",
+      "germanJobCount": 15,
+      "totalJobCount": 24,
+      "sampleLocations": [
+        "München",
+        "Leipzig",
+        "Garching bei München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "valuenet-group",
+      "ats": "personio",
+      "germanJobCount": 10,
+      "totalJobCount": 34,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "jobrad-loop",
+      "ats": "personio",
+      "germanJobCount": 8,
+      "totalJobCount": 43,
+      "sampleLocations": [
+        "Hamburg",
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "gustavogusto",
+      "ats": "personio",
+      "germanJobCount": 6,
+      "totalJobCount": 17,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "42watt",
+      "ats": "personio",
+      "germanJobCount": 18,
+      "totalJobCount": 22,
+      "sampleLocations": [
+        "München",
+        "Essen(remote)",
+        "Dortmund (remote)"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "ebp-consulting",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "mavig",
+      "ats": "personio",
+      "germanJobCount": 4,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "dedicom",
+      "ats": "personio",
+      "germanJobCount": 3,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "btelligent",
+      "ats": "personio",
+      "germanJobCount": 3,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "green-flexibility",
+      "ats": "personio",
+      "germanJobCount": 9,
+      "totalJobCount": 32,
+      "sampleLocations": [
+        "Münster (NRW)",
+        "München",
+        "Remote (Berlin)"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "yer-deutschland",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "ambrock",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "München",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "hiq",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "deutschlandweit / München / Augsburg / Regensburg / Stuttgart"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "qaware",
+      "ats": "personio",
+      "germanJobCount": 4,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "München",
+        "München / Mainz / Rosenheim",
+        "Mainz oder München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "ryd",
+      "ats": "personio",
+      "germanJobCount": 3,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "München",
+        "Deutschland"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "promodata",
+      "ats": "personio",
+      "germanJobCount": 7,
+      "totalJobCount": 25,
+      "sampleLocations": [
+        "München",
+        "Berlin",
+        "Hamburg"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "frommer-legal",
+      "ats": "personio",
+      "germanJobCount": 3,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "München &amp; Remote"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "logsol",
+      "ats": "personio",
+      "germanJobCount": 37,
+      "totalJobCount": 44,
+      "sampleLocations": [
+        "Dresden",
+        "Leipzig",
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "proliance",
+      "ats": "personio",
+      "germanJobCount": 12,
+      "totalJobCount": 16,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "noventive",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 9,
+      "sampleLocations": [
+        "München",
+        "Stuttgart"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "fellowpro",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "navax-software",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "München - hybrid",
+        "München",
+        "Köln"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "dmcgroup",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "München",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "unternehmertum",
+      "ats": "personio",
+      "germanJobCount": 29,
+      "totalJobCount": 42,
+      "sampleLocations": [
+        "München Kreativquartier",
+        "Garching &amp; München",
+        "x München Krestivquartier"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "59engineers",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "apoprojekt",
+      "ats": "personio",
+      "germanJobCount": 107,
+      "totalJobCount": 115,
+      "sampleLocations": [
+        "Hamburg",
+        "München",
+        "Stuttgart"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "assenagon",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "München",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "grandir",
+      "ats": "personio",
+      "germanJobCount": 15,
+      "totalJobCount": 19,
+      "sampleLocations": [
+        "München",
+        "1- München und München Umland",
+        "4 - Ulm"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "ommax",
+      "ats": "personio",
+      "germanJobCount": 102,
+      "totalJobCount": 178,
+      "sampleLocations": [
+        "München",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "contabo",
+      "ats": "personio",
+      "germanJobCount": 12,
+      "totalJobCount": 14,
+      "sampleLocations": [
+        "Cologne",
+        "Remote (Germany)",
+        "Munich"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "dymatrix",
+      "ats": "personio",
+      "germanJobCount": 20,
+      "totalJobCount": 21,
+      "sampleLocations": [
+        "Stuttgart",
+        "Stuttgart, Hamburg, München, Köln, Karlsruhe",
+        "Stuttgart, Hamburg, Karlsruhe"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "novotergum",
+      "ats": "personio",
+      "germanJobCount": 52,
+      "totalJobCount": 173,
+      "sampleLocations": [
+        "Hamburg Berliner Tor",
+        "Dortmund Kirchlinde",
+        "Berlin Lichtenberg Ergo"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "optikhallmann",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 14,
+      "sampleLocations": [
+        "Hamburg Verwaltung"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "kinderwelt-hamburg",
+      "ats": "personio",
+      "germanJobCount": 6,
+      "totalJobCount": 22,
+      "sampleLocations": [
+        "Hamburg"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "enernovix",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Vattenfall Hamburg",
+        "Vattenfall Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "ubilabs",
+      "ats": "personio",
+      "germanJobCount": 4,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Hamburg",
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "pdv",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "Hannover"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "novomind",
+      "ats": "personio",
+      "germanJobCount": 4,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "Hamburg"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "kaiserwetter",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Catering, Hamburg",
+        "Deli Bleichenbrücke, Hamburg"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "autorola",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Autorola GmbH (Hamburg)"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "welearn",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Hamburg HQ"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "driving-sales-group",
+      "ats": "personio",
+      "germanJobCount": 13,
+      "totalJobCount": 23,
+      "sampleLocations": [
+        "Hamburg",
+        "Nürnberg",
+        "Stuttgart"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "55birchstreet",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "Hamburg"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "abcfinlab",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Köln"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "adragos-leipzig",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Leipzig"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "adsquare",
+      "ats": "personio",
+      "germanJobCount": 9,
+      "totalJobCount": 16,
+      "sampleLocations": [
+        "Berlin",
+        "Düsseldorf"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "academia-holding-gmbh",
+      "ats": "personio",
+      "germanJobCount": 42,
+      "totalJobCount": 80,
+      "sampleLocations": [
+        "Dermahistopathologie Heidelberg",
+        "Pathologie Darmstadt",
+        "Academia Holding l Landwehrstraße 2, 80336 München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "aktivbank",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Frankfurt"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "ambior-gmbh",
+      "ats": "personio",
+      "germanJobCount": 72,
+      "totalJobCount": 96,
+      "sampleLocations": [
+        "Baden-Württemberg (Stuttgart)",
+        "Bayern (München)",
+        "Berlin (Berlin)"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "amnesty-international-deutschland",
+      "ats": "personio",
+      "germanJobCount": 4,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "1komma5grad",
+      "ats": "personio",
+      "germanJobCount": 527,
+      "totalJobCount": 1796,
+      "sampleLocations": [
+        "München",
+        "Augsburg",
+        "Hamburg"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "amplio",
+      "ats": "personio",
+      "germanJobCount": 6,
+      "totalJobCount": 10,
+      "sampleLocations": [
+        "Bielefeld",
+        "Hamburg"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "ams-technologies-ag",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "Hannover - neoLASE GmbH"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "anybill",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "antenne-deutschland",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "armira-beteiligungen-gmbh-co-kg",
+      "ats": "personio",
+      "germanJobCount": 10,
+      "totalJobCount": 10,
+      "sampleLocations": [
+        "Munich"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "aserto",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "Hannover"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "atgde",
+      "ats": "personio",
+      "germanJobCount": 8,
+      "totalJobCount": 8,
+      "sampleLocations": [
+        "Köln",
+        "Hamburg",
+        "Headquarter Köln"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "audi-business-innovation-gmbh",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "Munich"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "ass",
+      "ats": "personio",
+      "germanJobCount": 4,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Bochum"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "asellerate-gmbh",
+      "ats": "personio",
+      "germanJobCount": 8,
+      "totalJobCount": 9,
+      "sampleLocations": [
+        "Hybrid, Stuttgart",
+        "Stuttgart"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "artnight-gmbh",
+      "ats": "personio",
+      "germanJobCount": 25,
+      "totalJobCount": 45,
+      "sampleLocations": [
+        "Berlin",
+        "Hamburg",
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "autarcenergy",
+      "ats": "personio",
+      "germanJobCount": 15,
+      "totalJobCount": 15,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "aventus",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 4,
+      "sampleLocations": [
+        "Frankfurt am Main"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "aw-algorithmwatch-ggmbh",
+      "ats": "personio",
+      "germanJobCount": 4,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "auxmoney-gmbh",
+      "ats": "personio",
+      "germanJobCount": 14,
+      "totalJobCount": 16,
+      "sampleLocations": [
+        "Remote / Düsseldorf",
+        "Düsseldorf"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "ba-tax-gmbh",
+      "ats": "personio",
+      "germanJobCount": 12,
+      "totalJobCount": 12,
+      "sampleLocations": [
+        "Hamburg",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "bauer-kirch",
+      "ats": "personio",
+      "germanJobCount": 3,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "Aachen"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "baeuerle",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "Augsburg"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "autohaus-bleker-gmbh",
+      "ats": "personio",
+      "germanJobCount": 29,
+      "totalJobCount": 104,
+      "sampleLocations": [
+        "Münster",
+        "Dortmund",
+        "Bremen"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "bell-flavors-fragrances-gmbh",
+      "ats": "personio",
+      "germanJobCount": 10,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "Leipzig"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "berlinhaus-verwaltung-gmbh",
+      "ats": "personio",
+      "germanJobCount": 11,
+      "totalJobCount": 23,
+      "sampleLocations": [
+        "Berlin",
+        "Dresden"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "bfgroup",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 10,
+      "sampleLocations": [
+        "Main Office Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "bergmanclinics",
+      "ats": "personio",
+      "germanJobCount": 33,
+      "totalJobCount": 64,
+      "sampleLocations": [
+        "Augenklinik Bremen",
+        "Medical Eye Care Hamburg-Farmsen",
+        "Medical Eye Care Hamburg-Tonndorf"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "bauer-elektroanlagen",
+      "ats": "personio",
+      "germanJobCount": 89,
+      "totalJobCount": 209,
+      "sampleLocations": [
+        "Hamburg",
+        "Berlin",
+        "Leipzig"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "okapiorbits",
+      "ats": "personio",
+      "germanJobCount": 16,
+      "totalJobCount": 18,
+      "sampleLocations": [
+        "Brunswick (Germany)",
+        "Munich (Germany)"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "solareins",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 16,
+      "sampleLocations": [
+        "Potsdam"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "com-in",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "Ingolstadt Erni-Singerl-Straße"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "greenwind-group",
+      "ats": "personio",
+      "germanJobCount": 10,
+      "totalJobCount": 35,
+      "sampleLocations": [
+        "Berlin",
+        "Bremen",
+        "Potsdam"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "meteocontrol",
+      "ats": "personio",
+      "germanJobCount": 28,
+      "totalJobCount": 47,
+      "sampleLocations": [
+        "Augsburg",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "undkrauss",
+      "ats": "personio",
+      "germanJobCount": 23,
+      "totalJobCount": 25,
+      "sampleLocations": [
+        "Berlin",
+        "Berlin, Düsseldorf/Neuss, Frankfurt am Main, München",
+        "Frankfurt am Main"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "timpla",
+      "ats": "personio",
+      "germanJobCount": 9,
+      "totalJobCount": 29,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "klebl",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "München",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "ampere",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "gel-express-logistik",
+      "ats": "personio",
+      "germanJobCount": 6,
+      "totalJobCount": 22,
+      "sampleLocations": [
+        "Mainz",
+        "Berlin",
+        "Dresden"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "hornetsecurity",
+      "ats": "personio",
+      "germanJobCount": 39,
+      "totalJobCount": 116,
+      "sampleLocations": [
+        "GER - Hannover",
+        "GER - Berlin",
+        "GER - Remote Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "bralebau",
+      "ats": "personio",
+      "germanJobCount": 7,
+      "totalJobCount": 15,
+      "sampleLocations": [
+        "Dresden",
+        "Leipzig",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "autohaus-royal",
+      "ats": "personio",
+      "germanJobCount": 33,
+      "totalJobCount": 33,
+      "sampleLocations": [
+        "Berlin - Bessemerstraße 42A",
+        "Ludwigsfelde bei Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "aparts",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "landenberg-medical-institute",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "yepp",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 2,
+      "sampleLocations": [
+        "Berlin",
+        "Hamburg"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "moore-tk",
+      "ats": "personio",
+      "germanJobCount": 20,
+      "totalJobCount": 68,
+      "sampleLocations": [
+        "Berlin",
+        "Mannheim",
+        "Frankfurt am Main"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "homaris",
+      "ats": "personio",
+      "germanJobCount": 13,
+      "totalJobCount": 14,
+      "sampleLocations": [
+        "Berlin",
+        "Frankfurt",
+        "Hamburg"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "albaberlin",
+      "ats": "personio",
+      "germanJobCount": 8,
+      "totalJobCount": 8,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "norsan",
+      "ats": "personio",
+      "germanJobCount": 7,
+      "totalJobCount": 8,
+      "sampleLocations": [
+        "Berlin (Hauptverwaltung)",
+        "Berlin (Lager)",
+        "Hamburg"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "personal-partner",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "project-a",
+      "ats": "personio",
+      "germanJobCount": 48,
+      "totalJobCount": 48,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "gti-elektroanlagen",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "asg",
+      "ats": "personio",
+      "germanJobCount": 14,
+      "totalJobCount": 15,
+      "sampleLocations": [
+        "Hamburg"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "finetech",
+      "ats": "personio",
+      "germanJobCount": 15,
+      "totalJobCount": 15,
+      "sampleLocations": [
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "fair-parken",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "Bürostandort: Zentrale Düsseldorf"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "scrapbees",
+      "ats": "personio",
+      "germanJobCount": 3,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "Berlin",
+        "Hamburg"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "swiss-sense",
+      "ats": "personio",
+      "germanJobCount": 1,
+      "totalJobCount": 1,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "steadforce",
+      "ats": "personio",
+      "germanJobCount": 11,
+      "totalJobCount": 11,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "tng",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "München",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "dornier-medtech",
+      "ats": "personio",
+      "germanJobCount": 8,
+      "totalJobCount": 8,
+      "sampleLocations": [
+        "DMT-Germany - Wessling"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "flowprime",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 5,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "honest-catch",
+      "ats": "personio",
+      "germanJobCount": 3,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "peter-park",
+      "ats": "personio",
+      "germanJobCount": 31,
+      "totalJobCount": 36,
+      "sampleLocations": [
+        "München",
+        "Remote DE - Bayern",
+        "Remote DE - Sachsen"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "ghcsolutions",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "raible",
+      "ats": "personio",
+      "germanJobCount": 12,
+      "totalJobCount": 22,
+      "sampleLocations": [
+        "Unterschleißheim (München)",
+        "Frankfurt am Main"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "carpus",
+      "ats": "personio",
+      "germanJobCount": 17,
+      "totalJobCount": 19,
+      "sampleLocations": [
+        "Aachen",
+        "Frankfurt",
+        "Köln"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "ifg",
+      "ats": "personio",
+      "germanJobCount": 6,
+      "totalJobCount": 9,
+      "sampleLocations": [
+        "Stuttgart",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "tum",
+      "ats": "personio",
+      "germanJobCount": 5,
+      "totalJobCount": 6,
+      "sampleLocations": [
+        "München",
+        "Berlin"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "maxsolar",
+      "ats": "personio",
+      "germanJobCount": 12,
+      "totalJobCount": 20,
+      "sampleLocations": [
+        "Traunstein | München",
+        "München | Hamburg | Traunstein | Berlin | Frankfurt"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "mehr-ampere",
+      "ats": "personio",
+      "germanJobCount": 7,
+      "totalJobCount": 9,
+      "sampleLocations": [
+        "Regensburg",
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "gutachterix",
+      "ats": "personio",
+      "germanJobCount": 2,
+      "totalJobCount": 3,
+      "sampleLocations": [
+        "München - Westendstr"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "crozdach",
+      "ats": "personio",
+      "germanJobCount": 8,
+      "totalJobCount": 17,
+      "sampleLocations": [
+        "München"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "p3-security",
+      "ats": "personio",
+      "germanJobCount": 14,
+      "totalJobCount": 27,
+      "sampleLocations": [
+        "München",
+        "Store in Aschheim/Dornach bei München",
+        "München-Planegg-Martinsried"
+      ],
+      "tld": "de"
+    },
+    {
+      "slug": "softdoor",
+      "ats": "personio",
+      "germanJobCount": 6,
+      "totalJobCount": 18,
+      "sampleLocations": [
+        "Kiel",
+        "Ingolstadt",
+        "Hamburg"
+      ],
+      "tld": "de"
+    }
+  ],
+  "stats": {
+    "totalProbed": 42500,
+    "totalFound": 862,
+    "timestamp": "2026-08-05T09:24:38.720Z"
+  }
+}

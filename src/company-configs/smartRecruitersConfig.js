@@ -96,7 +96,156 @@ export const smartRecruitersConfig = {
         // To verify: hit
         //   https://api.smartrecruiters.com/v1/companies/{ID}/postings?country=de&limit=1
         // If totalFound > 0 and HTTP 200, add it.
-    ],
+        // --- GERMAN EXPANSION 2026-08-04 ---
+        // Verified: board reachable AND >=1 job located in Germany.
+        'check24',  // 87 DE / 100 total
+        'redcare-pharmacy',  // 52 DE / 100 total
+        'brainlab',  // 22 DE / 49 total
+        'sevensenders',  // 16 DE / 16 total
+        'rolandberger',  // 15 DE / 100 total
+        'continental',  // 12 DE / 100 total
+        'gerresheimer',  // 11 DE / 100 total
+        'home24',  // 9 DE / 9 total
+        'redcarepharmacy',  // 8 DE / 16 total
+        'auto1',  // 7 DE / 100 total
+        'deliveryhero',  // 5 DE / 100 total
+        'manara',  // 4 DE / 8 total
+        'beamery',  // 3 DE / 100 total
+        'bundesdruckerei',  // 3 DE / 3 total
+        'abbvie',  // 3 DE / 100 total
+        'omio',  // 2 DE / 2 total
+        'wundermobility',  // 2 DE / 2 total
+        'freshworks',  // 2 DE / 100 total
+        'nexthink',  // 1 DE / 91 total
+        'tomra',  // 1 DE / 100 total
+        // --- GERMAN EXPANSION 2026-08-05 ---
+        // Verified: board reachable AND >=1 job located in Germany.
+        'coolblue',  // 30 DE / 100 total
+        'kombo',  // 7 DE / 100 total
+        'yassir',  // 6 DE / 6 total
+        'mirantis',  // 2 DE / 54 total
+        'believe',  // 1 DE / 30 total
+        // --- GERMAN EXPANSION 2026-08-05 ---
+        // Verified: board reachable AND >=1 job located in Germany.
+        'fella',  // 1 DE / 7 total
+        'electry',  // 1 DE / 1 total
+        // --- GERMAN EXPANSION 2026-08-05 ---
+        // Verified: board reachable AND >=1 job located in Germany.
+        'celia',  // 2 DE / 71 total
+        // --- GERMAN EXPANSION 2026-08-05 ---
+        // Verified: board reachable AND >=1 job located in Germany.
+        'matterhorn',  // 2 DE / 10 total
+        'ktronik',  // 1 DE / 1 total
+        // --- GERMAN EXPANSION 2026-08-05 ---
+        // Verified: board reachable AND >=1 job located in Germany.
+        'motelone',  // 51 DE / 100 total
+        'haufegroup',  // 42 DE / 43 total
+        'devoteam',  // 26 DE / 100 total
+        'swarco',  // 23 DE / 100 total
+        'hubertburdamedia',  // 16 DE / 22 total
+        'jysk',  // 9 DE / 100 total
+        'wheregroup',  // 1 DE / 1 total
+        // --- GERMAN EXPANSION 2026-08-05 ---
+        // Verified: board reachable AND >=1 job located in Germany.
+        'contilia1',  // 80 DE / 100 total
+        'ebreuningergmbhco',  // 73 DE / 100 total
+        'axelspringernewsmedianational',  // 72 DE / 74 total
+        'dreessommerse',  // 71 DE / 100 total
+        'firevanderrwthaachen',  // 70 DE / 70 total
+        'atparchitekteningenieure',  // 47 DE / 100 total
+        'artemedse',  // 39 DE / 100 total
+        'afry',  // 36 DE / 100 total
+        'doco1',  // 35 DE / 100 total
+        'deutschepruefservicegmbh',  // 35 DE / 53 total
+        'avaloq1',  // 30 DE / 100 total
+        'enertrag',  // 29 DE / 100 total
+        'deindentaledg',  // 28 DE / 72 total
+        'bew',  // 27 DE / 27 total
+        'acetate',  // 24 DE / 42 total
+        'colliersinternationalemea',  // 23 DE / 100 total
+        'lgcgroup',  // 22 DE / 100 total
+        'avivgroup',  // 20 DE / 32 total
+        'analysysmason1',  // 20 DE / 33 total
+        'securitas',  // 15 DE / 100 total
+        'krombacher',  // 14 DE / 57 total
+        'europeanhomecaregmbh',  // 14 DE / 100 total
+        'coface',  // 12 DE / 100 total
+        'asburycommunities',  // 10 DE / 100 total
+        'expeditors',  // 10 DE / 100 total
+        'formelsconsulting',  // 10 DE / 10 total
+        'brainnest',  // 10 DE / 10 total
+        'heimstaden',  // 9 DE / 34 total
+        'msxinternational',  // 9 DE / 100 total
+        'rentokilinitial1',  // 8 DE / 100 total
+        'metromakro',  // 8 DE / 100 total
+        'ayming',  // 7 DE / 100 total
+        'coliseefrance',  // 7 DE / 100 total
+        'ib-vogt-gmbh',  // 7 DE / 35 total
+        'vusiongroupsa',  // 7 DE / 71 total
+        'audiinteractiongmbh',  // 7 DE / 7 total
+        'beumergroup1',  // 7 DE / 100 total
+        'baywaag',  // 6 DE / 100 total
+        'medmix',  // 6 DE / 46 total
+        'staubligroup',  // 6 DE / 100 total
+        'wuestpartner',  // 6 DE / 12 total
+        'aumovio',  // 6 DE / 100 total
+        'deltaelectronics',  // 5 DE / 53 total
+        'keenfinity',  // 5 DE / 73 total
+        'waremarenkhoffse',  // 5 DE / 60 total
+        'bitlane',  // 5 DE / 5 total
+        'epro360',  // 5 DE / 5 total
+        'jacklinksproteinsnacks',  // 4 DE / 100 total
+        'sectigo',  // 4 DE / 43 total
+        'hitachisolutions',  // 4 DE / 56 total
+        'jacobsdouweegberts',  // 4 DE / 100 total
+        'drreddyslaboratorieslimited',  // 4 DE / 81 total
+        'lendigroup1',  // 3 DE / 100 total
+        'trupanion1',  // 3 DE / 47 total
+        'accorhotel',  // 3 DE / 100 total
+        'umdaschgroup',  // 3 DE / 100 total
+        'advens',  // 2 DE / 27 total
+        'californiaclosets',  // 2 DE / 80 total
+        'everience',  // 2 DE / 100 total
+        'teamworkcorporate',  // 2 DE / 81 total
+        'thenielsencompany',  // 2 DE / 100 total
+        'linkedin3',  // 2 DE / 100 total
+        'northroprealty',  // 2 DE / 7 total
+        '2ntelekomunikaceas',  // 1 DE / 16 total
+        'applusidiada1',  // 1 DE / 100 total
+        'blend360',  // 1 DE / 100 total
+        'cint',  // 1 DE / 37 total
+        'easyvista',  // 1 DE / 11 total
+        'enero',  // 1 DE / 20 total
+        'hmgroup',  // 1 DE / 100 total
+        'ikanoretail',  // 1 DE / 100 total
+        'iomaxisllc',  // 1 DE / 12 total
+        'locinox',  // 1 DE / 8 total
+        'o-i',  // 1 DE / 100 total
+        'streemenergy',  // 1 DE / 9 total
+        'sosi1',  // 1 DE / 100 total
+        'ubisoft2',  // 1 DE / 100 total
+        'vonq',  // 1 DE / 5 total
+        'accorcorpo',  // 1 DE / 100 total
+        'antonpaar1',  // 1 DE / 100 total
+        'aristanetworks',  // 1 DE / 100 total
+        'assent',  // 1 DE / 26 total
+        'apmgroup',  // 1 DE / 100 total
+        'rrdonnelley',  // 1 DE / 100 total
+        'thetileshop1',  // 1 DE / 100 total
+        'worldwidetechservices',  // 1 DE / 100 total
+        'beckersgroup',  // 1 DE / 16 total
+        'crealogix',  // 1 DE / 4 total
+        'courir',  // 1 DE / 100 total
+        'nochmall',  // 1 DE / 1 total
+        'robertbosch',  // 1 DE / 6 total
+        // --- GERMAN EXPANSION 2026-08-05 ---
+        // Verified: board reachable AND >=1 job located in Germany.
+        'deutscheglasfaser',  // 31 DE / 72 total
+        'schnelleckelogistics',  // 24 DE / 40 total
+        'konecranes',  // 16 DE / 100 total
+        'akpowerlogistics',  // 2 DE / 3 total
+        'rzteversorgungniedersachsen',  // 2 DE / 2 total
+],
 
     // Internal state
     _allJobsQueue: [],
