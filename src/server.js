@@ -119,7 +119,7 @@ app.listen(PORT, async () => {
 
         console.log("✅ Cron tasks are scheduled.");
         console.log('--- Running initial scrape on start... ---');
-        // runScraper();
+        runScraper();
 
     } catch (err) {
         console.error("Failed to start server or connect to DB", err);
