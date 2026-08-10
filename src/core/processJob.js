@@ -246,6 +246,8 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
         console.log(`[Auto-Publish] ✅ ${mappedJob.JobTitle} (Confidence: ${aiResult.confidence}) — published automatically`);
         await Analytics.increment('jobsPublished');
         await Analytics.increment('jobsAutoPublished');
+        await Analytics.increment('totalReviews');
+        await Analytics.increment('totalAiAutoPublished');
     } else {
         mappedJob.Status = 'pending_review';
         mappedJob.approvalMethod = null;

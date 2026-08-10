@@ -17,6 +17,7 @@ import { careerGuideRouter } from './api/careerGuide.routes.js';
 import { adminCareerGuideRouter } from './api/admin/careerGuide.routes.js';
 import { adminCompanyProfilesRouter } from './api/admin/companyProfiles.routes.js';
 import { adminHealthRouter } from './api/admin/health.routes.js';
+import { cohortWaitlistAdminRouter } from './api/auth/cohortWaitlist.routes.js';
 import { attachVisitor } from './middleware/visitorMiddleware.js';
 import { FRONTEND_ORIGIN } from './env.js';
 import { initJobsCache, initRemoteJobsCache, startRemoteJobsWatcher } from './cache/index.js';
@@ -51,6 +52,7 @@ app.use('/api/career-guide', careerGuideRouter);
 app.use('/api/admin/career-guide', adminCareerGuideRouter);
 app.use('/api/admin/company-profiles', adminCompanyProfilesRouter);
 app.use('/api/admin/health', adminHealthRouter);
+app.use('/api/admin/cohort-waitlist', cohortWaitlistAdminRouter);
 
 // NOTE: All public HTML pages — the /city/*, /category/*, /sitemap.xml SEO
 // landing pages and the /career-guide/* pages — are now served by the Next.js

@@ -65,6 +65,9 @@ export async function connectToDb() {
     await db.collection('promoCodes').createIndex({ code: 1 }, { unique: true });
     await db.collection('subscriptions').createIndex({ userId: 1, createdAt: -1 });
 
+    // Cohort coaching demand test: one waitlist entry per email.
+    await db.collection('cohortWaitlist').createIndex({ email: 1 }, { unique: true });
+
     console.log(`🗄️  Successfully connected to MongoDB — ${describeMongoUri(MONGO_URI)}`);
     return db;
 }

@@ -36,6 +36,10 @@ export function attachAdminReviewRoutes(router) {
             }
             const { wasAutoPublished, JobTitle } = await reviewJobDecision(id, decision, rejectionReason || null);
 
+            // Lifetime counters — a rejection is still a review.
+            await Analytics.increment('totalReviews');
+            await Analytics.increment('totalManualReviews');
+
             // An auto-published job was already counted as published by the
             // scraper — counting it again on confirmation would double-count it.
             if (decision === 'accept' && !wasAutoPublished) {

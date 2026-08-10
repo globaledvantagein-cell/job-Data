@@ -39,6 +39,13 @@ const analyticsSchema = new mongoose.Schema({
   promo_redemptions: { type: Number, default: 0 },     // successful invite/promo activations
   promo_failed_attempts: { type: Number, default: 0 }, // invalid/expired/reused code submissions
 
+  // ── Lifetime review counters ──
+  // Cumulative, never reset — unlike the daily fields above.
+  totalReviews: { type: Number, default: 0 },          // manual + AI reviews, all time
+  totalManualReviews: { type: Number, default: 0 },    // admin accept/reject decisions
+  totalAiAutoPublished: { type: Number, default: 0 },  // AI auto-published (confidence >= AUTO_PUBLISH_THRESHOLD)
+  totalCohortWaitlist: { type: Number, default: 0 },   // cohort-coaching waitlist joins (demand test)
+
   lastUpdated: { type: Date, default: Date.now }
 });
 
