@@ -233,7 +233,48 @@ export const ashbyConfig = {
     _allJobsQueue: [],
     _initialized: false,
 
-    // Fetch all jobs from all boards upfront
+    // Fetch one board's jobs and return ONLY the Germany-filtered ones.
+    // Extracted so the full API response is GC-eligible per company instead of
+    // living until the whole initialize() loop finishes. null = failure.
+    async _fetchCompany(boardName) {
+        try {
+            const url = `${this.baseUrl}/${boardName}?includeCompensation=true`;
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                // Only log 404s if you want to see which ones failed
+                // console.log(`[Ashby] ? ${boardName}: ${response.status}`);
+                return null;
+            }
+
+            const data = await response.json();
+
+            if (!data.jobs || data.jobs.length === 0) {
+                return [];
+            }
+
+            // Filter for Germany jobs
+            const germanyJobs = data.jobs.filter(job => {
+                return this.hasGermanyLocation(job);
+            }).map(job => ({
+                ...job,
+                _boardName: boardName
+            }));
+
+            if (germanyJobs.length > 0) {
+                console.log(`[Ashby] ? ${boardName}: ${germanyJobs.length} jobs in Germany (${data.jobs.length} total)`);
+            }
+
+            // Rate limit: 300ms between companies
+            await new Promise(resolve => setTimeout(resolve, 300));
+            return germanyJobs;
+        } catch (error) {
+            console.error(`[Ashby] ? ${boardName}: ${error.message}`);
+            return null;
+        }
+    },
+
+    // Fetch all jobs from all boards upfront (streamed one company at a time)
     async initialize() {
         if (this._initialized) return;
 
@@ -243,43 +284,11 @@ export const ashbyConfig = {
         let failCount = 0;
 
         for (const boardName of this.companyBoardNames) {
-            try {
-                const url = `${this.baseUrl}/${boardName}?includeCompensation=true`;
-                const response = await fetch(url);
-
-                if (!response.ok) {
-                    failCount++;
-                    // Only log 404s if you want to see which ones failed
-                    // console.log(`[Ashby] ? ${boardName}: ${response.status}`);
-                    continue;
-                }
-
-                const data = await response.json();
-
-                if (!data.jobs || data.jobs.length === 0) {
-                    continue;
-                }
-
-                // Filter for Germany jobs
-                const germanyJobs = data.jobs.filter(job => {
-                    return this.hasGermanyLocation(job);
-                }).map(job => ({
-                    ...job,
-                    _boardName: boardName
-                }));
-
-                if (germanyJobs.length > 0) {
-                    console.log(`[Ashby] ? ${boardName}: ${germanyJobs.length} jobs in Germany (${data.jobs.length} total)`);
-                    this._allJobsQueue.push(...germanyJobs);
-                    successCount++;
-                }
-
-                // Rate limit: 300ms between companies
-                await new Promise(resolve => setTimeout(resolve, 300));
-
-            } catch (error) {
-                failCount++;
-                console.error(`[Ashby] ? ${boardName}: ${error.message}`);
+            const germanyJobs = await this._fetchCompany(boardName);
+            if (germanyJobs === null) { failCount++; continue; }
+            if (germanyJobs.length > 0) {
+                this._allJobsQueue.push(...germanyJobs);
+                successCount++;
             }
         }
 

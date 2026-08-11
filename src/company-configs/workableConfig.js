@@ -36,6 +36,37 @@ export const workableConfig = {
     _initialized: false,
     needsDescriptionScraping: false, // description comes from the API response
 
+    // -- Fetch one aggregator page → { jobs, nextPageToken } or null on error --
+    async _fetchAggregatorPage(pageToken) {
+        const params = new URLSearchParams({
+            location: 'Germany',
+            limit: String(PAGE_SIZE),
+        });
+        if (pageToken) params.set('pageToken', pageToken);
+
+        const url = `${API_BASE}?${params.toString()}`;
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 20000);
+
+        const res = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                'Accept': 'application/json',
+            },
+            signal: controller.signal,
+        });
+        clearTimeout(timeout);
+
+        if (!res.ok) {
+            console.log(`[Workable] ? API returned HTTP ${res.status} � stopping pagination`);
+            return null;
+        }
+
+        const data = await res.json();
+        return { jobs: data.jobs || [], nextPageToken: data.nextPageToken || null };
+    },
+
     // -- Pre-fetch phase: paginate the Germany search API ------------------------
     async initialize() {
         if (this._initialized) return;
@@ -50,40 +81,20 @@ export const workableConfig = {
 
         try {
             do {
-                const params = new URLSearchParams({
-                    location: 'Germany',
-                    limit: String(PAGE_SIZE),
-                });
-                if (pageToken) params.set('pageToken', pageToken);
+                // Per-page fetch is extracted so each raw API response goes out
+                // of scope (GC-eligible) as soon as its jobs are queued. The
+                // queued jobs here are all keepers — the API is already
+                // filtered to location=Germany, so there is no discard set.
+                const page = await this._fetchAggregatorPage(pageToken);
+                if (page === null) break;
 
-                const url = `${API_BASE}?${params.toString()}`;
-
-                const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 20000);
-
-                const res = await fetch(url, {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-                        'Accept': 'application/json',
-                    },
-                    signal: controller.signal,
-                });
-                clearTimeout(timeout);
-
-                if (!res.ok) {
-                    console.log(`[Workable] ? API returned HTTP ${res.status} � stopping pagination`);
-                    break;
-                }
-
-                const data = await res.json();
-                const jobs = data.jobs || [];
-
+                const { jobs, nextPageToken } = page;
                 if (jobs.length === 0) break;
 
                 this._allJobsQueue.push(...jobs);
                 totalFetched += jobs.length;
                 pageCount++;
-                pageToken = data.nextPageToken || null;
+                pageToken = nextPageToken;
 
                 console.log(`[Workable] Page ${pageCount}: ${jobs.length} jobs (${totalFetched} total so far)`);
 

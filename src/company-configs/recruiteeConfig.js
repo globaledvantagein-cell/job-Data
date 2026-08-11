@@ -191,6 +191,63 @@ export const recruiteeConfig = {
     _initialized: false,
     needsDescriptionScraping: false, // List endpoint returns full description + requirements
 
+    // -- Fetch one subdomain's offers → published + Germany only ----------------
+    // Extracted from the initialize() loop so the full offers payload is
+    // GC-eligible per company rather than living until the loop ends.
+    // Returns null on failure so the caller can count failures.
+    async _fetchCompany(subdomain) {
+        try {
+            const url = `https://${subdomain}.recruitee.com/api/offers/`;
+
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 20000);
+
+            const res = await fetch(url, {
+                headers: {
+                    'Accept': 'application/json',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                },
+                signal: controller.signal,
+            });
+            clearTimeout(timeout);
+
+            if (!res.ok) {
+                return null;
+            }
+
+            const data = await res.json();
+            const allOffers = data.offers || [];
+
+            if (allOffers.length === 0) return [];
+
+            // Filter for published + Germany
+            const germanyJobs = allOffers
+                .filter(offer => {
+                    // Only published offers
+                    if (offer.status && offer.status !== 'published') return false;
+                    return hasGermanyLocation(offer);
+                })
+                .map(offer => ({
+                    ...offer,
+                    _subdomain: subdomain,
+                }));
+
+            if (germanyJobs.length > 0) {
+                console.log(`[Recruitee] ? ${subdomain}: ${germanyJobs.length} Germany jobs (${allOffers.length} total)`);
+            }
+
+            // Polite delay between companies (300ms)
+            await new Promise(resolve => setTimeout(resolve, 300));
+            return germanyJobs;
+        } catch (error) {
+            // Only log non-abort errors
+            if (error.name !== 'AbortError') {
+                console.error(`[Recruitee] ? ${subdomain}: ${error.message}`);
+            }
+            return null;
+        }
+    },
+
     // -- Pre-fetch: hit every company subdomain, filter to Germany --------------
     async initialize() {
         if (this._initialized) return;
@@ -204,59 +261,12 @@ export const recruiteeConfig = {
         let germanyJobsTotal = 0;
 
         for (const subdomain of companySubdomains) {
-            try {
-                const url = `https://${subdomain}.recruitee.com/api/offers/`;
-
-                const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 20000);
-
-                const res = await fetch(url, {
-                    headers: {
-                        'Accept': 'application/json',
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-                    },
-                    signal: controller.signal,
-                });
-                clearTimeout(timeout);
-
-                if (!res.ok) {
-                    failCount++;
-                    continue;
-                }
-
-                const data = await res.json();
-                const allOffers = data.offers || [];
-
-                if (allOffers.length === 0) continue;
-
-                // Filter for published + Germany
-                const germanyJobs = allOffers
-                    .filter(offer => {
-                        // Only published offers
-                        if (offer.status && offer.status !== 'published') return false;
-                        return hasGermanyLocation(offer);
-                    })
-                    .map(offer => ({
-                        ...offer,
-                        _subdomain: subdomain,
-                    }));
-
-                if (germanyJobs.length > 0) {
-                    console.log(`[Recruitee] ? ${subdomain}: ${germanyJobs.length} Germany jobs (${allOffers.length} total)`);
-                    this._allJobsQueue.push(...germanyJobs);
-                    germanyJobsTotal += germanyJobs.length;
-                    successCount++;
-                }
-
-                // Polite delay between companies (300ms)
-                await new Promise(resolve => setTimeout(resolve, 300));
-
-            } catch (error) {
-                failCount++;
-                // Only log non-abort errors
-                if (error.name !== 'AbortError') {
-                    console.error(`[Recruitee] ? ${subdomain}: ${error.message}`);
-                }
+            const germanyJobs = await this._fetchCompany(subdomain);
+            if (germanyJobs === null) { failCount++; continue; }
+            if (germanyJobs.length > 0) {
+                this._allJobsQueue.push(...germanyJobs);
+                germanyJobsTotal += germanyJobs.length;
+                successCount++;
             }
         }
 

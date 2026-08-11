@@ -147,112 +147,123 @@ export const workdayConfig = {
         });
 
         for (const board of boards) {
-            const { company, instance, site, name } = board;
-            const baseUrl = `https://${company}.${instance}.myworkdayjobs.com`;
-            const listUrl = `${baseUrl}/wday/cxs/${company}/${site}/jobs`;
+            const result = await this._fetchCompany(board);
+            if (result.status === 'failed') { failCount++; continue; }
+            if (result.status === 'empty') { emptyCount++; continue; }
+            this._allJobsQueue.push(...result.jobs);
+            germanyJobsTotal += result.jobs.length;
+            successCount++;
+        }
 
-            let allJobs = [];
-            let total = 0;
-            let offset = 0;
-            const limit = 20;
+        console.log(`[Workday] ? Summary: ${successCount} companies with Germany jobs, ${failCount} failed, ${emptyCount} empty`);
+        console.log(`[Workday] ?? Total Germany jobs queued: ${germanyJobsTotal}`);
+        this._initialized = true;
+    },
 
-            try {
-                // -- First page ----------------------------------------------
-                const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 30000);
+    // -- Fetch + paginate one board → Germany-filtered jobs only ----------------
+    // Extracted from the initialize() loop so the accumulated allJobs array
+    // (every posting on the board, often hundreds) goes out of scope per
+    // company and becomes GC-eligible instead of persisting across the loop.
+    // Returns { status: 'ok' | 'empty' | 'failed', jobs }.
+    async _fetchCompany(board) {
+        const { company, instance, site, name } = board;
+        const baseUrl = `https://${company}.${instance}.myworkdayjobs.com`;
+        const listUrl = `${baseUrl}/wday/cxs/${company}/${site}/jobs`;
 
-                const firstRes = await fetch(listUrl, {
+        let allJobs = [];
+        let total = 0;
+        let offset = 0;
+        const limit = 20;
+
+        try {
+            // -- First page ----------------------------------------------
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 30000);
+
+            const firstRes = await fetch(listUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ appliedFacets: {}, limit, offset, searchText: '' }),
+                signal: controller.signal,
+            });
+            clearTimeout(timeout);
+
+            if (!firstRes.ok) {
+                console.log(`[Workday] ? ${company} (${name}): HTTP ${firstRes.status} � skipping`);
+                return { status: 'failed', jobs: [] };
+            }
+
+            const firstData = await firstRes.json();
+            total = firstData.total || 0;
+
+            if (!total) {
+                return { status: 'empty', jobs: [] };
+            }
+
+            // Add first page jobs
+            const firstPageJobs = (firstData.jobPostings || []).map(j => ({
+                ...j,
+                _company: company,
+                _instance: instance,
+                _site: site,
+                _companyName: name,
+            }));
+            allJobs.push(...firstPageJobs);
+            offset += limit;
+
+            // -- Subsequent pages ----------------------------------------
+            while (offset < total) {
+                await new Promise(r => setTimeout(r, 200)); // polite delay between pages
+
+                const pageController = new AbortController();
+                const pageTimeout = setTimeout(() => pageController.abort(), 30000);
+
+                const pageRes = await fetch(listUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
                     },
                     body: JSON.stringify({ appliedFacets: {}, limit, offset, searchText: '' }),
-                    signal: controller.signal,
+                    signal: pageController.signal,
                 });
-                clearTimeout(timeout);
+                clearTimeout(pageTimeout);
 
-                if (!firstRes.ok) {
-                    failCount++;
-                    console.log(`[Workday] ? ${company} (${name}): HTTP ${firstRes.status} � skipping`);
-                    continue;
-                }
+                if (!pageRes.ok) break;
 
-                const firstData = await firstRes.json();
-                total = firstData.total || 0;
-
-                if (!total) {
-                    emptyCount++;
-                    continue;
-                }
-
-                // Add first page jobs
-                const firstPageJobs = (firstData.jobPostings || []).map(j => ({
+                const pageData = await pageRes.json();
+                const pageJobs = (pageData.jobPostings || []).map(j => ({
                     ...j,
                     _company: company,
                     _instance: instance,
                     _site: site,
                     _companyName: name,
                 }));
-                allJobs.push(...firstPageJobs);
+                allJobs.push(...pageJobs);
                 offset += limit;
-
-                // -- Subsequent pages ----------------------------------------
-                while (offset < total) {
-                    await new Promise(r => setTimeout(r, 200)); // polite delay between pages
-
-                    const pageController = new AbortController();
-                    const pageTimeout = setTimeout(() => pageController.abort(), 30000);
-
-                    const pageRes = await fetch(listUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                        },
-                        body: JSON.stringify({ appliedFacets: {}, limit, offset, searchText: '' }),
-                        signal: pageController.signal,
-                    });
-                    clearTimeout(pageTimeout);
-
-                    if (!pageRes.ok) break;
-
-                    const pageData = await pageRes.json();
-                    const pageJobs = (pageData.jobPostings || []).map(j => ({
-                        ...j,
-                        _company: company,
-                        _instance: instance,
-                        _site: site,
-                        _companyName: name,
-                    }));
-                    allJobs.push(...pageJobs);
-                    offset += limit;
-                }
-
-                // -- Filter to Germany-only ----------------------------------
-                const germanyJobs = allJobs.filter(j => hasGermanyLocation(j));
-
-                if (germanyJobs.length > 0) {
-                    console.log(`[Workday] ? ${company} (${name}): ${germanyJobs.length} Germany jobs (${total} total)`);
-                    this._allJobsQueue.push(...germanyJobs);
-                    germanyJobsTotal += germanyJobs.length;
-                    successCount++;
-                } else {
-                    console.log(`[Workday]    ${company} (${name}): ${total} jobs, 0 in Germany`);
-                    emptyCount++;
-                }
-
-                await new Promise(r => setTimeout(r, 500)); // polite delay between companies
-
-            } catch (err) {
-                failCount++;
-                console.log(`[Workday] ? ${company} (${name}): ${err?.message || err}`);
             }
-        }
 
-        console.log(`[Workday] ? Summary: ${successCount} companies with Germany jobs, ${failCount} failed, ${emptyCount} empty`);
-        console.log(`[Workday] ?? Total Germany jobs queued: ${germanyJobsTotal}`);
-        this._initialized = true;
+            // -- Filter to Germany-only ----------------------------------
+            const germanyJobs = allJobs.filter(j => hasGermanyLocation(j));
+
+            if (germanyJobs.length > 0) {
+                console.log(`[Workday] ? ${company} (${name}): ${germanyJobs.length} Germany jobs (${total} total)`);
+            } else {
+                console.log(`[Workday]    ${company} (${name}): ${total} jobs, 0 in Germany`);
+            }
+
+            await new Promise(r => setTimeout(r, 500)); // polite delay between companies
+
+            return germanyJobs.length > 0
+                ? { status: 'ok', jobs: germanyJobs }
+                : { status: 'empty', jobs: [] };
+        } catch (err) {
+            console.log(`[Workday] ? ${company} (${name}): ${err?.message || err}`);
+            return { status: 'failed', jobs: [] };
+        }
     },
 
     // -- Called by network.js (fetchJobsPage detects this method) --------------

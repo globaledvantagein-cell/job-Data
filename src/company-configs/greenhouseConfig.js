@@ -248,7 +248,54 @@ export const greenhouseConfig = {
     _allJobsQueue: [],
     _initialized: false,
 
-    // Fetch all jobs from all boards upfront
+    // Fetch one board's jobs and return ONLY the Germany-filtered ones.
+    // Extracted from the initialize() loop so the full API response (often
+    // 1,000+ jobs with descriptions) goes out of scope — and becomes eligible
+    // for garbage collection — as soon as each company finishes, instead of
+    // accumulating for the whole loop. Returns null on failure so the caller
+    // can count failures separately from empty boards.
+    async _fetchCompany(boardToken) {
+        try {
+            const url = `${this.baseUrl}/${boardToken}/jobs?content=true`;
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                // Only log if you want to see failures (comment out to reduce noise)
+                // console.log(`[Greenhouse] ? ${boardToken}: ${response.status}`);
+                return null;
+            }
+
+            const data = await response.json();
+
+            if (!data.jobs || data.jobs.length === 0) {
+                return [];
+            }
+
+            // Filter for Germany and add board token
+            const germanyJobs = data.jobs
+                .filter(job => {
+                    const location = job.location?.name || '';
+                    return this.isGermanyLocation(location);
+                })
+                .map(job => ({
+                    ...job,
+                    _boardToken: boardToken
+                }));
+
+            if (germanyJobs.length > 0) {
+                console.log(`[Greenhouse] ✅ ${boardToken}: ${germanyJobs.length} jobs in Germany (${data.jobs.length} total)`);
+            }
+
+            // Rate limit: wait 500ms between companies
+            await new Promise(resolve => setTimeout(resolve, 500));
+            return germanyJobs;
+        } catch (error) {
+            console.error(`[Greenhouse] ? ${boardToken}: ${error.message}`);
+            return null;
+        }
+    },
+
+    // Fetch all jobs from all boards upfront (streamed one company at a time)
     async initialize() {
         if (this._initialized) return;
 
@@ -258,46 +305,11 @@ export const greenhouseConfig = {
         let failCount = 0;
 
         for (const boardToken of this.companyBoardTokens) {
-            try {
-                const url = `${this.baseUrl}/${boardToken}/jobs?content=true`;
-                const response = await fetch(url);
-
-                if (!response.ok) {
-                    failCount++;
-                    // Only log if you want to see failures (comment out to reduce noise)
-                    // console.log(`[Greenhouse] ? ${boardToken}: ${response.status}`);
-                    continue;
-                }
-
-                const data = await response.json();
-
-                if (!data.jobs || data.jobs.length === 0) {
-                    continue;
-                }
-
-                // Filter for Germany and add board token
-                const germanyJobs = data.jobs
-                    .filter(job => {
-                        const location = job.location?.name || '';
-                        return this.isGermanyLocation(location);
-                    })
-                    .map(job => ({
-                        ...job,
-                        _boardToken: boardToken
-                    }));
-
-                if (germanyJobs.length > 0) {
-                    console.log(`[Greenhouse] ✅ ${boardToken}: ${germanyJobs.length} jobs in Germany (${data.jobs.length} total)`);
-                    this._allJobsQueue.push(...germanyJobs);
-                    successCount++;
-                }
-
-                // Rate limit: wait 500ms between companies
-                await new Promise(resolve => setTimeout(resolve, 500));
-
-            } catch (error) {
-                failCount++;
-                console.error(`[Greenhouse] ? ${boardToken}: ${error.message}`);
+            const germanyJobs = await this._fetchCompany(boardToken);
+            if (germanyJobs === null) { failCount++; continue; }
+            if (germanyJobs.length > 0) {
+                this._allJobsQueue.push(...germanyJobs);
+                successCount++;
             }
         }
 

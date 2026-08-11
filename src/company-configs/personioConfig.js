@@ -402,7 +402,56 @@ companyTargets: [
     _allJobsQueue: [],
     _initialized: false,
 
-    // ─── Initialize: fetch all XML feeds upfront ──────────────────────────
+    // ─── Fetch one company's XML feed → Germany-filtered jobs only ────────
+    // Extracted from the initialize() loop so the raw XML text + full parse
+    // (all positions, with descriptions) go out of scope per company and can
+    // be garbage-collected instead of accumulating for the whole loop.
+    // Returns null on failure so the caller can count failures.
+    async _fetchCompany(target) {
+        const { subdomain, tld } = target;
+        const url = `https://${subdomain}.jobs.personio.${tld}/xml?language=en`;
+
+        try {
+            const response = await fetch(url, {
+                headers: { 'Accept': 'application/xml,text/xml' },
+            });
+
+            if (!response.ok) {
+                console.log(`[Personio] ❌ ${subdomain}: HTTP ${response.status}`);
+                return null;
+            }
+
+            const xmlText = await response.text();
+            const parsed = xmlParser.parse(xmlText);
+            const positions = parsed?.['workzag-jobs']?.position || [];
+
+            if (positions.length === 0) {
+                return [];
+            }
+
+            // Filter to Germany jobs only — checks office + additionalOffices
+            const germanyJobs = positions
+                .filter(job => this.isGermanyJob(job))
+                .map(job => ({
+                    ...job,
+                    _subdomain: subdomain,
+                    _tld: tld,
+                }));
+
+            if (germanyJobs.length > 0) {
+                console.log(`[Personio] ✅ ${subdomain}: ${germanyJobs.length} jobs in Germany (${positions.length} total)`);
+            }
+
+            // Be polite — 500ms between companies
+            await new Promise(resolve => setTimeout(resolve, 500));
+            return germanyJobs;
+        } catch (error) {
+            console.error(`[Personio] ❌ ${subdomain}: ${error.message}`);
+            return null;
+        }
+    },
+
+    // ─── Initialize: fetch all XML feeds upfront (streamed per company) ───
     async initialize() {
         if (this._initialized) return;
 
@@ -412,49 +461,11 @@ companyTargets: [
         let failCount = 0;
 
         for (const target of this.companyTargets) {
-            const { subdomain, tld } = target;
-            const url = `https://${subdomain}.jobs.personio.${tld}/xml?language=en`;
-
-            try {
-                const response = await fetch(url, {
-                    headers: { 'Accept': 'application/xml,text/xml' },
-                });
-
-                if (!response.ok) {
-                    failCount++;
-                    console.log(`[Personio] ❌ ${subdomain}: HTTP ${response.status}`);
-                    continue;
-                }
-
-                const xmlText = await response.text();
-                const parsed = xmlParser.parse(xmlText);
-                const positions = parsed?.['workzag-jobs']?.position || [];
-
-                if (positions.length === 0) {
-                    continue;
-                }
-
-                // Filter to Germany jobs only — checks office + additionalOffices
-                const germanyJobs = positions
-                    .filter(job => this.isGermanyJob(job))
-                    .map(job => ({
-                        ...job,
-                        _subdomain: subdomain,
-                        _tld: tld,
-                    }));
-
-                if (germanyJobs.length > 0) {
-                    console.log(`[Personio] ✅ ${subdomain}: ${germanyJobs.length} jobs in Germany (${positions.length} total)`);
-                    this._allJobsQueue.push(...germanyJobs);
-                    successCount++;
-                }
-
-                // Be polite — 500ms between companies
-                await new Promise(resolve => setTimeout(resolve, 500));
-
-            } catch (error) {
-                failCount++;
-                console.error(`[Personio] ❌ ${subdomain}: ${error.message}`);
+            const germanyJobs = await this._fetchCompany(target);
+            if (germanyJobs === null) { failCount++; continue; }
+            if (germanyJobs.length > 0) {
+                this._allJobsQueue.push(...germanyJobs);
+                successCount++;
             }
         }
 

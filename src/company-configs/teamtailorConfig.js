@@ -118,6 +118,52 @@ export const teamtailorConfig = {
     _allJobsQueue: [],
     _initialized: false,
 
+    // Fetch one career site's feed → Germany-filtered jobs only. Extracted so
+    // the full JSON Feed payload is GC-eligible per site instead of living
+    // until the whole initialize() loop finishes. Returns null on failure.
+    async _fetchCompany(boardName) {
+        try {
+            const url = `${this.buildFeedUrl(boardName)}`;
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                return null;
+            }
+
+            // A missing/renamed career site can answer 200 with an HTML error
+            // page, so guard the parse rather than trusting the status alone.
+            let data;
+            try {
+                data = await response.json();
+            } catch {
+                console.warn(`[Teamtailor] ${boardName}: response was not valid JSON`);
+                return null;
+            }
+
+            const items = this.getJobs(data);
+            if (items.length === 0) return [];
+
+            const germanyJobs = items
+                .filter(job => this.hasGermanyLocation(job))
+                .map(job => ({
+                    ...job,
+                    _boardName: boardName,
+                    _feedTitle: data?.title || null,
+                }));
+
+            if (germanyJobs.length > 0) {
+                console.log(`[Teamtailor] ${boardName}: ${germanyJobs.length} jobs in Germany (${items.length} total)`);
+            }
+
+            // Rate limit: 300ms between career sites (matches ashbyConfig)
+            await new Promise(resolve => setTimeout(resolve, 300));
+            return germanyJobs;
+        } catch (error) {
+            console.error(`[Teamtailor] ${boardName}: ${error.message}`);
+            return null;
+        }
+    },
+
     async initialize() {
         if (this._initialized) return;
 
@@ -127,49 +173,11 @@ export const teamtailorConfig = {
         let failCount = 0;
 
         for (const boardName of this.companyBoardNames) {
-            try {
-                const url = `${this.buildFeedUrl(boardName)}`;
-                const response = await fetch(url);
-
-                if (!response.ok) {
-                    failCount++;
-                    continue;
-                }
-
-                // A missing/renamed career site can answer 200 with an HTML error
-                // page, so guard the parse rather than trusting the status alone.
-                let data;
-                try {
-                    data = await response.json();
-                } catch {
-                    failCount++;
-                    console.warn(`[Teamtailor] ${boardName}: response was not valid JSON`);
-                    continue;
-                }
-
-                const items = this.getJobs(data);
-                if (items.length === 0) continue;
-
-                const germanyJobs = items
-                    .filter(job => this.hasGermanyLocation(job))
-                    .map(job => ({
-                        ...job,
-                        _boardName: boardName,
-                        _feedTitle: data?.title || null,
-                    }));
-
-                if (germanyJobs.length > 0) {
-                    console.log(`[Teamtailor] ${boardName}: ${germanyJobs.length} jobs in Germany (${items.length} total)`);
-                    this._allJobsQueue.push(...germanyJobs);
-                    successCount++;
-                }
-
-                // Rate limit: 300ms between career sites (matches ashbyConfig)
-                await new Promise(resolve => setTimeout(resolve, 300));
-
-            } catch (error) {
-                failCount++;
-                console.error(`[Teamtailor] ${boardName}: ${error.message}`);
+            const germanyJobs = await this._fetchCompany(boardName);
+            if (germanyJobs === null) { failCount++; continue; }
+            if (germanyJobs.length > 0) {
+                this._allJobsQueue.push(...germanyJobs);
+                successCount++;
             }
         }
 

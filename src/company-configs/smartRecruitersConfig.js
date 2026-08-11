@@ -265,32 +265,38 @@ export const smartRecruitersConfig = {
         let failedCompanies = 0;
 
         for (const companyId of this.companyIdentifiers) {
-            try {
-                // ── Step 1: paginate through list endpoint ──
-                const listedJobs = await this.fetchAllListedJobs(companyId);
-                totalListed += listedJobs.length;
-
-                if (listedJobs.length === 0) {
-                    console.log(`[SmartRecruiters] ⚠️  ${companyId}: 0 jobs matched filters`);
-                    continue;
-                }
-
-                // ── Step 2: enrich each with detail (description + apply URL) ──
-                const enriched = await this.enrichJobsWithDetails(companyId, listedJobs);
-                totalEnriched += enriched.length;
-                this._allJobsQueue.push(...enriched);
-
-                console.log(`[SmartRecruiters] ✅ ${companyId}: ${enriched.length}/${listedJobs.length} jobs enriched`);
-
-            } catch (error) {
-                failedCompanies++;
-                console.error(`[SmartRecruiters] ❌ ${companyId}: ${error.message}`);
-            }
+            const result = await this._fetchCompany(companyId);
+            if (result === null) { failedCompanies++; continue; }
+            totalListed += result.listed;
+            totalEnriched += result.jobs.length;
+            if (result.jobs.length > 0) this._allJobsQueue.push(...result.jobs);
         }
 
         console.log(`[SmartRecruiters] 📊 Summary: ${totalEnriched} jobs enriched (${totalListed} listed, ${failedCompanies} companies failed)`);
         console.log(`[SmartRecruiters] 💼 Total in queue: ${this._allJobsQueue.length}`);
         this._initialized = true;
+    },
+
+    // ─── Fetch + enrich one company; intermediates GC-eligible on return ──
+    // Returns { jobs, listed } or null on failure.
+    async _fetchCompany(companyId) {
+        try {
+            // ── Step 1: paginate through list endpoint ──
+            const listedJobs = await this.fetchAllListedJobs(companyId);
+
+            if (listedJobs.length === 0) {
+                console.log(`[SmartRecruiters] ⚠️  ${companyId}: 0 jobs matched filters`);
+                return { jobs: [], listed: 0 };
+            }
+
+            // ── Step 2: enrich each with detail (description + apply URL) ──
+            const enriched = await this.enrichJobsWithDetails(companyId, listedJobs);
+            console.log(`[SmartRecruiters] ✅ ${companyId}: ${enriched.length}/${listedJobs.length} jobs enriched`);
+            return { jobs: enriched, listed: listedJobs.length };
+        } catch (error) {
+            console.error(`[SmartRecruiters] ❌ ${companyId}: ${error.message}`);
+            return null;
+        }
     },
 
     // ─── Helper: paginate through all listed jobs for a company ──────────
