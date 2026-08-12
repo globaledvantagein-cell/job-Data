@@ -2,6 +2,7 @@ import fetch from 'node-fetch';
 import { StripHtml, SanitizeHtml } from '../utils.js';
 import { GERMAN_CITIES } from '../core/locationPrefilters.js';
 import { normalizeArray } from '../core/jobExtractor.js';
+import { loadScrapeStates, saveScrapeStatesBulk, computeContentHash, stateKey } from '../core/scrapeState.js';
 
 
 // --- Helpers ------------------------------------------------------------------
@@ -195,30 +196,60 @@ export const recruiteeConfig = {
     // Extracted from the initialize() loop so the full offers payload is
     // GC-eligible per company rather than living until the loop ends.
     // Returns null on failure so the caller can count failures.
-    async _fetchCompany(subdomain) {
+    async _fetchCompany(subdomain, stateMap) {
+        const prev = stateMap.get(stateKey('recruitee', subdomain));
         try {
             const url = `https://${subdomain}.recruitee.com/api/offers/`;
 
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 20000);
 
+            const headers = {
+                'Accept': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            };
+            if (prev?.etag) headers['If-None-Match'] = prev.etag;
+
             const res = await fetch(url, {
-                headers: {
-                    'Accept': 'application/json',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-                },
+                headers,
                 signal: controller.signal,
             });
             clearTimeout(timeout);
+
+            if (res.status === 304) {
+                await new Promise(resolve => setTimeout(resolve, 300));
+                return {
+                    unchanged: true, jobs: [],
+                    state: { slug: subdomain, etag: prev.etag, contentHash: prev.contentHash, jobCount: prev.jobCount ?? 0, changed: false },
+                };
+            }
 
             if (!res.ok) {
                 return null;
             }
 
             const data = await res.json();
+            const etag = res.headers.get('etag') || null;
             const allOffers = data.offers || [];
 
-            if (allOffers.length === 0) return [];
+            if (allOffers.length === 0) {
+                return {
+                    unchanged: false, jobs: [],
+                    state: { slug: subdomain, etag, contentHash: computeContentHash([]), jobCount: 0, changed: !prev },
+                };
+            }
+
+            // id|title|location|status fingerprint — descriptions excluded.
+            const contentHash = computeContentHash(
+                allOffers.map(o => `${o.id}|${o.title || ''}|${o.location || o.city || ''}|${o.status || ''}`),
+            );
+            if (prev && prev.contentHash === contentHash) {
+                await new Promise(resolve => setTimeout(resolve, 300));
+                return {
+                    unchanged: true, jobs: [],
+                    state: { slug: subdomain, etag, contentHash, jobCount: prev.jobCount ?? 0, changed: false },
+                };
+            }
 
             // Filter for published + Germany
             const germanyJobs = allOffers
@@ -238,7 +269,10 @@ export const recruiteeConfig = {
 
             // Polite delay between companies (300ms)
             await new Promise(resolve => setTimeout(resolve, 300));
-            return germanyJobs;
+            return {
+                unchanged: false, jobs: germanyJobs,
+                state: { slug: subdomain, etag, contentHash, jobCount: germanyJobs.length, changed: true },
+            };
         } catch (error) {
             // Only log non-abort errors
             if (error.name !== 'AbortError') {
@@ -256,21 +290,27 @@ export const recruiteeConfig = {
 
         console.log(`[Recruitee] Fetching jobs from ${companySubdomains.length} companies...`);
 
+        const stateMap = await loadScrapeStates('recruitee');
+        const pendingStates = [];
         let successCount = 0;
         let failCount = 0;
+        let skippedCount = 0;
         let germanyJobsTotal = 0;
 
         for (const subdomain of companySubdomains) {
-            const germanyJobs = await this._fetchCompany(subdomain);
-            if (germanyJobs === null) { failCount++; continue; }
-            if (germanyJobs.length > 0) {
-                this._allJobsQueue.push(...germanyJobs);
-                germanyJobsTotal += germanyJobs.length;
+            const result = await this._fetchCompany(subdomain, stateMap);
+            if (result === null) { failCount++; continue; }
+            pendingStates.push(result.state);
+            if (result.unchanged) { skippedCount++; continue; }
+            if (result.jobs.length > 0) {
+                this._allJobsQueue.push(...result.jobs);
+                germanyJobsTotal += result.jobs.length;
                 successCount++;
             }
         }
 
-        console.log(`[Recruitee] ? Summary: ${successCount} companies with Germany jobs, ${failCount} failed/empty`);
+        await saveScrapeStatesBulk('recruitee', pendingStates);
+        console.log(`[Recruitee] ? Summary: ${successCount} companies with Germany jobs, ${skippedCount} unchanged (skipped), ${failCount} failed/empty`);
         console.log(`[Recruitee] ?? Total Germany jobs queued: ${germanyJobsTotal}`);
         this._initialized = true;
     },

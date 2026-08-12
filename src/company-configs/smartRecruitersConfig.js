@@ -2,6 +2,7 @@ import fetch from 'node-fetch';
 import { StripHtml, SanitizeHtml } from '../utils.js';
 import { isGermanyString, normalizeEmploymentType } from '../core/locationPrefilters.js';
 import { normalizeArray } from '../core/jobExtractor.js';
+import { loadScrapeStates, saveScrapeStatesBulk, computeContentHash, stateKey } from '../core/scrapeState.js';
 
 // ─── SmartRecruiters experienceLevel → your taxonomy ──────────────────────
 const EXPERIENCE_MAP = {
@@ -264,35 +265,65 @@ export const smartRecruitersConfig = {
         let totalEnriched = 0;
         let failedCompanies = 0;
 
+        const stateMap = await loadScrapeStates('smartrecruiters');
+        const pendingStates = [];
+        let skippedCompanies = 0;
+
         for (const companyId of this.companyIdentifiers) {
-            const result = await this._fetchCompany(companyId);
+            const result = await this._fetchCompany(companyId, stateMap);
             if (result === null) { failedCompanies++; continue; }
+            pendingStates.push(result.state);
+            if (result.unchanged) { skippedCompanies++; continue; }
             totalListed += result.listed;
             totalEnriched += result.jobs.length;
             if (result.jobs.length > 0) this._allJobsQueue.push(...result.jobs);
         }
 
-        console.log(`[SmartRecruiters] 📊 Summary: ${totalEnriched} jobs enriched (${totalListed} listed, ${failedCompanies} companies failed)`);
+        await saveScrapeStatesBulk('smartrecruiters', pendingStates);
+        console.log(`[SmartRecruiters] 📊 Summary: ${totalEnriched} jobs enriched (${totalListed} listed, ${skippedCompanies} unchanged skipped, ${failedCompanies} companies failed)`);
         console.log(`[SmartRecruiters] 💼 Total in queue: ${this._allJobsQueue.length}`);
         this._initialized = true;
     },
 
     // ─── Fetch + enrich one company; intermediates GC-eligible on return ──
-    // Returns { jobs, listed } or null on failure.
-    async _fetchCompany(companyId) {
+    // The content hash is computed from the LIST results, BEFORE enrichment —
+    // an unchanged company skips all of its per-job detail fetches, which is
+    // where nearly all of this platform's request volume goes. (No ETag layer:
+    // the list endpoint is paginated, so there is no single response to tag.)
+    // Returns { unchanged, jobs, listed, state } or null on failure.
+    async _fetchCompany(companyId, stateMap) {
+        const prev = stateMap.get(stateKey('smartrecruiters', companyId));
         try {
             // ── Step 1: paginate through list endpoint ──
             const listedJobs = await this.fetchAllListedJobs(companyId);
 
             if (listedJobs.length === 0) {
                 console.log(`[SmartRecruiters] ⚠️  ${companyId}: 0 jobs matched filters`);
-                return { jobs: [], listed: 0 };
+                return {
+                    unchanged: false, jobs: [], listed: 0,
+                    state: { slug: companyId, etag: null, contentHash: computeContentHash([]), jobCount: 0, changed: !prev },
+                };
+            }
+
+            // id|name|releasedDate fingerprint — descriptions live in the
+            // detail endpoint and never affect the hash.
+            const contentHash = computeContentHash(
+                listedJobs.map(j => `${j.id}|${j.name || ''}|${j.releasedDate || ''}`),
+            );
+            if (prev && prev.contentHash === contentHash) {
+                return {
+                    unchanged: true, jobs: [], listed: listedJobs.length,
+                    state: { slug: companyId, etag: null, contentHash, jobCount: prev.jobCount ?? 0, changed: false },
+                };
             }
 
             // ── Step 2: enrich each with detail (description + apply URL) ──
             const enriched = await this.enrichJobsWithDetails(companyId, listedJobs);
             console.log(`[SmartRecruiters] ✅ ${companyId}: ${enriched.length}/${listedJobs.length} jobs enriched`);
-            return { jobs: enriched, listed: listedJobs.length };
+            return {
+                unchanged: false, jobs: enriched, listed: listedJobs.length,
+                state: { slug: companyId, etag: null, contentHash, jobCount: enriched.length, changed: true },
+            };
         } catch (error) {
             console.error(`[SmartRecruiters] ❌ ${companyId}: ${error.message}`);
             return null;

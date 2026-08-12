@@ -2,6 +2,7 @@ import fetch from 'node-fetch';
 import { StripHtml, SanitizeHtml } from '../utils.js';
 import { GERMAN_CITIES, isGermanyString, normalizeWorkplaceType, normalizeEmploymentType } from '../core/locationPrefilters.js';
 import { normalizeArray } from '../core/jobExtractor.js';
+import { loadScrapeStates, saveScrapeStatesBulk, computeContentHash, stateKey } from '../core/scrapeState.js';
 
 
 // --- Germany location matching -------------------------------------------------
@@ -146,16 +147,23 @@ export const workdayConfig = {
             return true;
         });
 
+        const stateMap = await loadScrapeStates('workday');
+        const pendingStates = [];
+        let skippedCount = 0;
+
         for (const board of boards) {
-            const result = await this._fetchCompany(board);
+            const result = await this._fetchCompany(board, stateMap);
             if (result.status === 'failed') { failCount++; continue; }
+            if (result.state) pendingStates.push(result.state);
+            if (result.status === 'unchanged') { skippedCount++; continue; }
             if (result.status === 'empty') { emptyCount++; continue; }
             this._allJobsQueue.push(...result.jobs);
             germanyJobsTotal += result.jobs.length;
             successCount++;
         }
 
-        console.log(`[Workday] ? Summary: ${successCount} companies with Germany jobs, ${failCount} failed, ${emptyCount} empty`);
+        await saveScrapeStatesBulk('workday', pendingStates);
+        console.log(`[Workday] ? Summary: ${successCount} companies with Germany jobs, ${skippedCount} unchanged (skipped), ${failCount} failed, ${emptyCount} empty`);
         console.log(`[Workday] ?? Total Germany jobs queued: ${germanyJobsTotal}`);
         this._initialized = true;
     },
@@ -164,9 +172,14 @@ export const workdayConfig = {
     // Extracted from the initialize() loop so the accumulated allJobs array
     // (every posting on the board, often hundreds) goes out of scope per
     // company and becomes GC-eligible instead of persisting across the loop.
-    // Returns { status: 'ok' | 'empty' | 'failed', jobs }.
-    async _fetchCompany(board) {
+    // Change detection: Workday's list endpoint is a POST, so there is no
+    // ETag layer here — only the content hash (externalPath|postedOn), which
+    // still spares the queue/AI pipeline even though the pages are downloaded.
+    // Returns { status: 'ok' | 'empty' | 'failed' | 'unchanged', jobs, state? }.
+    async _fetchCompany(board, stateMap) {
         const { company, instance, site, name } = board;
+        const stateSlug = `${company}_${site}`;
+        const prev = stateMap.get(stateKey('workday', stateSlug));
         const baseUrl = `https://${company}.${instance}.myworkdayjobs.com`;
         const listUrl = `${baseUrl}/wday/cxs/${company}/${site}/jobs`;
 
@@ -200,7 +213,10 @@ export const workdayConfig = {
             total = firstData.total || 0;
 
             if (!total) {
-                return { status: 'empty', jobs: [] };
+                return {
+                    status: 'empty', jobs: [],
+                    state: { slug: stateSlug, etag: null, contentHash: computeContentHash([]), jobCount: 0, changed: !prev },
+                };
             }
 
             // Add first page jobs
@@ -246,6 +262,18 @@ export const workdayConfig = {
                 offset += limit;
             }
 
+            // -- Unchanged board? Skip filter + queue entirely ------------
+            const contentHash = computeContentHash(
+                allJobs.map(j => `${j.externalPath || ''}|${j.title || ''}|${j.postedOn || ''}`),
+            );
+            if (prev && prev.contentHash === contentHash) {
+                await new Promise(r => setTimeout(r, 500));
+                return {
+                    status: 'unchanged', jobs: [],
+                    state: { slug: stateSlug, etag: null, contentHash, jobCount: prev.jobCount ?? 0, changed: false },
+                };
+            }
+
             // -- Filter to Germany-only ----------------------------------
             const germanyJobs = allJobs.filter(j => hasGermanyLocation(j));
 
@@ -257,9 +285,10 @@ export const workdayConfig = {
 
             await new Promise(r => setTimeout(r, 500)); // polite delay between companies
 
+            const state = { slug: stateSlug, etag: null, contentHash, jobCount: germanyJobs.length, changed: true };
             return germanyJobs.length > 0
-                ? { status: 'ok', jobs: germanyJobs }
-                : { status: 'empty', jobs: [] };
+                ? { status: 'ok', jobs: germanyJobs, state }
+                : { status: 'empty', jobs: [], state };
         } catch (err) {
             console.log(`[Workday] ? ${company} (${name}): ${err?.message || err}`);
             return { status: 'failed', jobs: [] };

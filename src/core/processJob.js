@@ -257,5 +257,16 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
 
     normalizeSalaryValues(mappedJob);
     mappedJob.Location = normalizeStoredLocation(mappedJob);
+
+    // 200-char plain-text preview for the cache/teaser layer — the cache load
+    // projection excludes the full Description, so this is what lists serve.
+    const plainDescription = String(mappedJob.Description || '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    mappedJob.descriptionPreview = plainDescription.length > 200
+        ? `${plainDescription.slice(0, 200)}...`
+        : plainDescription;
+
     return createJobModel(mappedJob, siteConfig.siteName);
 }

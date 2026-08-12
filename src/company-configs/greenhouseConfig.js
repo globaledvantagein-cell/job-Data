@@ -2,6 +2,7 @@ import fetch from 'node-fetch';
 import { StripHtml, SanitizeHtml } from '../utils.js';
 import { GERMAN_CITIES, isGermanyString, normalizeWorkplaceType, normalizeEmploymentType } from '../core/locationPrefilters.js';
 import { normalizeArray } from '../core/jobExtractor.js';
+import { loadScrapeStates, saveScrapeStatesBulk, computeContentHash, stateKey } from '../core/scrapeState.js';
 
 
 function metadataToObject(metadata) {
@@ -251,13 +252,29 @@ export const greenhouseConfig = {
     // Fetch one board's jobs and return ONLY the Germany-filtered ones.
     // Extracted from the initialize() loop so the full API response (often
     // 1,000+ jobs with descriptions) goes out of scope — and becomes eligible
-    // for garbage collection — as soon as each company finishes, instead of
-    // accumulating for the whole loop. Returns null on failure so the caller
-    // can count failures separately from empty boards.
-    async _fetchCompany(boardToken) {
+    // for garbage collection — as soon as each company finishes.
+    //
+    // Change detection (both layers live HERE, before jobs can enter the
+    // queue): an If-None-Match/304 skips the download entirely; otherwise a
+    // content hash over id|title|location fingerprints (descriptions excluded)
+    // skips boards whose postings haven't materially changed.
+    //
+    // Returns null on failure, else { unchanged, jobs, state }.
+    async _fetchCompany(boardToken, stateMap) {
+        const prev = stateMap.get(stateKey('greenhouse', boardToken));
         try {
             const url = `${this.baseUrl}/${boardToken}/jobs?content=true`;
-            const response = await fetch(url);
+            const headers = prev?.etag ? { 'If-None-Match': prev.etag } : {};
+            const response = await fetch(url, { headers });
+
+            // 304 — board unchanged at the HTTP layer; nothing was downloaded.
+            if (response.status === 304) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                return {
+                    unchanged: true, jobs: [],
+                    state: { slug: boardToken, etag: prev.etag, contentHash: prev.contentHash, jobCount: prev.jobCount ?? 0, changed: false },
+                };
+            }
 
             if (!response.ok) {
                 // Only log if you want to see failures (comment out to reduce noise)
@@ -266,9 +283,26 @@ export const greenhouseConfig = {
             }
 
             const data = await response.json();
+            const etag = response.headers.get('etag') || null;
 
             if (!data.jobs || data.jobs.length === 0) {
-                return [];
+                return {
+                    unchanged: false, jobs: [],
+                    state: { slug: boardToken, etag, contentHash: computeContentHash([]), jobCount: 0, changed: !prev },
+                };
+            }
+
+            // Content hash over the RAW list (pre-filter) so any add/remove/edit
+            // that could flip a filter decision invalidates it.
+            const contentHash = computeContentHash(
+                data.jobs.map(j => `${j.id}|${j.title || ''}|${j.location?.name || ''}`),
+            );
+            if (prev && prev.contentHash === contentHash) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                return {
+                    unchanged: true, jobs: [],
+                    state: { slug: boardToken, etag, contentHash, jobCount: prev.jobCount ?? 0, changed: false },
+                };
             }
 
             // Filter for Germany and add board token
@@ -288,7 +322,10 @@ export const greenhouseConfig = {
 
             // Rate limit: wait 500ms between companies
             await new Promise(resolve => setTimeout(resolve, 500));
-            return germanyJobs;
+            return {
+                unchanged: false, jobs: germanyJobs,
+                state: { slug: boardToken, etag, contentHash, jobCount: germanyJobs.length, changed: true },
+            };
         } catch (error) {
             console.error(`[Greenhouse] ? ${boardToken}: ${error.message}`);
             return null;
@@ -301,19 +338,25 @@ export const greenhouseConfig = {
 
         console.log(`[Greenhouse] Fetching jobs from ${this.companyBoardTokens.length} companies...`);
 
+        const stateMap = await loadScrapeStates('greenhouse');
+        const pendingStates = [];
         let successCount = 0;
         let failCount = 0;
+        let skippedCount = 0;
 
         for (const boardToken of this.companyBoardTokens) {
-            const germanyJobs = await this._fetchCompany(boardToken);
-            if (germanyJobs === null) { failCount++; continue; }
-            if (germanyJobs.length > 0) {
-                this._allJobsQueue.push(...germanyJobs);
+            const result = await this._fetchCompany(boardToken, stateMap);
+            if (result === null) { failCount++; continue; }
+            pendingStates.push(result.state);
+            if (result.unchanged) { skippedCount++; continue; }
+            if (result.jobs.length > 0) {
+                this._allJobsQueue.push(...result.jobs);
                 successCount++;
             }
         }
 
-        console.log(`[Greenhouse] ? Summary: ${successCount} companies with Germany jobs, ${failCount} failed/empty`);
+        await saveScrapeStatesBulk('greenhouse', pendingStates);
+        console.log(`[Greenhouse] ? Summary: ${successCount} companies with Germany jobs, ${skippedCount} unchanged (skipped), ${failCount} failed/empty`);
         console.log(`[Greenhouse] ?? Total jobs found: ${this._allJobsQueue.length}`);
         this._initialized = true;
     },

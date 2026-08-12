@@ -127,7 +127,12 @@ export async function initRemoteJobsCache(){
     const startTime = Date.now();
 
     const db = await connectToRemoteDb();
-    const cursor = db.collection('remoteJobs').find({ Status: 'active' });
+    // Heavy fields excluded — same projection as jobsCache; the remote detail
+    // endpoint reads MongoDB directly, the cache never needs these.
+    const cursor = db.collection('remoteJobs').find(
+        { Status: 'active' },
+        { projection: { Description: 0, DescriptionHtml: 0, parsedRequirements: 0 } },
+    );
 
     remoteJobsMap.clear();
 

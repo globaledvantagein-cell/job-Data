@@ -2,6 +2,7 @@ import fetch from 'node-fetch';
 import { StripHtml, SanitizeHtml } from '../utils.js';
 import { isGermanyString, normalizeWorkplaceType, normalizeCountry, normalizeEmploymentType } from '../core/locationPrefilters.js';
 import { normalizeArray } from '../core/jobExtractor.js';
+import { loadScrapeStates, saveScrapeStatesBulk, computeContentHash, stateKey } from '../core/scrapeState.js';
 
 // ─── Teamtailor ────────────────────────────────────────────────────────────────
 //
@@ -121,10 +122,20 @@ export const teamtailorConfig = {
     // Fetch one career site's feed → Germany-filtered jobs only. Extracted so
     // the full JSON Feed payload is GC-eligible per site instead of living
     // until the whole initialize() loop finishes. Returns null on failure.
-    async _fetchCompany(boardName) {
+    async _fetchCompany(boardName, stateMap) {
+        const prev = stateMap.get(stateKey('teamtailor', boardName));
         try {
             const url = `${this.buildFeedUrl(boardName)}`;
-            const response = await fetch(url);
+            const headers = prev?.etag ? { 'If-None-Match': prev.etag } : {};
+            const response = await fetch(url, { headers });
+
+            if (response.status === 304) {
+                await new Promise(resolve => setTimeout(resolve, 300));
+                return {
+                    unchanged: true, jobs: [],
+                    state: { slug: boardName, etag: prev.etag, contentHash: prev.contentHash, jobCount: prev.jobCount ?? 0, changed: false },
+                };
+            }
 
             if (!response.ok) {
                 return null;
@@ -140,8 +151,26 @@ export const teamtailorConfig = {
                 return null;
             }
 
+            const etag = response.headers.get('etag') || null;
             const items = this.getJobs(data);
-            if (items.length === 0) return [];
+            if (items.length === 0) {
+                return {
+                    unchanged: false, jobs: [],
+                    state: { slug: boardName, etag, contentHash: computeContentHash([]), jobCount: 0, changed: !prev },
+                };
+            }
+
+            // id|title fingerprint — descriptions excluded on purpose.
+            const contentHash = computeContentHash(
+                items.map(item => `${item?._jobposting?.identifier?.value ?? item?.id}|${item?.title || ''}`),
+            );
+            if (prev && prev.contentHash === contentHash) {
+                await new Promise(resolve => setTimeout(resolve, 300));
+                return {
+                    unchanged: true, jobs: [],
+                    state: { slug: boardName, etag, contentHash, jobCount: prev.jobCount ?? 0, changed: false },
+                };
+            }
 
             const germanyJobs = items
                 .filter(job => this.hasGermanyLocation(job))
@@ -157,7 +186,10 @@ export const teamtailorConfig = {
 
             // Rate limit: 300ms between career sites (matches ashbyConfig)
             await new Promise(resolve => setTimeout(resolve, 300));
-            return germanyJobs;
+            return {
+                unchanged: false, jobs: germanyJobs,
+                state: { slug: boardName, etag, contentHash, jobCount: germanyJobs.length, changed: true },
+            };
         } catch (error) {
             console.error(`[Teamtailor] ${boardName}: ${error.message}`);
             return null;
@@ -169,19 +201,25 @@ export const teamtailorConfig = {
 
         console.log(`[Teamtailor] Fetching jobs from ${this.companyBoardNames.length} career sites...`);
 
+        const stateMap = await loadScrapeStates('teamtailor');
+        const pendingStates = [];
         let successCount = 0;
         let failCount = 0;
+        let skippedCount = 0;
 
         for (const boardName of this.companyBoardNames) {
-            const germanyJobs = await this._fetchCompany(boardName);
-            if (germanyJobs === null) { failCount++; continue; }
-            if (germanyJobs.length > 0) {
-                this._allJobsQueue.push(...germanyJobs);
+            const result = await this._fetchCompany(boardName, stateMap);
+            if (result === null) { failCount++; continue; }
+            pendingStates.push(result.state);
+            if (result.unchanged) { skippedCount++; continue; }
+            if (result.jobs.length > 0) {
+                this._allJobsQueue.push(...result.jobs);
                 successCount++;
             }
         }
 
-        console.log(`[Teamtailor] Summary: ${successCount} sites with Germany jobs, ${failCount} failed/empty`);
+        await saveScrapeStatesBulk('teamtailor', pendingStates);
+        console.log(`[Teamtailor] Summary: ${successCount} sites with Germany jobs, ${skippedCount} unchanged (skipped), ${failCount} failed/empty`);
         console.log(`[Teamtailor] Total jobs found: ${this._allJobsQueue.length}`);
         this._initialized = true;
     },

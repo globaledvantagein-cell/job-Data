@@ -2,6 +2,7 @@ import fetch from 'node-fetch';
 import { StripHtml, SanitizeHtml } from '../utils.js';
 import { normalizeWorkplaceType, normalizeEmploymentType } from '../core/locationPrefilters.js';
 import { normalizeArray } from '../core/jobExtractor.js';
+import { loadScrapeStates, saveScrapeStatesBulk, computeContentHash, stateKey } from '../core/scrapeState.js';
 
 // Workable-specific: maps experience keywords to ExperienceLevel enum
 function normalizeExperienceLevel(value) {
@@ -108,6 +109,30 @@ export const workableConfig = {
         } catch (err) {
             console.log(`[Workable] ? Fetch error: ${err.message}`);
         }
+
+        // Change detection — Workable is one aggregated Germany feed, not a
+        // per-company list, so a single state doc (slug 'aggregator') hashes
+        // the whole fetched set. Unchanged feed → drop the queue before the
+        // engine (and the AI pipeline) ever sees it. No ETag layer: the feed
+        // is paginated with rotating tokens, so there is no stable response
+        // to tag — bandwidth is still spent, downstream work is not.
+        const stateMap = await loadScrapeStates('workable');
+        const prev = stateMap.get(stateKey('workable', 'aggregator'));
+        const contentHash = computeContentHash(
+            this._allJobsQueue.map(j => `${j.id || j.shortcode || ''}|${j.title || ''}|${j.location?.city || ''}`),
+        );
+        if (prev && prev.contentHash === contentHash) {
+            console.log(`[Workable] ? Feed unchanged since last run — skipping all ${this._allJobsQueue.length} jobs`);
+            this._allJobsQueue = [];
+            await saveScrapeStatesBulk('workable', [
+                { slug: 'aggregator', etag: null, contentHash, jobCount: prev.jobCount ?? 0, changed: false },
+            ]);
+            this._initialized = true;
+            return;
+        }
+        await saveScrapeStatesBulk('workable', [
+            { slug: 'aggregator', etag: null, contentHash, jobCount: this._allJobsQueue.length, changed: true },
+        ]);
 
         console.log(`[Workable] ? Done: ${totalFetched} Germany jobs queued from ${pageCount} page(s)`);
 

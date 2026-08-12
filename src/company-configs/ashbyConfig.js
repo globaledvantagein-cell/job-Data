@@ -2,6 +2,7 @@ import fetch from 'node-fetch';
 import { StripHtml, SanitizeHtml } from '../utils.js';
 import { isGermanyString, normalizeWorkplaceType, normalizeCountry, normalizeEmploymentType } from '../core/locationPrefilters.js';
 import { normalizeArray } from '../core/jobExtractor.js';
+import { loadScrapeStates, saveScrapeStatesBulk, computeContentHash, stateKey } from '../core/scrapeState.js';
 
 
 function findCompensationComponent(job, typeName) {
@@ -235,11 +236,24 @@ export const ashbyConfig = {
 
     // Fetch one board's jobs and return ONLY the Germany-filtered ones.
     // Extracted so the full API response is GC-eligible per company instead of
-    // living until the whole initialize() loop finishes. null = failure.
-    async _fetchCompany(boardName) {
+    // living until the whole initialize() loop finishes.
+    // Change detection lives HERE: ETag/304 skips the download, content hash
+    // (id|title|location, descriptions excluded) skips unchanged boards.
+    // Returns null on failure, else { unchanged, jobs, state }.
+    async _fetchCompany(boardName, stateMap) {
+        const prev = stateMap.get(stateKey('ashby', boardName));
         try {
             const url = `${this.baseUrl}/${boardName}?includeCompensation=true`;
-            const response = await fetch(url);
+            const headers = prev?.etag ? { 'If-None-Match': prev.etag } : {};
+            const response = await fetch(url, { headers });
+
+            if (response.status === 304) {
+                await new Promise(resolve => setTimeout(resolve, 300));
+                return {
+                    unchanged: true, jobs: [],
+                    state: { slug: boardName, etag: prev.etag, contentHash: prev.contentHash, jobCount: prev.jobCount ?? 0, changed: false },
+                };
+            }
 
             if (!response.ok) {
                 // Only log 404s if you want to see which ones failed
@@ -248,9 +262,24 @@ export const ashbyConfig = {
             }
 
             const data = await response.json();
+            const etag = response.headers.get('etag') || null;
 
             if (!data.jobs || data.jobs.length === 0) {
-                return [];
+                return {
+                    unchanged: false, jobs: [],
+                    state: { slug: boardName, etag, contentHash: computeContentHash([]), jobCount: 0, changed: !prev },
+                };
+            }
+
+            const contentHash = computeContentHash(
+                data.jobs.map(j => `${j.id}|${j.title || ''}|${j.location || ''}`),
+            );
+            if (prev && prev.contentHash === contentHash) {
+                await new Promise(resolve => setTimeout(resolve, 300));
+                return {
+                    unchanged: true, jobs: [],
+                    state: { slug: boardName, etag, contentHash, jobCount: prev.jobCount ?? 0, changed: false },
+                };
             }
 
             // Filter for Germany jobs
@@ -267,7 +296,10 @@ export const ashbyConfig = {
 
             // Rate limit: 300ms between companies
             await new Promise(resolve => setTimeout(resolve, 300));
-            return germanyJobs;
+            return {
+                unchanged: false, jobs: germanyJobs,
+                state: { slug: boardName, etag, contentHash, jobCount: germanyJobs.length, changed: true },
+            };
         } catch (error) {
             console.error(`[Ashby] ? ${boardName}: ${error.message}`);
             return null;
@@ -280,19 +312,25 @@ export const ashbyConfig = {
 
         console.log(`[Ashby] Fetching jobs from ${this.companyBoardNames.length} companies...`);
 
+        const stateMap = await loadScrapeStates('ashby');
+        const pendingStates = [];
         let successCount = 0;
         let failCount = 0;
+        let skippedCount = 0;
 
         for (const boardName of this.companyBoardNames) {
-            const germanyJobs = await this._fetchCompany(boardName);
-            if (germanyJobs === null) { failCount++; continue; }
-            if (germanyJobs.length > 0) {
-                this._allJobsQueue.push(...germanyJobs);
+            const result = await this._fetchCompany(boardName, stateMap);
+            if (result === null) { failCount++; continue; }
+            pendingStates.push(result.state);
+            if (result.unchanged) { skippedCount++; continue; }
+            if (result.jobs.length > 0) {
+                this._allJobsQueue.push(...result.jobs);
                 successCount++;
             }
         }
 
-        console.log(`[Ashby] ? Summary: ${successCount} companies with Germany jobs, ${failCount} failed/empty`);
+        await saveScrapeStatesBulk('ashby', pendingStates);
+        console.log(`[Ashby] ? Summary: ${successCount} companies with Germany jobs, ${skippedCount} unchanged (skipped), ${failCount} failed/empty`);
         console.log(`[Ashby] ?? Total jobs found: ${this._allJobsQueue.length}`);
         this._initialized = true;
     },

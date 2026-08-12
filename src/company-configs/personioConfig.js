@@ -3,6 +3,7 @@ import { XMLParser } from 'fast-xml-parser';
 import { StripHtml, SanitizeHtml } from '../utils.js';
 import { isGermanyString, normalizeWorkplaceType, normalizeEmploymentType } from '../core/locationPrefilters.js';
 import { normalizeArray } from '../core/jobExtractor.js';
+import { loadScrapeStates, saveScrapeStatesBulk, computeContentHash, stateKey } from '../core/scrapeState.js';
 
 // ─── Seniority mapping (Personio → your ExperienceLevel taxonomy) ─────────
 const SENIORITY_MAP = {
@@ -407,14 +408,23 @@ companyTargets: [
     // (all positions, with descriptions) go out of scope per company and can
     // be garbage-collected instead of accumulating for the whole loop.
     // Returns null on failure so the caller can count failures.
-    async _fetchCompany(target) {
+    async _fetchCompany(target, stateMap) {
         const { subdomain, tld } = target;
         const url = `https://${subdomain}.jobs.personio.${tld}/xml?language=en`;
+        const prev = stateMap.get(stateKey('personio', subdomain));
 
         try {
-            const response = await fetch(url, {
-                headers: { 'Accept': 'application/xml,text/xml' },
-            });
+            const headers = { 'Accept': 'application/xml,text/xml' };
+            if (prev?.etag) headers['If-None-Match'] = prev.etag;
+            const response = await fetch(url, { headers });
+
+            if (response.status === 304) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                return {
+                    unchanged: true, jobs: [],
+                    state: { slug: subdomain, etag: prev.etag, contentHash: prev.contentHash, jobCount: prev.jobCount ?? 0, changed: false },
+                };
+            }
 
             if (!response.ok) {
                 console.log(`[Personio] ❌ ${subdomain}: HTTP ${response.status}`);
@@ -422,11 +432,27 @@ companyTargets: [
             }
 
             const xmlText = await response.text();
+            const etag = response.headers.get('etag') || null;
             const parsed = xmlParser.parse(xmlText);
             const positions = parsed?.['workzag-jobs']?.position || [];
 
             if (positions.length === 0) {
-                return [];
+                return {
+                    unchanged: false, jobs: [],
+                    state: { slug: subdomain, etag, contentHash: computeContentHash([]), jobCount: 0, changed: !prev },
+                };
+            }
+
+            // id|name|offices fingerprint — descriptions excluded on purpose.
+            const contentHash = computeContentHash(
+                positions.map(job => `${job.id}|${job.name || ''}|${this.collectAllOffices(job).join(',')}`),
+            );
+            if (prev && prev.contentHash === contentHash) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                return {
+                    unchanged: true, jobs: [],
+                    state: { slug: subdomain, etag, contentHash, jobCount: prev.jobCount ?? 0, changed: false },
+                };
             }
 
             // Filter to Germany jobs only — checks office + additionalOffices
@@ -444,7 +470,10 @@ companyTargets: [
 
             // Be polite — 500ms between companies
             await new Promise(resolve => setTimeout(resolve, 500));
-            return germanyJobs;
+            return {
+                unchanged: false, jobs: germanyJobs,
+                state: { slug: subdomain, etag, contentHash, jobCount: germanyJobs.length, changed: true },
+            };
         } catch (error) {
             console.error(`[Personio] ❌ ${subdomain}: ${error.message}`);
             return null;
@@ -457,19 +486,25 @@ companyTargets: [
 
         console.log(`[Personio] Fetching jobs from ${this.companyTargets.length} companies...`);
 
+        const stateMap = await loadScrapeStates('personio');
+        const pendingStates = [];
         let successCount = 0;
         let failCount = 0;
+        let skippedCount = 0;
 
         for (const target of this.companyTargets) {
-            const germanyJobs = await this._fetchCompany(target);
-            if (germanyJobs === null) { failCount++; continue; }
-            if (germanyJobs.length > 0) {
-                this._allJobsQueue.push(...germanyJobs);
+            const result = await this._fetchCompany(target, stateMap);
+            if (result === null) { failCount++; continue; }
+            pendingStates.push(result.state);
+            if (result.unchanged) { skippedCount++; continue; }
+            if (result.jobs.length > 0) {
+                this._allJobsQueue.push(...result.jobs);
                 successCount++;
             }
         }
 
-        console.log(`[Personio] 📊 Summary: ${successCount} companies with Germany jobs, ${failCount} failed`);
+        await saveScrapeStatesBulk('personio', pendingStates);
+        console.log(`[Personio] 📊 Summary: ${successCount} companies with Germany jobs, ${skippedCount} unchanged (skipped), ${failCount} failed`);
         console.log(`[Personio] 💼 Total jobs found: ${this._allJobsQueue.length}`);
         this._initialized = true;
     },

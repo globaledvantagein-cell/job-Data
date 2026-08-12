@@ -126,7 +126,13 @@ export async function initJobsCache(){
     const startTime = Date.now();
 
     const db = await connectToDb();
-    const cursor = db.collection('jobs').find({ Status: 'active' });
+    // Heavy fields excluded — 5-20KB each per job and never read from the
+    // cache (list responses use descriptionPreview; the detail endpoint reads
+    // MongoDB directly). Keeps the RAM footprint and load time small.
+    const cursor = db.collection('jobs').find(
+        { Status: 'active' },
+        { projection: { Description: 0, DescriptionHtml: 0, parsedRequirements: 0 } },
+    );
 
     jobsMap.clear();
 
