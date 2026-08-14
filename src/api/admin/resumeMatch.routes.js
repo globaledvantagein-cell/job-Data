@@ -8,7 +8,7 @@
 // Results are saved on the user doc after every successful POST.
 
 import multer from 'multer';
-import { verifyToken, verifyAdmin } from '../../middleware/authMiddleware.js';
+import { verifyToken, requirePremium } from '../../middleware/authMiddleware.js';
 import { matchResumeToJobs, matchResumeTextToJobs } from '../../resume-matcher/index.js';
 import { connectToDb } from '../../db/connection.js';
 import { ObjectId } from 'mongodb';
@@ -45,7 +45,9 @@ async function saveCachedResults(userId, result) {
 
 export function attachResumeMatchRoutes(router) {
     // ── GET: return cached results ─────────────────────────────────────
-    router.get('/admin/resume-match', verifyToken, verifyAdmin, async (req, res) => {
+    // Premium-gated (NOT admin) — Smart Match is a premium feature; the
+    // "/admin/" in the path is historical. requirePremium admits admins too.
+    router.get('/admin/resume-match', verifyToken, requirePremium, async (req, res) => {
         try {
             Analytics.increment('pageViews_smartMatch'); // page opened (cache hit or miss)
             const db = await connectToDb();
@@ -73,7 +75,7 @@ export function attachResumeMatchRoutes(router) {
     router.post(
         '/admin/resume-match',
         verifyToken,
-        verifyAdmin,
+        requirePremium,
         upload.single('resume'),
         async (req, res) => {
             try {
