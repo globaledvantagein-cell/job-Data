@@ -20,7 +20,7 @@ import { adminHealthRouter } from './api/admin/health.routes.js';
 import { cohortWaitlistAdminRouter } from './api/auth/cohortWaitlist.routes.js';
 import { attachVisitor } from './middleware/visitorMiddleware.js';
 import { FRONTEND_ORIGIN } from './env.js';
-import { initJobsCache, initRemoteJobsCache, startRemoteJobsWatcher } from './cache/index.js';
+import { initJobsCache, initRemoteJobsCache, startRemoteJobsWatcher, isJobsCacheReady } from './cache/index.js';
 
 // --- Setup ---
 const app = express();
@@ -42,9 +42,24 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(attachVisitor); // adds lazy req.resolveVisitor() to every request
 
+// Warm-up guard. app.listen() accepts connections IMMEDIATELY, while the boot
+// callback below still needs ~90s to load 4k+ jobs into RAM. Without this,
+// every cache-backed route (job list, Smart Match, Today's Matches) threw
+// "[jobsCache] cache is not initialized yet" and surfaced as a generic 500 for
+// the first minute-and-a-half after every deploy/restart. A 503 + Retry-After
+// is the honest answer: the server is up, this route just isn't ready yet.
+const requireCacheReady = (req, res, next) => {
+    if (isJobsCacheReady()) return next();
+    res.set('Retry-After', '30');
+    return res.status(503).json({
+        error: 'Server is starting up — job data is still loading. Please retry in a moment.',
+        code: 'CACHE_WARMING_UP',
+    });
+};
+
 // --- API Routes ---
 app.use('/api/auth', authRouter);
-app.use('/api/jobs', jobsApiRouter);
+app.use('/api/jobs', requireCacheReady, jobsApiRouter);
 app.use('/api/remote-jobs', remoteJobsRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/feedback', feedbackRouter);

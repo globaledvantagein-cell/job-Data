@@ -107,7 +107,21 @@ export function attachResumeMatchRoutes(router) {
 
                 res.status(200).json({ success: true, ...result, cached: false });
             } catch (error) {
-                console.error('[ResumeMatch] Error:', error.message);
+                // Log the STACK, not just the message — a generic
+                // "Something went wrong" with no stack made this
+                // undiagnosable in production.
+                console.error('[ResumeMatch] Error:', error.stack || error.message);
+
+                // Cache still warming (server restarted moments ago) — tell the
+                // user to retry instead of reporting a hard failure.
+                if (error.message?.includes('cache is not initialized')) {
+                    res.set('Retry-After', '30');
+                    return res.status(503).json({
+                        success: false,
+                        error: 'Job data is still loading after a restart. Please try again in a moment.',
+                        code: 'CACHE_WARMING_UP',
+                    });
+                }
 
                 if (error.message?.includes('parse') || error.message?.includes('PDF')) {
                     return res.status(400).json({

@@ -162,6 +162,14 @@ export async function initJobsCache(){
     console.log(`[jobsCache] ✅ Loaded ${loadedCount} jobs in ${elapsedMs}ms`);
 }
 
+/**
+ * True once initJobsCache() has finished. Express starts accepting connections
+ * before the boot callback finishes loading the cache (~90s for 4k jobs), so
+ * every cache-backed route must gate on this or it throws a confusing 500
+ * during the warm-up window. See requireCacheReady in server.js.
+ */
+export function isJobsCacheReady(){ return isReady; }
+
 // Returns live jobs only — tombstones (null slots left by removals) are skipped.
 export function getAllJobs(){
     if(!isReady) throw new Error('[jobsCache] cache is not initialized yet');

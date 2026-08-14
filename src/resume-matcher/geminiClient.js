@@ -17,6 +17,10 @@ const MODEL = process.env.RESUME_MATCHER_MODEL || 'gemini-2.5-flash-lite';
 const DEFAULT_TEMPERATURE = 0.1;
 const MAX_RETRIES = 3;               // retries on 429 (rate limited)
 const SERVER_ERROR_RETRY_MS = 2_000; // wait before the single 500/503 retry
+// Hard per-call ceiling. Without it a hung Gemini connection hangs the whole
+// HTTP request forever (fetch has no default timeout) — a Smart Match POST
+// that never returns, which the proxy eventually kills as a 5xx.
+const REQUEST_TIMEOUT_MS = 90_000;
 
 // ── Own round-robin key rotation (separate from src/gemini/) ──────────────────
 let currentIndex = 0;
@@ -65,11 +69,21 @@ function backoffWithJitter(attempt) {
 async function requestOnce(apiKey, body) {
     const url = `${API_BASE}${MODEL}:generateContent?key=${apiKey}`;
 
-    const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-    });
+    let res;
+    try {
+        res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+            signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        });
+    } catch (netErr) {
+        // Timeout / DNS / socket failure — tag as retryable-server-ish so the
+        // loop rotates the key and tries once more instead of hanging.
+        const err = new Error(`[ResumeMatch] Request failed: ${netErr.name === 'TimeoutError' ? `timed out after ${REQUEST_TIMEOUT_MS}ms` : netErr.message}`);
+        err.status = 503;
+        throw err;
+    }
 
     if (!res.ok) {
         const err = new Error(`[ResumeMatch] API responded ${res.status} ${res.statusText}`);

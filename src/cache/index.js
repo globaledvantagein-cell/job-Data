@@ -17,6 +17,7 @@ export {
     upsertJob,
     removeJob,
     getCacheStats,
+    isJobsCacheReady,
 } from './jobsCache.js';
 
 export {
