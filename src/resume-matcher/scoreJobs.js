@@ -80,25 +80,41 @@ function tierFromScore(score) {
 }
 
 /**
- * Ensures each job has a Description; cached jobs normally do, but if one is
- * missing (e.g. stripped), fetch it from the DB by _id.
+ * Hydrates the scoring-only fields (Description, parsedRequirements) that the
+ * RAM cache deliberately excludes since the cache-projection change — both
+ * prompt builders need them, so without this every job reaches Gemini with an
+ * empty description and the shortlist is garbage.
+ *
+ * Returns SHALLOW COPIES: the cached job objects are shared and must stay
+ * lean, so the heavy fields are attached to per-request copies that are GC'd
+ * when scoring finishes. One $in query for the whole set.
  */
-async function ensureDescriptions(jobs) {
-    const missing = jobs.filter(job => !job.Description);
-    if (missing.length === 0) return jobs;
+async function hydrateScoringFields(jobs) {
+    if (jobs.length === 0) return jobs;
+
+    const copies = jobs.map(job => ({ ...job }));
+    // Any job without a Description needs the fetch — Pass B always wants the
+    // full text, even when parsedRequirements (cached) already covers Pass A.
+    const missing = copies.filter(job => !job.Description);
+    if (missing.length === 0) return copies;
 
     const db = await connectToDb();
-    const collection = db.collection('jobs');
+    const docs = await db.collection('jobs')
+        .find(
+            { _id: { $in: missing.map(job => job._id) } },
+            { projection: { Description: 1, parsedRequirements: 1 } },
+        )
+        .toArray();
+    const byId = new Map(docs.map(doc => [String(doc._id), doc]));
 
-    await Promise.all(missing.map(async (job) => {
-        const full = await collection.findOne(
-            { _id: job._id },
-            { projection: { Description: 1 } }
-        );
-        if (full?.Description) job.Description = full.Description;
-    }));
+    for (const job of missing) {
+        const full = byId.get(String(job._id));
+        if (!full) continue;
+        if (full.Description) job.Description = full.Description;
+        if (full.parsedRequirements) job.parsedRequirements = full.parsedRequirements;
+    }
 
-    return jobs;
+    return copies;
 }
 
 /**
@@ -145,8 +161,6 @@ async function runPassA(profile, jobs) {
  * results sorted by score descending.
  */
 async function runPassB(profile, shortlistedJobs) {
-    await ensureDescriptions(shortlistedJobs);
-
     const batches = chunk(shortlistedJobs, PASS_B_BATCH_SIZE);
     const results = [];
     let failedBatches = 0;
@@ -209,7 +223,11 @@ async function runPassB(profile, shortlistedJobs) {
  * @returns {Promise<Array<object>>} ranked, enriched results (top 15)
  */
 export async function scoreJobs(profile, jobs) {
-    const shortlist = await runPassA(profile, jobs);
+    // Hydrate BEFORE Pass A — both passes' prompts need Description /
+    // parsedRequirements, which the RAM cache no longer carries.
+    const hydratedJobs = await hydrateScoringFields(jobs);
+
+    const shortlist = await runPassA(profile, hydratedJobs);
     if (shortlist.length === 0) return [];
 
     const shortlistedJobs = shortlist.map(entry => entry.job);

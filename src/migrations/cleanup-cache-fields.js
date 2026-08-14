@@ -13,7 +13,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-const HEAVY_FIELDS = ['Description', 'DescriptionHtml', 'parsedRequirements'];
+// parsedRequirements is deliberately NOT here — the skill-matcher needs it in
+// the cache; only the description fields are excluded by the load projection.
+const HEAVY_FIELDS = ['Description', 'DescriptionHtml'];
 
 async function run() {
     console.log('🔎 Cache field diagnostic (read-only)...\n');

@@ -128,10 +128,12 @@ export async function initJobsCache(){
     const db = await connectToDb();
     // Heavy fields excluded — 5-20KB each per job and never read from the
     // cache (list responses use descriptionPreview; the detail endpoint reads
-    // MongoDB directly). Keeps the RAM footprint and load time small.
+    // MongoDB directly). parsedRequirements stays IN: it's a small structured
+    // object and the skill-matcher (Today's Matches) scans the whole cache by
+    // it — excluding it made every job skip and matches come back empty.
     const cursor = db.collection('jobs').find(
         { Status: 'active' },
-        { projection: { Description: 0, DescriptionHtml: 0, parsedRequirements: 0 } },
+        { projection: { Description: 0, DescriptionHtml: 0 } },
     );
 
     jobsMap.clear();

@@ -127,11 +127,12 @@ export async function initRemoteJobsCache(){
     const startTime = Date.now();
 
     const db = await connectToRemoteDb();
-    // Heavy fields excluded — same projection as jobsCache; the remote detail
-    // endpoint reads MongoDB directly, the cache never needs these.
+    // Heavy fields excluded — same projection as jobsCache (parsedRequirements
+    // kept for the skill-matcher); the remote detail endpoint reads MongoDB
+    // directly, the cache never needs the description fields.
     const cursor = db.collection('remoteJobs').find(
         { Status: 'active' },
-        { projection: { Description: 0, DescriptionHtml: 0, parsedRequirements: 0 } },
+        { projection: { Description: 0, DescriptionHtml: 0 } },
     );
 
     remoteJobsMap.clear();
