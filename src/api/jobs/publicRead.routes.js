@@ -42,7 +42,7 @@ function buildDescriptionPreview(job) {
     return `${plain.slice(0, 150)}...`;
 }
 
-// Strip advanced filters + the salary sort for non-premium users. Returns the
+// Strip advanced filters for non-premium users. Returns the
 // (possibly modified) filters plus the list of param names that were removed so
 // the frontend can surface a "Premium required" indicator. Premium/admin users
 // pass through untouched. Shared by GET / and GET /filter-counts to stay in sync.
@@ -70,12 +70,6 @@ function applyPremiumFilterGating(filters, isPremiumUser) {
             gated[key] = null;
         }
     }
-    // Salary sort is premium-only → fall back to newest.
-    if (gated.sort === 'salary') {
-        premiumFiltersIgnored.push('sort');
-        gated.sort = 'newest';
-    }
-
     return { filters: gated, premiumFiltersIgnored };
 }
 
@@ -86,7 +80,6 @@ function applyPremiumFilterGating(filters, isPremiumUser) {
 const VALID_WORKPLACE = ['remote', 'hybrid', 'onsite'];
 const VALID_EXPERIENCE = ['entry', 'mid', 'senior', 'lead', 'executive'];
 const VALID_EMPLOYMENT = ['fulltime', 'parttime', 'contract', 'internship'];
-const VALID_SORT = ['newest', 'company', 'salary'];
 const SALARY_LOWER_BOUND = 0;
 const SALARY_UPPER_BOUND = 1000000;
 
@@ -115,8 +108,6 @@ function parseSalaryBound(value) {
 // returns the exact `filters` shape getJobsPaginatedFromCache / getFilterCounts
 // expect. Plain function (not middleware) so both routes stay in sync.
 function parseJobFilters(query) {
-    const sort = VALID_SORT.includes(query.sort) ? query.sort : 'newest';
-
     let salaryMin = parseSalaryBound(query.salaryMin);
     let salaryMax = parseSalaryBound(query.salaryMax);
     // A min above the max is nonsensical — drop both rather than guess intent.
@@ -130,7 +121,6 @@ function parseJobFilters(query) {
         category:   toArrayParam(query.category),
         search:     query.search || '',
         date:       query.date   || 'All',
-        sort,
         workplace:  toArrayParam(query.workplace,  VALID_WORKPLACE),
         experience: toArrayParam(query.experience, VALID_EXPERIENCE),
         employment: toArrayParam(query.employment, VALID_EMPLOYMENT),
@@ -154,7 +144,7 @@ export function attachPublicReadRoutes(router) {
         }
     });
 
-    // ─── Main jobs list — filtered, sorted, paginated ─────────────────
+    // ─── Main jobs list — filtered, shuffled, paginated ───────────────
     // softVerifyToken + attachPremiumStatus are soft (non-blocking): they set
     // req.user / req.isPremium when a valid token is present, and leave the
     // route fully public for anonymous visitors. Advanced filters + salary

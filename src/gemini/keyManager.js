@@ -1,167 +1,260 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+// ─── Gemini Key Manager (SINGLETON) ────────────────────────────────────────────
+//
+// ONE shared key pool for every Gemini consumer in the process — the scraper's
+// job analyzer AND Smart Match's resume scoring. Previously each had its own
+// private rotation, so both could hammer the same key at the same time while
+// believing they were spreading load.
+//
+// Because ES modules are cached per-process, importing this file anywhere gives
+// the same state: per-minute request counts, cooldown timestamps and dead-key
+// flags are visible to all callers. When the scraper marks key #1 RPM-limited,
+// Smart Match skips it on its very next call.
+//
+// Modelled after src/gemma/keyManager.js (one shared module, one source of
+// truth) but with richer state, since Gemini keys hit RPM limits and can be
+// permanently rejected with 403.
+//
+// Keys come from GEMINI_API_KEY_1/_2/_3, assembled in src/env.js.
+
 import { GEMINI_API_KEYS } from '../env.js';
 
-// ─── Model Selection ───────────────────────────────────────────────────────────
-// gemini-3.1-flash-lite: 500 RPD | 15 RPM | 250K TPM  ← stable, same limits as preview
-// gemini-2.5-flash-lite:  20 RPD | 10 RPM | 250K TPM  ← old (was our bottleneck)
-// gemini-2.5-flash:       20 RPD |  5 RPM | 250K TPM  ← fewer RPM too
-const MODEL_NAME = 'gemini-3.1-flash-lite';
+export const RPM_COOLDOWN_MS = 62_000; // default cooldown when a 429 carries no retry hint
 
-// ─── Per-key state tracker ─────────────────────────────────────────────────────
+// ─── Per-model free-tier caps ──────────────────────────────────────────────────
 //
-// Instead of a simple round-robin index, we track per-key metadata so we can:
-//   1. Skip keys that are in an RPM or RPD cooldown
-//   2. Auto-fall-through to the next healthy key immediately on 429
-//   3. Re-enable keys after their cooldown window has elapsed
-//   4. Distribute load evenly (pick the key with the fewest requests this minute)
-//
-export const MAX_RETRIES_PER_CALL = 3;  // Retries across ALL keys for one job
-export const RPM_COOLDOWN_MS = 62_000;   // 62s cooldown when RPM limit hit
-export const RPD_COOLDOWN_MS = 24 * 60 * 60 * 1_000; // 24h cooldown when RPD exhausted
+// Deliberately set BELOW Google's published limits so we stop asking before the
+// API starts refusing — a 429 wastes a round-trip and parks the key for a
+// minute, whereas a local cap just routes the call to another key/model.
+// Counts are per key per model per UTC day.
+export const MODEL_RPD_CAPS = {
+    'gemini-3.7-flash': 17,
+    'gemini-3.6-flash': 17,
+    'gemini-3.5-flash-lite': 480,
+    'gemini-3.5-flash': 17,
+    'gemini-3.1-flash-lite': 480,
+    'gemini-3-flash': 17,
+    'gemini-2.5-flash-lite': 17,
+    'gemini-2.5-flash': 17,
+};
 
-export class KeyState {
-    constructor(apiKey, index) {
-        this.apiKey = apiKey;
-        this.index = index;  // for logging
-        this.model = null;   // initialized lazily
+export const MODEL_RPM_CAPS = {
+    'gemini-3.7-flash': 4,
+    'gemini-3.6-flash': 4,
+    'gemini-3.5-flash-lite': 13,
+    'gemini-3.5-flash': 4,
+    'gemini-3.1-flash-lite': 13,
+    'gemini-3-flash': 4,
+    'gemini-2.5-flash-lite': 8,
+    'gemini-2.5-flash': 4,
+};
 
-        // Cooldown timestamps (null = not in cooldown)
-        this.rpmCooldownUntil = null;
-        this.rpdCooldownUntil = null;
-
-        // Per-minute request window (rolling)
-        this.requestsThisMinute = 0;
-        this.minuteWindowStart = Date.now();
-    }
-
-    getModel() {
-        if (!this.model) {
-            const genAI = new GoogleGenerativeAI(this.apiKey);
-            this.model = genAI.getGenerativeModel({
-                model: MODEL_NAME,
-                generationConfig: {
-                    temperature: 0,
-                    responseMimeType: 'application/json',
-                },
-            });
-        }
-        return this.model;
-    }
-
-    // Returns the number of milliseconds until this key is available (0 if ready now)
-    cooldownRemaining() {
-        const now = Date.now();
-
-        if (this.rpdCooldownUntil && now < this.rpdCooldownUntil) {
-            return this.rpdCooldownUntil - now;
-        }
-        if (this.rpmCooldownUntil && now < this.rpmCooldownUntil) {
-            return this.rpmCooldownUntil - now;
-        }
-
-        // Clear expired cooldowns
-        if (this.rpdCooldownUntil && now >= this.rpdCooldownUntil) this.rpdCooldownUntil = null;
-        if (this.rpmCooldownUntil && now >= this.rpmCooldownUntil) this.rpmCooldownUntil = null;
-
-        return 0;
-    }
-
-    isRpdExhausted() {
-        return this.rpdCooldownUntil !== null && Date.now() < this.rpdCooldownUntil;
-    }
-
-    // Count this request in the rolling per-minute window
-    recordRequest() {
-        const now = Date.now();
-        if (now - this.minuteWindowStart > 60_000) {
-            // New minute window
-            this.requestsThisMinute = 0;
-            this.minuteWindowStart = now;
-        }
-        this.requestsThisMinute++;
-    }
-
-    markRpmLimit(retryAfterMs) {
-        const cooldown = retryAfterMs || RPM_COOLDOWN_MS;
-        this.rpmCooldownUntil = Date.now() + cooldown;
-        console.warn(`[AI] Key #${this.index + 1} RPM limited — cooldown ${Math.round(cooldown / 1000)}s`);
-    }
-
-    markRpdLimit() {
-        this.rpdCooldownUntil = Date.now() + RPD_COOLDOWN_MS;
-        console.error(`[AI] Key #${this.index + 1} RPD EXHAUSTED — disabled for 24h`);
-    }
-}
-
-// Build state for each configured key
 if (GEMINI_API_KEYS.length === 0) {
-    throw new Error('[AI] No Gemini API keys configured. Set GEMINI_API_KEY_1, _2, _3 in .env');
+    throw new Error('[Gemini] No API keys configured. Set GEMINI_API_KEY_1, _2, _3 in .env');
 }
-export const keyStates = GEMINI_API_KEYS.map((k, i) => new KeyState(k, i));
 
-console.log(`[AI] Initialized ${keyStates.length} API key(s) with model: ${MODEL_NAME}`);
+// One state record per configured key. Never reassigned — this array IS the
+// shared state.
+const keyStates = GEMINI_API_KEYS.map((apiKey, index) => ({
+    apiKey,
+    index,
+    dead: false,              // 403 Forbidden — permanently unusable
+    cooldownUntil: null,      // epoch ms while RPM-limited, null when ready
+    requestsThisMinute: 0,
+    minuteWindowStart: Date.now(),
+    modelUsage: new Map(),    // modelName -> requests made today with this key
+}));
 
-// ─── Key Selection ─────────────────────────────────────────────────────────────
+console.log(`[Gemini] Initialized ${keyStates.length} shared API key(s)`);
+
+// ─── Daily counter reset (UTC) ─────────────────────────────────────────────────
+//
+// Google's free-tier RPD windows roll over at UTC midnight, so the local
+// counters must too. There's no timer: every read checks whether the UTC date
+// has moved on and wipes the counters first, which is both cheaper and correct
+// for a process that may have been idle across the boundary.
+
+function utcDateKey() {
+    return new Date().toISOString().slice(0, 10);
+}
+
+let currentDateKey = utcDateKey();
+
+/** Clears every key's per-model daily counters. */
+export function resetDailyCounts() {
+    for (const ks of keyStates) ks.modelUsage.clear();
+    currentDateKey = utcDateKey();
+    console.log(`[Gemini] Daily model usage counters reset for ${currentDateKey} (UTC)`);
+}
+
+/** Resets the counters if the UTC date has changed since the last check. */
+function refreshDailyWindow() {
+    if (utcDateKey() !== currentDateKey) resetDailyCounts();
+}
+
+/** Requests made today with `keyIndex` against `modelName`. */
+export function getModelUsageForKey(keyIndex, modelName) {
+    refreshDailyWindow();
+    return keyStates[keyIndex]?.modelUsage.get(modelName) || 0;
+}
 
 /**
- * Returns the best available KeyState, or null if ALL keys are exhausted/in cooldown.
- *
- * Strategy: prefer the key with the fewest requests in the current minute
- * (among keys not in any cooldown).
+ * True when this key has spent its daily budget for this model.
+ * A model with no configured cap is never considered exhausted.
  */
-export function getBestAvailableKey() {
+export function isModelExhaustedOnKey(keyIndex, modelName) {
+    const cap = MODEL_RPD_CAPS[modelName];
+    if (cap === undefined) return false;
+    const ks = keyStates[keyIndex];
+    if (!ks) return true;
+    if (ks.dead) return true;
+    return getModelUsageForKey(keyIndex, modelName) >= cap;
+}
+
+/** Counts one successful call of `modelName` against `keyIndex`. */
+export function recordModelUsage(keyIndex, modelName) {
+    refreshDailyWindow();
+    const ks = keyStates[keyIndex];
+    if (!ks) return;
+    ks.modelUsage.set(modelName, (ks.modelUsage.get(modelName) || 0) + 1);
+}
+
+/** Rolls the per-minute window forward if the current one has elapsed. */
+function refreshWindow(ks, now) {
+    if (now - ks.minuteWindowStart > 60_000) {
+        ks.requestsThisMinute = 0;
+        ks.minuteWindowStart = now;
+    }
+}
+
+/** True when the key is neither dead nor inside an active cooldown. */
+function isAvailable(ks, now) {
+    if (ks.dead) return false;
+    if (ks.cooldownUntil && now < ks.cooldownUntil) return false;
+    if (ks.cooldownUntil) ks.cooldownUntil = null; // expired — clear it
+    return true;
+}
+
+/**
+ * Picks the best key to use right now: among keys that are alive and out of
+ * cooldown, the one with the fewest requests in the current minute.
+ *
+ * Records the request against the chosen key before returning, so concurrent
+ * callers immediately see the increased load and pick a different key.
+ *
+ * @param {string} [model] - when given, keys that have spent their daily budget
+ *        for this model, or already hit its per-minute cap, are skipped.
+ * @returns {{ apiKey: string, index: number, requestsThisMinute: number } | null}
+ *          null when no key can serve this model right now.
+ */
+export function getNextKey(model) {
     const now = Date.now();
+    const rpmCap = model ? MODEL_RPM_CAPS[model] : undefined;
     let best = null;
 
     for (const ks of keyStates) {
-        // Skip RPD-exhausted keys entirely
-        if (ks.isRpdExhausted()) continue;
-
-        // Skip keys in RPM cooldown
-        if (ks.rpmCooldownUntil && now < ks.rpmCooldownUntil) continue;
-
-        // Prefer the key least-used this minute
-        if (best === null || ks.requestsThisMinute < best.requestsThisMinute) {
-            best = ks;
-        }
+        refreshWindow(ks, now);
+        if (!isAvailable(ks, now)) continue;
+        if (model && isModelExhaustedOnKey(ks.index, model)) continue;
+        // Stay under the model's RPM ceiling rather than earning a 429.
+        if (rpmCap !== undefined && ks.requestsThisMinute >= rpmCap) continue;
+        if (best === null || ks.requestsThisMinute < best.requestsThisMinute) best = ks;
     }
-    return best;
+
+    if (!best) return null;
+
+    best.requestsThisMinute++;
+    return {
+        apiKey: best.apiKey,
+        index: best.index,
+        requestsThisMinute: best.requestsThisMinute,
+    };
 }
 
 /**
- * Returns the shortest cooldown remaining across all non-RPD-exhausted keys.
- * Used to sleep the minimum time needed before a key becomes available again.
+ * Marks a key rate-limited for `cooldownSeconds` (defaults to 62s). Every other
+ * consumer skips it until the cooldown expires.
+ */
+export function markKeyRpmLimited(index, cooldownSeconds) {
+    const ks = keyStates[index];
+    if (!ks) return;
+    const cooldownMs = cooldownSeconds > 0 ? cooldownSeconds * 1_000 : RPM_COOLDOWN_MS;
+    ks.cooldownUntil = Date.now() + cooldownMs;
+}
+
+/** Marks a key permanently unusable (403 Forbidden). Never retried. */
+export function markKeyDead(index) {
+    const ks = keyStates[index];
+    if (!ks) return;
+    ks.dead = true;
+}
+
+/** Number of keys that are not dead (they may still be in cooldown). */
+export function getActiveKeyCount() {
+    return keyStates.filter(ks => !ks.dead).length;
+}
+
+/** Total number of configured keys, dead ones included. */
+export function getTotalKeyCount() {
+    return keyStates.length;
+}
+
+/**
+ * Shortest remaining cooldown across all non-dead keys, in ms.
+ * null when no key is merely cooling down (i.e. every key is dead).
  */
 export function shortestCooldownMs() {
     const now = Date.now();
     let shortest = null;
 
     for (const ks of keyStates) {
-        if (ks.isRpdExhausted()) continue; // don't bother waiting for RPD
-
-        const remaining = ks.cooldownRemaining();
-        if (remaining > 0) {
-            if (shortest === null || remaining < shortest) shortest = remaining;
-        }
+        if (ks.dead) continue;
+        if (!ks.cooldownUntil) continue;
+        const remaining = ks.cooldownUntil - now;
+        if (remaining <= 0) continue;
+        if (shortest === null || remaining < shortest) shortest = remaining;
     }
     return shortest;
 }
 
 /**
- * All keys are RPD-exhausted when none can ever serve requests today.
+ * True when NO key has daily budget left for this model. This is the permanent
+ * condition the cascade acts on — unlike an RPM ceiling, waiting won't help.
  */
-export function allKeysRpdExhausted() {
-    return keyStates.every(ks => ks.isRpdExhausted());
+export function isModelExhaustedEverywhere(model) {
+    return keyStates.every(ks => ks.dead || isModelExhaustedOnKey(ks.index, model));
 }
 
-// ─── Diagnostic helper ─────────────────────────────────────────────────────────
-// Call this to see the current state of all keys (useful for debugging)
-export function getKeyStatus() {
+/**
+ * Milliseconds until the soonest per-minute window rolls over on a key that
+ * still has daily budget for `model`. Used when getNextKey() came back empty
+ * only because every candidate had hit the model's RPM ceiling — that clears
+ * on its own, so the caller should wait rather than give up.
+ */
+export function msUntilMinuteWindowReset(model) {
+    const now = Date.now();
+    let soonest = null;
+
+    for (const ks of keyStates) {
+        if (ks.dead) continue;
+        if (model && isModelExhaustedOnKey(ks.index, model)) continue;
+        const remaining = Math.max(0, 60_000 - (now - ks.minuteWindowStart));
+        if (soonest === null || remaining < soonest) soonest = remaining;
+    }
+    return soonest;
+}
+
+/** Snapshot of every key's state — for logging and debugging. */
+export function getAllKeysStatus() {
+    refreshDailyWindow();
     const now = Date.now();
     return keyStates.map(ks => ({
         key: `Key #${ks.index + 1}`,
-        rpmCooldown: ks.rpmCooldownUntil ? `${Math.round((ks.rpmCooldownUntil - now) / 1000)}s remaining` : 'ready',
-        rpdStatus: ks.isRpdExhausted() ? 'EXHAUSTED (daily limit hit)' : 'OK',
-        requestsThisMin: ks.requestsThisMinute,
+        status: ks.dead
+            ? 'DEAD (403 Forbidden)'
+            : (ks.cooldownUntil && now < ks.cooldownUntil)
+                ? `cooldown ${Math.round((ks.cooldownUntil - now) / 1000)}s remaining`
+                : 'ready',
+        requestsThisMinute: ks.requestsThisMinute,
+        modelUsageToday: Object.fromEntries(ks.modelUsage),
     }));
 }

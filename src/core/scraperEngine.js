@@ -3,6 +3,7 @@ import { shouldContinuePaging } from './pagination.js';
 import { processJob } from './processJob.js';
 import { saveJobs, findSavedJobsByJobIDs } from '../db/index.js';
 import { extractAndStoreRequirements } from '../gemma/index.js';
+import { isGeminiBudgetExhausted } from '../gemini/geminiClient.js';
 import { sleep } from '../utils.js';
 
 /**
@@ -49,6 +50,10 @@ export async function scrapeSite(siteConfig, existingIDsMap, crossEntityKeys) {
     let offset = 0;
     let hasMore = true;
     let totalJobs = 0;
+    // Set when the Gemini daily budget runs out mid-scrape. Everything already
+    // processed is kept and saved; we simply stop asking for more analysis.
+    let budgetExhausted = false;
+    let processedCount = 0;
 
     console.log(`\n--- Starting scrape for [${siteName}] ---`);
 
@@ -73,8 +78,22 @@ export async function scrapeSite(siteConfig, existingIDsMap, crossEntityKeys) {
             const batchSize = 1; 
             
             for (let i = 0; i < jobs.length; i += batchSize) {
+                // Checked BEFORE any AI call: once every cascade model is spent
+                // on every key, further jobs can only fail. Stop cleanly and let
+                // tomorrow's run pick them up.
+                if (isGeminiBudgetExhausted()) {
+                    const jobNumber = offset + i + 1;
+                    const remaining = jobs.length - i;
+                    console.warn(
+                        `[Scraper] AI budget exhausted. Stopping scrape at job #${jobNumber}. ` +
+                        `Processed ${processedCount} jobs, ${remaining} remaining will be retried tomorrow.`
+                    );
+                    budgetExhausted = true;
+                    break;
+                }
+
                 const batch = jobs.slice(i, i + batchSize);
-                
+
                 batch.forEach((rawJob, index) => {
                     const jobTitle = rawJob._source ? rawJob._source.title : (rawJob.titel || rawJob.title || rawJob.PositionTitle || rawJob.job_title || rawJob.name || rawJob.jobFields?.jobTitle);
                     const jobNumber = offset + i + index + 1;
@@ -86,6 +105,7 @@ export async function scrapeSite(siteConfig, existingIDsMap, crossEntityKeys) {
                 );
                 
                 const processedJobs = await Promise.all(jobPromises);
+                processedCount += batch.length;
                 const newJobsInBatch = processedJobs.filter(job => job !== null);
 
                 if (newJobsInBatch.length > 0) {
@@ -112,6 +132,8 @@ export async function scrapeSite(siteConfig, existingIDsMap, crossEntityKeys) {
                 }
             }
             
+            if (budgetExhausted) break;
+
             hasMore = shouldContinuePaging(siteConfig, jobs, offset, limit, totalJobs);
             offset += limit;
         }

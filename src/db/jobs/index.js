@@ -4,8 +4,6 @@
 export {
     loadAllExistingIDs,
     saveJobs,
-    saveJobTestLog,
-    findTestLogByFingerprint,
     findSavedJobsByJobIDs,
     addCuratedJob,
 } from './saveQueries.js';
@@ -40,6 +38,7 @@ export {
     deleteJobById,
     deleteJobsByCompany,
     cleanAllDescriptions,
+    cleanOldAiResults,
 } from './cleanupQueries.js';
 
 export {

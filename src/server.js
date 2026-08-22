@@ -20,7 +20,7 @@ import { adminHealthRouter } from './api/admin/health.routes.js';
 import { cohortWaitlistAdminRouter } from './api/auth/cohortWaitlist.routes.js';
 import { attachVisitor } from './middleware/visitorMiddleware.js';
 import { FRONTEND_ORIGIN } from './env.js';
-import { initJobsCache, initRemoteJobsCache, startRemoteJobsWatcher, isJobsCacheReady } from './cache/index.js';
+import { initJobsCache, initAiResultCache, initRemoteJobsCache, startRemoteJobsWatcher, isJobsCacheReady } from './cache/index.js';
 
 // --- Setup ---
 const app = express();
@@ -90,6 +90,16 @@ app.listen(PORT, async () => {
 
         // const {initJobsCache}=await import('./cache/index.js');
         await initJobsCache()
+
+        // The scraper's fingerprint cache must be in RAM before any scrape
+        // runs, or every job would look uncached and burn an AI call. Loaded
+        // here rather than lazily so the first cron scrape starts warm.
+        try {
+            await initAiResultCache();
+        } catch (aiCacheErr) {
+            console.warn('[AiCache] init failed:', aiCacheErr.message);
+        }
+
         // The remote vertical loads its own independent cache from the
         // "remoteJobs" collection. A failure here must not take down the
         // German product, so it's warned-and-continued rather than fatal.

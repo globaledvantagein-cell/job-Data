@@ -1,7 +1,7 @@
 import { SITES_CONFIG } from '../config.js';
 import { loadAllExistingIDs, deleteOldJobs } from '../db/index.js';
 import { scrapeSite } from '../core/scraperEngine.js';
-import { refreshJobsCache, refreshRemoteJobsCache } from '../cache/index.js';
+import { refreshJobsCache, refreshRemoteJobsCache, initAiResultCache, isAiResultCacheReady } from '../cache/index.js';
 import { Analytics } from '../models/analyticsModel.js';
 
 let isScraping = false;
@@ -15,6 +15,11 @@ export const runScraper = async function () {
     console.log("🚀 Starting scheduled scrape task...");
 
     try {
+        // Safety net for a scrape started outside the server boot path: an
+        // empty fingerprint cache looks like "nothing analyzed yet" and would
+        // re-send every job to the AI. Idempotent — a no-op when already loaded.
+        if (!isAiResultCacheReady()) await initAiResultCache();
+
         // Track "Connected Sources" metric
         const totalSources = SITES_CONFIG.filter(s => s && s.siteName).length;
         await Analytics.setValue('connectedSources', totalSources);

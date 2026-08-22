@@ -121,45 +121,123 @@ function clearIndexes() {
     salaryRangeArray = [];
 }
 
-export async function initJobsCache(){
+// How many jobs to accumulate before flushing a batch into the live structures.
+const LOAD_BATCH_SIZE = 200;
+
+// Guards against two loads running at once. refreshJobsCache() now returns as
+// soon as the first batch is live, so a scrape finishing while a previous
+// refresh is still streaming would otherwise interleave two writers over the
+// same jobsArray/index state.
+let loadInFlight = null;        // resolves when the full stream finishes
+let firstBatchInFlight = null;  // resolves when the first batch is queryable
+
+/**
+ * Load active jobs into RAM, streaming in batches.
+ *
+ * Returns as soon as the FIRST batch is live — the API can start serving with
+ * partial data instead of blocking the whole boot on a full 5k-job read. The
+ * remaining batches continue in the background; each one bumps cacheVersion, so
+ * memoized query results invalidate and the next request sees the larger set.
+ *
+ * @returns {Promise<void>} resolves after the first batch is queryable
+ */
+export function initJobsCache(){
+    // Coalesce: a refresh arriving mid-stream joins the running load rather
+    // than starting a second writer over the same structures.
+    if (loadInFlight) {
+        console.log('[jobsCache] Load already in progress — joining it');
+        return firstBatchInFlight;
+    }
+
     console.log('[jobsCache] Loading jobs into RAM...');
     const startTime = Date.now();
 
-    const db = await connectToDb();
-    // Heavy fields excluded — 5-20KB each per job and never read from the
-    // cache (list responses use descriptionPreview; the detail endpoint reads
-    // MongoDB directly). parsedRequirements stays IN: it's a small structured
-    // object and the skill-matcher (Today's Matches) scans the whole cache by
-    // it — excluding it made every job skip and matches come back empty.
-    const cursor = db.collection('jobs').find(
-        { Status: 'active' },
-        { projection: { Description: 0, DescriptionHtml: 0 } },
-    );
+    let resolveFirstBatch;
+    let rejectFirstBatch;
+    const firstBatchReady = new Promise((resolve, reject) => {
+        resolveFirstBatch = resolve;
+        rejectFirstBatch = reject;
+    });
 
-    jobsMap.clear();
+    let settled = false;
+    const markLive = (count) => {
+        if (settled) return;
+        settled = true;
+        isReady = true;
+        loadedAt = new Date();
+        console.log(`[Cache] First batch ready — ${count} jobs live, streaming remainder in background`);
+        resolveFirstBatch();
+    };
 
-    let loadedCount = 0;
-    for await(const job of cursor){
-        jobsMap.set(job.JobID, job);
-        loadedCount++;
-    }
+    // Apply one accumulated batch to the live structures.
+    const flush = (batch) => {
+        for (const job of batch) upsertJob(job);
+        // indexJob() appends to salaryRangeArray; range scans need it ordered.
+        sortSalaryRange();
+        // Invalidate memoized query results so the next request sees this batch.
+        cacheVersion++;
+    };
 
-    // Build the stable-index array + inverted indexes from a clean slate.
-    jobsArray = Array.from(jobsMap.values());
-    clearIndexes();
+    const stream = async () => {
+        const db = await connectToDb();
+        // Heavy fields excluded — 5-20KB each per job and never read from the
+        // cache (list responses use descriptionPreview; the detail endpoint reads
+        // MongoDB directly). parsedRequirements stays IN: it's a small structured
+        // object and the skill-matcher (Today's Matches) scans the whole cache by
+        // it — excluding it made every job skip and matches come back empty.
+        const cursor = db.collection('jobs').find(
+            { Status: 'active' },
+            { projection: { Description: 0, DescriptionHtml: 0 } },
+        );
 
-    for (let i = 0; i < jobsArray.length; i++) {
-        jobIdToArrayIndex.set(jobsArray[i].JobID, i);
-        indexJob(i, jobsArray[i]);
-    }
-    sortSalaryRange();
+        // Start from a clean slate; upsertJob() rebuilds both the array and
+        // every index incrementally as batches arrive.
+        jobsMap.clear();
+        jobsArray = [];
+        clearIndexes();
 
-    isReady = true;
-    loadedAt = new Date();
-    cacheVersion++;
+        let loadedCount = 0;
+        let batch = [];
 
-    const elapsedMs = Date.now() - startTime;
-    console.log(`[jobsCache] ✅ Loaded ${loadedCount} jobs in ${elapsedMs}ms`);
+        for await (const job of cursor) {
+            batch.push(job);
+            loadedCount++;
+
+            if (batch.length >= LOAD_BATCH_SIZE) {
+                flush(batch);
+                batch = [];
+                markLive(loadedCount);
+            }
+        }
+
+        // Trailing partial batch.
+        if (batch.length > 0) {
+            flush(batch);
+            markLive(loadedCount);
+        }
+
+        // An empty collection still has to unblock the server.
+        markLive(loadedCount);
+
+        const elapsedMs = Date.now() - startTime;
+        console.log(`[Cache] Fully loaded — ${loadedCount} jobs in ${elapsedMs}ms`);
+    };
+
+    firstBatchInFlight = firstBatchReady;
+    loadInFlight = stream()
+        .catch(err => {
+            // Before the first batch there is nothing to serve, so the caller
+            // (server boot) must hear about it. After that the cache is already
+            // usable and a mid-stream failure only means fewer jobs than expected.
+            if (!settled) {
+                rejectFirstBatch(err);
+            } else {
+                console.warn(`[Cache] Background load stopped early: ${err.message}`);
+            }
+        })
+        .finally(() => { loadInFlight = null; firstBatchInFlight = null; });
+
+    return firstBatchReady;
 }
 
 /**

@@ -8,7 +8,7 @@
 // Only when EVERY batch in a pass fails do we throw.
 
 import { connectToDb } from '../db/connection.js';
-import { callGemini } from './geminiClient.js';
+import { callGemini } from '../gemini/geminiClient.js';
 import {
     getPassASystemPrompt,
     getPassBSystemPrompt,
@@ -17,6 +17,20 @@ import {
     buildPassAUserMessage,
     buildPassBUserMessage,
 } from './promptBuilders.js';
+
+// Scoring shares the process-wide Gemini key pool (src/gemini/keyManager.js)
+// with the scraper, so a key the scraper just rate-limited is skipped here too.
+const MODEL = process.env.RESUME_MATCHER_MODEL || 'gemini-2.5-flash-lite';
+
+/** One scoring call through the shared Gemini client. */
+function scoreWithGemini(systemPrompt, userMessage, label) {
+    return callGemini({
+        model: MODEL,
+        contents: [{ role: 'user', parts: [{ text: userMessage }] }],
+        systemInstruction: systemPrompt,
+        label,
+    });
+}
 
 const PASS_A_BATCH_SIZE = 50;
 const PASS_B_BATCH_SIZE = 10;
@@ -129,7 +143,11 @@ async function runPassA(profile, jobs) {
     for (let b = 0; b < batches.length; b++) {
         const batch = batches[b];
         try {
-            const raw = await callGemini(getPassASystemPrompt(), buildPassAUserMessage(profile, batch));
+            const raw = await scoreWithGemini(
+                getPassASystemPrompt(),
+                buildPassAUserMessage(profile, batch),
+                `Pass A batch ${b + 1}/${batches.length}`,
+            );
             const rows = parseJsonArray(raw);
 
             for (const row of rows) {
@@ -168,7 +186,11 @@ async function runPassB(profile, shortlistedJobs) {
     for (let b = 0; b < batches.length; b++) {
         const batch = batches[b];
         try {
-            const raw = await callGemini(getPassBSystemPrompt(), buildPassBUserMessage(profile, batch));
+            const raw = await scoreWithGemini(
+                getPassBSystemPrompt(),
+                buildPassBUserMessage(profile, batch),
+                `Pass B batch ${b + 1}/${batches.length}`,
+            );
             const rows = parseJsonArray(raw);
 
             for (const row of rows) {

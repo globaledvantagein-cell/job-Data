@@ -83,7 +83,9 @@ analyticsRouter.get('/counts', async (req, res) => {
     try {
         const db = await connectToDb();
         const jobs = db.collection('jobs');
-        const testLogs = db.collection('jobTestLogs');
+        // Was jobTestLogs; that collection is retired and its fingerprint role
+        // now lives in aiResultCache, so the count tracks the same thing.
+        const testLogs = db.collection('aiResultCache');
 
         // Run all 4 counts in parallel — each uses index scans, no full collection scan
         const [testLogsCount, reviewQueue, activeJobsCount, rejectedJobsCount] = await Promise.all([

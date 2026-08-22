@@ -11,7 +11,7 @@
 //   - Very short text → warns but still processes (might be a sparse resume)
 
 import { PDFParse } from 'pdf-parse';
-import { callGemma } from '../gemma/gemmaClient.js';
+import { callGemmaWithCascade } from '../gemma/gemmaClient.js';
 import { getResumeParsePrompt } from './prompts.js';
 
 const VALID_LEVELS = ['Entry', 'Mid', 'Senior', 'Lead', 'Executive'];
@@ -156,7 +156,7 @@ export async function parseResume(pdfBuffer, mimeType) {
  * Sends text to Gemma 4 for structured extraction.
  */
 export async function parseResumeFromText(text) {
-    const raw = await callGemma(getResumeParsePrompt(), text);
+    const raw = await callGemmaWithCascade(getResumeParsePrompt(), text);
     const parsed = parseJsonResponse(raw);
     return validateProfile(parsed);
 }

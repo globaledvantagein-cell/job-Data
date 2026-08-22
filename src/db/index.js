@@ -5,8 +5,6 @@ export { client, connectToDb } from './connection.js';
 export {
     loadAllExistingIDs,
     saveJobs,
-    saveJobTestLog,
-    findTestLogByFingerprint,
     findSavedJobsByJobIDs,
     deleteOldJobs,
     deleteJobById,
@@ -41,6 +39,7 @@ export {
     restoreRejectedJobToQueue,
     deleteJobsByCompany,
     cleanAllDescriptions,
+    cleanOldAiResults,
     getDigestJobs,
 } from './jobQueries.js';
 

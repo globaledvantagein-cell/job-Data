@@ -20,6 +20,17 @@ export {
     isJobsCacheReady,
 } from './jobsCache.js';
 
+// ── Scraper fingerprint cache ──────────────────────────────────────────────
+// Maps a job fingerprint to the AI verdict already recorded for it, so a
+// re-scrape of an unchanged posting skips the API call.
+export {
+    initAiResultCache,
+    lookupFingerprint,
+    saveAiResult,
+    getCacheSize as getAiResultCacheSize,
+    isAiResultCacheReady,
+} from './aiResultCache.js';
+
 export {
     getJobsPaginatedFromCache,
     getFilterCountsFromCache,

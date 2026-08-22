@@ -70,53 +70,6 @@ export async function findSavedJobsByJobIDs(jobIDs, sourceSite) {
         .toArray();
 }
 
-export async function saveJobTestLog(jobTestLog) {
-    if (!jobTestLog) return;
-    const db = await connectToDb();
-    const testLogsCollection = db.collection('jobTestLogs');
-
-    // Ensure fingerprint index exists (runs once, no-ops after that)
-    await testLogsCollection.createIndex({ fingerprint: 1 }, { background: true }).catch(() => { });
-
-    const { createdAt, ...pureJobData } = jobTestLog;
-
-    await testLogsCollection.updateOne(
-        { JobID: jobTestLog.JobID, sourceSite: jobTestLog.sourceSite },
-        {
-            $set: {
-                ...pureJobData,
-                scrapedAt: new Date()
-            },
-            $setOnInsert: { createdAt: new Date() }
-        },
-        { upsert: true }
-    );
-}
-
-export async function findTestLogByFingerprint(fingerprint) {
-    if (!fingerprint) return null;
-    const db = await connectToDb();
-    const testLogsCollection = db.collection('jobTestLogs');
-
-    const log = await testLogsCollection.findOne(
-        { fingerprint: fingerprint },
-        {
-            projection: {
-                GermanRequired: 1,
-                Domain: 1,
-                SubDomain: 1,
-                ConfidenceScore: 1,
-                Evidence: 1,
-                FinalDecision: 1,
-                RejectionReason: 1,
-                fingerprint: 1,
-            }
-        }
-    );
-
-    return log || null;
-}
-
 export async function addCuratedJob(jobData) {
     if (!jobData.JobTitle || !jobData.ApplicationURL || !jobData.Company) {
         throw new Error('Job Title, URL, and Company are required.');

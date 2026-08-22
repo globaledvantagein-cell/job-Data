@@ -81,6 +81,35 @@ export async function deleteOldJobs(siteName, scrapeStartTime) {
     return totalDeleted;
 }
 
+/**
+ * Prune fingerprint cache entries older than `maxAgeDays`.
+ *
+ * A fingerprint is MD5(title + company + first 500 chars of description). Once
+ * a posting comes down from its ATS board that exact string never appears
+ * again, so its cache entry can only ever miss — it is dead weight, not a
+ * future cache hit. 90 days is well past the point where a live posting would
+ * have been re-scraped and re-touched.
+ *
+ * @param {number} [maxAgeDays=90]
+ * @returns {Promise<number>} entries deleted
+ */
+export async function cleanOldAiResults(maxAgeDays = 90) {
+    const db = await connectToDb();
+    const cutoff = new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000);
+
+    const result = await db.collection('aiResultCache').deleteMany({
+        createdAt: { $lt: cutoff },
+    });
+
+    if (result.deletedCount > 0) {
+        console.log(`[AiCache] 🗑️  Deleted ${result.deletedCount} cache entries older than ${maxAgeDays} days`);
+    } else {
+        console.log(`[AiCache] ✅ Cleanup: nothing older than ${maxAgeDays} days`);
+    }
+
+    return result.deletedCount || 0;
+}
+
 export async function deleteJobById(jobId) {
     try {
         const db = await connectToDb();

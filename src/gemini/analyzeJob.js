@@ -1,28 +1,18 @@
-import { sleep } from '../utils.js';
 import { buildDescriptionSnippet } from './snippetExtractor.js';
-import {
-    keyStates,
-    getBestAvailableKey,
-    shortestCooldownMs,
-    allKeysRpdExhausted,
-    MAX_RETRIES_PER_CALL,
-    RPM_COOLDOWN_MS,
-} from './keyManager.js';
+import { callGeminiWithCascade } from './geminiClient.js';
 
 // ─── Main AI Analyzer ─────────────────────────────────────────────────────────
 
 /**
  * Analyzes a job description for German language requirements.
  *
- * Uses gemini-3.1-flash-lite (500 RPD / 15 RPM free tier per key).
+ * The model is chosen by the client's cascade — best tier that still has daily
+ * budget, dropping down as tiers are spent. No model is named here.
  * Function name kept as analyzeJobWithGroq for backward compatibility.
  *
- * Round-robin strategy:
- *   - Always picks the key with the lowest requests-this-minute among ready keys
- *   - On 429 RPM: marks key in cooldown, immediately retries with next available key
- *   - On 429 RPD: marks key exhausted for 24h, immediately falls to next key
- *   - If ALL keys are in RPM cooldown: waits for the shortest cooldown then retries
- *   - If ALL keys are RPD exhausted: gives up and returns null
+ * Key selection, rotation, cooldowns and retries all live in the shared
+ * src/gemini/geminiClient.js + keyManager.js pair, so this analyzer and Smart
+ * Match draw from the same coordinated key pool.
  */
 export async function analyzeJobWithGroq(jobTitle, description) {
     if (!description || description.length < 50) return null;
@@ -60,102 +50,32 @@ evidence.german_reason: If german_required=true, copy the exact phrase from the 
 Return ONLY this JSON, no other text:
 {"german_required":bool,"confidence":0.0-1.0,"evidence":{"german_reason":"exact quote"}}`;
 
-    // ── Attempt loop ──────────────────────────────────────────────────────────
-    for (let attempt = 1; attempt <= MAX_RETRIES_PER_CALL; attempt++) {
-        // If all keys are permanently exhausted for today, bail out
-        if (allKeysRpdExhausted()) {
-            console.error(`[AI] ALL API keys RPD exhausted — cannot process more jobs today`);
-            return null;
-        }
+    try {
+        const { content } = await callGeminiWithCascade({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            label: String(jobTitle).substring(0, 30),
+            generationConfig: { temperature: 0 },
+        });
 
-        let ks = getBestAvailableKey();
+        if (!content) throw new Error('Empty response from Gemini');
 
-        // If no key is immediately available, wait for the shortest cooldown
-        if (!ks) {
-            const waitMs = shortestCooldownMs();
-            if (!waitMs) {
-                // No cooldown remaining but still no key — shouldn't happen
-                console.error(`[AI] No available key found (unexpected state). Returning null.`);
-                return null;
-            }
-            console.warn(`[AI] All keys in cooldown. Waiting ${Math.round(waitMs / 1000)}s for next available key...`);
-            await sleep(waitMs + 500); // small buffer
-            ks = getBestAvailableKey();
-            if (!ks) return null; // still nothing
-        }
+        const data = JSON.parse(content);
 
-        try {
-            ks.recordRequest();
-            console.log(`[AI] Using key #${ks.index + 1}/${keyStates.length} (${ks.requestsThisMinute} req/min) — ${String(jobTitle).substring(0, 30)}...`);
+        const normalizedData = {
+            german_required: data.german_required === true || data.german_required === "true",
+            domain: "Unclear",
+            sub_domain: "Other",
+            confidence: Number(data.confidence) || 0,
+            evidence: data.evidence || { german_reason: "No reason provided" },
+        };
 
-            const result = await ks.getModel().generateContent(prompt);
-            const content = result.response.text();
+        console.log(`[AI] ✅ ${String(jobTitle).substring(0, 30)}... | GermanReq: ${normalizedData.german_required} | Conf: ${normalizedData.confidence}`);
+        return normalizedData;
 
-            if (!content) throw new Error("Empty response from Gemini");
-
-            const data = JSON.parse(content);
-
-            const normalizedData = {
-                german_required: data.german_required === true || data.german_required === "true",
-                domain: "Unclear",
-                sub_domain: "Other",
-                confidence: Number(data.confidence) || 0,
-                evidence: data.evidence || { german_reason: "No reason provided" },
-            };
-
-            console.log(`[AI] ✅ Key #${ks.index + 1} | ${String(jobTitle).substring(0, 30)}... | GermanReq: ${normalizedData.german_required} | Conf: ${normalizedData.confidence}`);
-            return normalizedData;
-
-        } catch (err) {
-            const errMsg = err?.message || '';
-            const status = err?.status || 0;
-
-            // ── RPM rate limit (429) ──────────────────────────────────────────
-            const isRpmLimit = status === 429
-                || errMsg.includes('429')
-                || errMsg.includes('RESOURCE_EXHAUSTED')
-                || errMsg.includes('quota');
-
-            // ── RPD quota (daily limit) detection ────────────────────────────
-            // Gemini returns these strings when daily quota is gone:
-            const isRpdLimit = isRpmLimit && (
-                errMsg.includes('daily')
-                || errMsg.includes('per day')
-                || errMsg.includes('perDay')
-                || errMsg.includes('Daily')
-                || errMsg.includes('DAILY')
-            );
-
-            if (isRpdLimit) {
-                ks.markRpdLimit();
-                // Immediately fall through the loop — pick a different key
-                console.warn(`[AI] Attempt ${attempt}: Key #${ks.index + 1} hit daily limit. Trying next key...`);
-                continue;
-            }
-
-            if (isRpmLimit) {
-                // Try to parse retry-after delay from error message
-                let waitMs = RPM_COOLDOWN_MS;
-                const retryMatch = errMsg.match(/retry\s*(?:in|after)\s*([\d.]+)s/i);
-                if (retryMatch) waitMs = Math.ceil(parseFloat(retryMatch[1]) * 1000) + 1000;
-
-                ks.markRpmLimit(waitMs);
-
-                // Don't sleep here — immediately try the next available key
-                console.warn(`[AI] Attempt ${attempt}: Key #${ks.index + 1} RPM limited. Trying next key immediately...`);
-                continue;
-            }
-
-            // ── Other errors (parse error, network, etc.) ─────────────────────
-            console.warn(`[AI] Attempt ${attempt}/${MAX_RETRIES_PER_CALL}: Key #${ks.index + 1} error: ${errMsg}`);
-            if (attempt < MAX_RETRIES_PER_CALL) {
-                await sleep(3000);
-            }
-        }
+    } catch (err) {
+        console.warn(`[AI] Analysis failed for "${String(jobTitle).substring(0, 40)}": ${err?.message || err}`);
+        return null;
     }
-
-    console.warn(`[AI] All ${MAX_RETRIES_PER_CALL} attempts exhausted for: ${String(jobTitle).substring(0, 40)}`);
-    return null;
 }
 
 export async function isGermanRequired(description, jobTitle) {

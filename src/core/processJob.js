@@ -1,7 +1,6 @@
 import { analyzeJobWithGroq } from '../gemini/index.js';
 import { createJobModel } from '../models/jobModel.js';
-import { createJobTestLog } from '../models/jobTestLogModel.js';
-import { saveJobTestLog, findTestLogByFingerprint } from '../db/index.js';
+import { lookupFingerprint, saveAiResult } from '../cache/aiResultCache.js';
 import { Analytics } from '../models/analyticsModel.js';
 import {
     BANNED_ROLES,
@@ -158,17 +157,20 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
 
     // 6. FINGERPRINT CHECK — reuse old AI result if we already analyzed this job
     const fingerprint = generateJobFingerprint(mappedJob.JobTitle, mappedJob.Company, mappedJob.Description);
-    const cachedResult = await findTestLogByFingerprint(fingerprint);
+    // Synchronous — the cache lives in RAM, so this is a Map.get(), not a query.
+    const cachedResult = lookupFingerprint(fingerprint);
 
     let aiResult;
     if (cachedResult) {
         console.log(`[Cache Hit] ♻️ Reusing AI result for: ${mappedJob.JobTitle.substring(0, 40)}...`);
         aiResult = {
-            german_required: cachedResult.GermanRequired,
-            domain: cachedResult.Domain,
-            sub_domain: cachedResult.SubDomain,
-            confidence: cachedResult.ConfidenceScore,
-            evidence: cachedResult.Evidence || { german_reason: 'Cached result' }
+            german_required: cachedResult.germanRequired,
+            domain: cachedResult.domain,
+            sub_domain: cachedResult.subDomain,
+            confidence: cachedResult.confidence,
+            // Evidence is no longer stored — it was only ever read back for
+            // display, and the lean cache drops it.
+            evidence: { german_reason: 'Cached result' }
         };
     } else {
         await Analytics.increment('jobsSentToAI');
@@ -206,25 +208,15 @@ export async function processJob(rawJob, siteConfig, existingIDs, sessionHeaders
     const isAutoPublished = finalDecision === 'accepted'
         && aiResult.confidence >= AUTO_PUBLISH_THRESHOLD;
 
-    // 8. SAVE TO TEST LOG (with fingerprint for future cache lookups)
-    const testLogData = {
-        ...mappedJob,
-        GermanRequired: aiResult.german_required,
-        Domain: deriveDomain(mappedJob.Department, mappedJob.JobTitle),
-        SubDomain: mappedJob.Department || 'Other',
-        ConfidenceScore: aiResult.confidence,
-        Evidence: aiResult.evidence,
-        FinalDecision: finalDecision,
-        RejectionReason: rejectionReason,
-        Status: finalDecision === 'rejected'
-            ? 'rejected'
-            : (isAutoPublished ? 'active' : 'pending_review'),
+    // 8. CACHE THE AI VERDICT (keyed by fingerprint, for future runs)
+    await saveAiResult({
         fingerprint,
-    };
-
-    const jobTestLog = createJobTestLog(testLogData, siteConfig.siteName);
-    await saveJobTestLog(jobTestLog);
-    console.log(`📝 [Test Log] Saved ${finalDecision} job: ${mappedJob.JobTitle}`);
+        germanRequired: aiResult.german_required,
+        confidence: aiResult.confidence,
+        domain: deriveDomain(mappedJob.Department, mappedJob.JobTitle),
+        subDomain: mappedJob.Department || 'Other',
+    });
+    console.log(`📝 [AI Cache] Stored ${finalDecision} verdict: ${mappedJob.JobTitle}`);
 
     // 9. RETURN NULL IF REJECTED
     if (finalDecision === 'rejected') return null;

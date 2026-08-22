@@ -109,7 +109,7 @@ export async function matchResumeTextToJobs(text, userId) {
 }
 
 // ── Barrel re-exports ─────────────────────────────────────────────────────────
-export { callGemini, callGeminiWithPdf } from './geminiClient.js';
+export { callGemini } from '../gemini/geminiClient.js';
 export { parseResume, parseResumeFromText } from './parseResume.js';
 export { filterJobs } from './filterJobs.js';
 export { scoreJobs } from './scoreJobs.js';

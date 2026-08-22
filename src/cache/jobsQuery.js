@@ -112,10 +112,10 @@ function computeFilteredIndexSet(filters = {}) {
 //
 //   filters  ← built by the route handler from req.query
 //   returns  → { jobs: [...], totalJobs: N }  (same shape MongoDB returned)
-// Memoized full-list sort for the no-filter request (the most common one —
-// default page load). Keyed by cacheVersion + sortMode; any upsert/remove/
-// refresh bumps cacheVersion and invalidates automatically.
-let sortedAllMemo = { version: -1, sortMode: null, jobs: null };
+// Memoized full-list order for the no-filter request (the most common one —
+// default page load). Keyed by cacheVersion + the UTC date: any upsert/remove/
+// refresh bumps cacheVersion, and the date rolls the shuffle at UTC midnight.
+let sortedAllMemo = { version: -1, dateKey: null, jobs: null };
 
 function isUnfiltered(filters) {
     return (!filters.company || filters.company.length === 0)
@@ -131,22 +131,23 @@ function isUnfiltered(filters) {
 
 export function getJobsPaginatedFromCache(page = 1, limit = 30, filters = {}) {
 
+    const dateKey = todayKey();
+
     let sorted;
     if (isUnfiltered(filters)) {
         const version = getCacheStats().cacheVersion;
-        const sortMode = filters.sort || 'newest';
-        if (sortedAllMemo.version !== version || sortedAllMemo.sortMode !== sortMode) {
+        if (sortedAllMemo.version !== version || sortedAllMemo.dateKey !== dateKey) {
             const all = getJobsArray().filter(job => job !== null && job.GermanRequired === false);
-            sortedAllMemo = { version, sortMode, jobs: sortJobs(all, sortMode) };
+            sortedAllMemo = { version, dateKey, jobs: shuffleJobsDaily(all, dateKey) };
         }
         sorted = sortedAllMemo.jobs;
     } else {
         const { resultSet, jobsArr } = computeFilteredIndexSet(filters);
 
-        // Materialize the surviving jobs, then sort (never touches cache arrays).
+        // Materialize the surviving jobs, then shuffle (never touches cache arrays).
         const resultJobs = [];
         for (const idx of resultSet) resultJobs.push(jobsArr[idx]);
-        sorted = sortJobs(resultJobs, filters.sort);
+        sorted = shuffleJobsDaily(resultJobs, dateKey);
     }
 
     // Total BEFORE slicing (frontend uses this for pagination UI).
@@ -254,7 +255,9 @@ export function getPublicBaitJobsFromCache() {
 
     let jobs = getAllJobs();
     jobs = jobs.filter(job => job.GermanRequired === false);
-    jobs = sortJobs(jobs, 'newest');
+    // Deliberately NOT the daily shuffle — this is the curated "9 newest"
+    // homepage teaser, not the browse view.
+    jobs = sortByNewest(jobs);
 
     return jobs.slice(0, 9).map(job => ({
         _id: job._id,
@@ -353,35 +356,67 @@ function applyDateToSet(resultSet, jobsArr, dateFilter) {
 // Sort helpers
 // ────────────────────────────────────────────────────────────────────────
 
-// Sort the filtered list. Returns a NEW array (cache stays untouched).
-//   'company' → A→Z, newest within each company
-//   'salary'  → highest pay first, null-salary sinks to the bottom
-//   default   → newest first by PostedDate, createdAt tie-break
-function sortJobs(jobs, sortMode) {
-    const sorted = [...jobs]; // never sort a cache array directly
+/** Today's date in UTC as YYYY-MM-DD — the shuffle seed and memo key. */
+export function todayKey() {
+    return new Date().toISOString().slice(0, 10);
+}
 
-    if (sortMode === 'company') {
-        sorted.sort((a, b) => {
-            const companyCmp = (a.Company || '').localeCompare(b.Company || '');
-            if (companyCmp !== 0) return companyCmp;
-            return compareByDate(b.PostedDate, a.PostedDate);
-        });
-    } else if (sortMode === 'salary') {
-        sorted.sort((a, b) => {
-            const aMax = a.filterSalaryMax ?? a.filterSalaryMin ?? -1;
-            const bMax = b.filterSalaryMax ?? b.filterSalaryMin ?? -1;
-            if (aMax !== bMax) return bMax - aMax; // highest first
-            return compareByDate(b.PostedDate, a.PostedDate); // tie-break: newest
-        });
-    } else {
-        sorted.sort((a, b) => {
-            const postedCmp = compareByDate(b.PostedDate, a.PostedDate);
-            if (postedCmp !== 0) return postedCmp;
-            return compareByDate(b.createdAt, a.createdAt);
-        });
+// FNV-1a. Any deterministic string→int hash works; this one is short and has
+// no collisions worth worrying about over a 10-character date string.
+function hashCode(str) {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < str.length; i++) {
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 0x01000193);
+    }
+    return h >>> 0;
+}
+
+// Mulberry32 — a small seeded PRNG. Math.random() can't be seeded, and the
+// whole point here is that the order is reproducible for a given day.
+function seededRandom(seed) {
+    let a = seed >>> 0;
+    return function () {
+        a = (a + 0x6d2b79f5) >>> 0;
+        let t = a;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+/**
+ * Deterministic daily shuffle. Returns a NEW array (cache stays untouched).
+ *
+ * Replaces the old sort modes for the browse view. Every visitor sees the same
+ * order for the whole UTC day, and refreshing the page never reshuffles — so
+ * pagination stays coherent across requests, which a per-request Math.random()
+ * would break (the same job could appear on page 1 and page 3).
+ *
+ * The order changes at UTC midnight, which is what stops the same companies
+ * from permanently owning the top of the list the way newest-first did.
+ */
+function shuffleJobsDaily(jobs, dateKey = todayKey()) {
+    const shuffled = [...jobs]; // never shuffle a cache array directly
+    const rand = seededRandom(hashCode(dateKey));
+
+    // Fisher-Yates.
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(rand() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
 
-    return sorted;
+    return shuffled;
+}
+
+// Newest-first. Retained ONLY for /public-bait, which is a curated "9 newest"
+// homepage teaser rather than the browse view.
+function sortByNewest(jobs) {
+    return [...jobs].sort((a, b) => {
+        const postedCmp = compareByDate(b.PostedDate, a.PostedDate);
+        if (postedCmp !== 0) return postedCmp;
+        return compareByDate(b.createdAt, a.createdAt);
+    });
 }
 
 // Subtract two dates as numbers. Missing dates become epoch (0) so they sink to

@@ -3,7 +3,7 @@
 // Uses Gemma 4 to extract structured requirements from a job description.
 // Returns a validated object, or null if extraction fails — caller decides.
 
-import { callGemma } from './gemmaClient.js';
+import { callGemmaWithCascade } from './gemmaClient.js';
 
 const VALID_EXPERIENCE_LEVELS = ['Entry', 'Mid', 'Senior', 'Lead', 'Executive'];
 const VALID_EMPLOYMENT_TYPES = ['Full-time', 'Part-time', 'Contract', 'Internship'];
@@ -176,7 +176,7 @@ export async function extractRequirements(job) {
     }
     const userMessage = `Job Title: ${job?.JobTitle || ''}\nCompany: ${job?.Company || ''}\n\nJob Description:\n${description}`;
     try {
-        const raw = await callGemma(SYSTEM_PROMPT, userMessage);
+        const raw = await callGemmaWithCascade(SYSTEM_PROMPT, userMessage);
         const parsed = parseJsonResponse(raw);
         return { ...validateResult(parsed), extractedAt: new Date().toISOString() };
     } catch (error) {

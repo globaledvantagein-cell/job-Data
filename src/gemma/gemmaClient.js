@@ -6,10 +6,18 @@
 //
 // Separate from src/gemini/ — does not import from it.
 
-import { getNextKey } from './keyManager.js';
+import { getNextKey, recordModelUsage, isModelExhaustedEverywhere } from './keyManager.js';
 
 const MODEL_NAME = 'gemma-4-26b-a4b-it';
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
+
+// Only two tiers, and 82K calls/day of combined capacity — the cascade exists
+// for completeness, not because we expect to reach the second entry. There is
+// deliberately NO Gemini fallback: Gemma consumers stay on Gemma.
+const GEMMA_CASCADE = ['gemma-4-26b-a4b-it', 'gemma-4-31b-it'];
+
+/** Error code marking a permanent (not transient) "no budget left" failure. */
+const MODEL_EXHAUSTED = 'MODEL_EXHAUSTED';
 
 const DEFAULT_TEMPERATURE = 0.1;
 const MAX_RETRIES = 3;          // retries on 429 (rate limited)
@@ -36,8 +44,8 @@ function backoffWithJitter(attempt) {
  * Performs one HTTP call to Gemma and returns the parsed candidate text.
  * Throws an Error tagged with `.status` so the retry loop can branch on it.
  */
-async function requestOnce(apiKey, body) {
-    const url = `${API_BASE}/${MODEL_NAME}:generateContent?key=${apiKey}`;
+async function requestOnce(apiKey, model, body) {
+    const url = `${API_BASE}/${model}:generateContent?key=${apiKey}`;
 
     const res = await fetch(url, {
         method: 'POST',
@@ -81,7 +89,7 @@ async function requestOnce(apiKey, body) {
  *
  * @param {string} systemPrompt - system instruction text
  * @param {string} userMessage  - user content text
- * @param {{ temperature?: number }} [options]
+ * @param {{ temperature?: number, model?: string }} [options]
  * @returns {Promise<string>} the model's raw response text
  *
  * Retry policy:
@@ -91,6 +99,7 @@ async function requestOnce(apiKey, body) {
  */
 export async function callGemma(systemPrompt, userMessage, options = {}) {
     const temperature = options.temperature ?? DEFAULT_TEMPERATURE;
+    const model = options.model || MODEL_NAME;
 
     // Gemma models on the generativelanguage API do NOT accept `system_instruction`
     // (400: "Developer instruction is not enabled for models/gemma-…") and do NOT
@@ -109,26 +118,33 @@ export async function callGemma(systemPrompt, userMessage, options = {}) {
     let rateLimitRetries = 0;
     let hasRetriedServerError = false;
 
-    // Track key slot for logging only (1-based count of calls made).
-    let keyIndex = 0;
-
     while (true) {
-        const apiKey = getNextKey();
-        keyIndex += 1;
+        const slot = getNextKey(model);
+
+        // Every key is out of budget or at its per-minute ceiling for this
+        // model. Surface it as a tagged error so the cascade can drop a tier.
+        if (!slot) {
+            const err = new Error(`[Gemma] Model ${model} exhausted on all keys`);
+            err.code = MODEL_EXHAUSTED;
+            throw err;
+        }
+
+        const { apiKey, index: keyIndex } = slot;
 
         const startedAt = Date.now();
         try {
-            const text = await requestOnce(apiKey, body);
+            const text = await requestOnce(apiKey, model, body);
+            recordModelUsage(keyIndex, model);
             const durationMs = Date.now() - startedAt;
             console.log(
-                `[Gemma] OK — model=${MODEL_NAME} keyCall=${keyIndex} duration=${durationMs}ms`
+                `[Gemma] OK — model=${model} keyIndex=${keyIndex} duration=${durationMs}ms`
             );
             return text;
         } catch (error) {
             const durationMs = Date.now() - startedAt;
             const status = error.status;
             console.warn(
-                `[Gemma] FAIL — model=${MODEL_NAME} keyCall=${keyIndex} ` +
+                `[Gemma] FAIL — model=${model} keyIndex=${keyIndex} ` +
                 `duration=${durationMs}ms status=${status ?? 'n/a'} msg=${error.message}`
             );
 
@@ -166,4 +182,40 @@ export async function callGemma(systemPrompt, userMessage, options = {}) {
             throw error;
         }
     }
+}
+/**
+ * Calls Gemma without naming a model: tries 26B first, falling back to 31B only
+ * once 26B has no daily budget left on any key.
+ *
+ * @param {string} systemPrompt
+ * @param {string} userMessage
+ * @param {{ temperature?: number }} [options]
+ * @returns {Promise<string>} the model's raw response text
+ */
+export async function callGemmaWithCascade(systemPrompt, userMessage, options = {}) {
+    for (let i = 0; i < GEMMA_CASCADE.length; i++) {
+        const model = GEMMA_CASCADE[i];
+
+        if (isModelExhaustedEverywhere(model)) {
+            const next = GEMMA_CASCADE[i + 1];
+            if (next) console.warn(`[Gemma] Model ${model} exhausted on all keys, cascading to ${next}`);
+            continue;
+        }
+
+        console.log(`[Gemma] Cascade selected model: ${model}`);
+        try {
+            return await callGemma(systemPrompt, userMessage, { ...options, model });
+        } catch (error) {
+            // Budget ran out mid-flight — drop a tier. Everything else is
+            // transient and belongs to the caller.
+            if (error?.code === MODEL_EXHAUSTED) {
+                const next = GEMMA_CASCADE[i + 1];
+                if (next) console.warn(`[Gemma] Model ${model} exhausted on all keys, cascading to ${next}`);
+                continue;
+            }
+            throw error;
+        }
+    }
+
+    throw new Error('[Gemma] All models exhausted for the day');
 }

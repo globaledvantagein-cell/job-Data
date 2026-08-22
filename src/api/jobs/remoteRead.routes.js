@@ -27,7 +27,6 @@ import { Analytics } from '../../models/analyticsModel.js';
 const VALID_WORKPLACE = ['remote', 'hybrid', 'onsite'];
 const VALID_EXPERIENCE = ['entry', 'mid', 'senior', 'lead', 'executive'];
 const VALID_EMPLOYMENT = ['fulltime', 'parttime', 'contract', 'internship'];
-const VALID_SORT = ['newest', 'company', 'salary'];
 // The countries the remote scraper collects. Anything else is dropped rather
 // than passed through to the cache.
 const VALID_COUNTRY = ['US', 'GB', 'CA', 'AU', 'IE', 'NZ', 'SG'];
@@ -66,8 +65,6 @@ function parseSalaryBound(value) {
 
 // Shared parser for the list + filter-counts routes, so both stay in sync.
 function parseRemoteJobFilters(query) {
-    const sort = VALID_SORT.includes(query.sort) ? query.sort : 'newest';
-
     let salaryMin = parseSalaryBound(query.salaryMin);
     let salaryMax = parseSalaryBound(query.salaryMax);
     // A min above the max is nonsensical — drop both rather than guess intent.
@@ -82,7 +79,6 @@ function parseRemoteJobFilters(query) {
         country:    toCountryParam(query.country),
         search:     query.search || '',
         date:       query.date   || 'All',
-        sort,
         workplace:  toArrayParam(query.workplace,  VALID_WORKPLACE),
         experience: toArrayParam(query.experience, VALID_EXPERIENCE),
         employment: toArrayParam(query.employment, VALID_EMPLOYMENT),
@@ -118,7 +114,7 @@ remoteJobsRouter.get('/public-bait', (req, res) => {
     }
 });
 
-// ─── Main remote jobs list — filtered, sorted, paginated ──────────────
+// ─── Main remote jobs list — filtered, shuffled, paginated ────────────
 // softVerifyToken is analytics-only here: it populates req.user when a token is
 // present and is a no-op otherwise. Nothing about the response is gated, and
 // salary insights ship to everyone — remote is the free tier.
